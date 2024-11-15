@@ -1,50 +1,68 @@
 package pl.kamann.ui.views;
 
+import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.kamann.appuser.model.AppUser;
+import pl.kamann.appuser.model.Role;
 import pl.kamann.appuser.service.AppUserService;
+import pl.kamann.session.SessionService;
 
 @Route("")
-public class MainView extends VerticalLayout {
-    private final AppUserService userService;
+public class MainView extends AppLayout {
 
-    public MainView(AppUserService userService) {
-        this.userService = userService;
+    private final AppUserService appUserService;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final SessionService sessionService;
 
-        H1 title = new H1("Booking App");
-        Grid<AppUser> userGrid = new Grid<>(AppUser.class);
-        userGrid.setItems(userService.getAllAppUsers());
+    public MainView(AppUserService appUserService, BCryptPasswordEncoder passwordEncoder, SessionService sessionService) {
+        this.appUserService = appUserService;
+        this.passwordEncoder = passwordEncoder;
+        this.sessionService = sessionService;
 
-        Button addUser = new Button("Add User");
-        addUser.addClickListener(e -> showUserForm());
+        AppUser currentUser = sessionService.getCurrentUser();
 
-        add(title, addUser, userGrid);
+        if (currentUser != null) {
+            navigateBasedOnRole(currentUser);
+        } else {
+            showLoginForm();
+        }
     }
 
-    private void showUserForm() {
-        Dialog dialog = new Dialog();
-        FormLayout form = new FormLayout();
+    private void showLoginForm() {
+        FormLayout formLayout = new FormLayout();
 
-        TextField name = new TextField("Name");
-        TextField email = new TextField("Email");
+        TextField emailField = new TextField("Email");
+        PasswordField passwordField = new PasswordField("Password");
+        Button loginButton = new Button("Login");
 
-        Button save = new Button("Save", e -> {
-            AppUser user = new AppUser();
-            user.setName(name.getValue());
-            user.setEmail(email.getValue());
-            userService.createAppUser(user);
-            dialog.close();
-        });
+        loginButton.addClickListener(e -> {
+            String email = emailField.getValue();
+            String password = passwordField.getValue();
 
-        form.add(name, email, save);
-        dialog.add(form);
-        dialog.open();
+            AppUser user = appUserService.findByEmail(email);
+
+            if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+                sessionService.setCurrentUser(user);
+                navigateBasedOnRole(sessionService.getCurrentUser());
+
+            }});
+        formLayout.add(emailField, passwordField, loginButton);
+        setContent(formLayout);
+    }
+
+    private void navigateBasedOnRole(AppUser currentUser) {
+        if (currentUser.getRole() == Role.ADMIN) {
+            getUI().ifPresent(ui -> ui.navigate("admin-dashboard"));
+        } else if (currentUser.getRole() == Role.INSTRUCTOR) {
+            getUI().ifPresent(ui -> ui.navigate("instructor-dashboard"));
+        } else {
+            getUI().ifPresent(ui -> ui.navigate("client-dashboard"));
+        }
     }
 }
