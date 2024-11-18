@@ -5,6 +5,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import pl.kamann.auth.role.model.Role;
 
 import javax.crypto.SecretKey;
 import java.util.Base64;
@@ -23,7 +24,7 @@ public class JwtUtils {
         this.secretKey = Keys.hmacShaKeyFor(decodedKey);
     }
 
-    public String generateToken(String email, Set<String> roles) {
+    public String generateToken(String email, Set<Role> roles) {
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
                 .claim("roles", roles)

@@ -23,6 +23,11 @@ import pl.kamann.security.jwt.JwtAuthenticationFilter;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final String API_ADMIN = "/api/admin";
+    private final String API_USER = "/api/user";
+    private final String API_AUTH = "/api/auth";
+    private final String ADMIN = "ADMIN";
+    private final String USER = "USER";
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -34,10 +39,11 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
                         authorizationManagerRequestMatcherRegistry
-                                .requestMatchers("/api/auth/**").permitAll()
-                                .requestMatchers("/api/user/me").authenticated()
-                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                                .requestMatchers(API_AUTH + "/**").permitAll()
+                                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                                .requestMatchers(API_USER + "/me").authenticated()
+                                .requestMatchers(API_ADMIN + "/**").hasRole(ADMIN)
+                                .requestMatchers(API_USER + "/**").hasAnyRole(ADMIN, USER)
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

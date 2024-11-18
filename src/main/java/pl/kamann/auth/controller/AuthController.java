@@ -1,8 +1,9 @@
-package pl.kamann.auth;
+package pl.kamann.auth.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,12 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.kamann.auth.login.request.LoginRequest;
 import pl.kamann.auth.login.response.LoginResponse;
 import pl.kamann.auth.register.RegisterRequest;
+import pl.kamann.auth.role.model.Role;
+import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.auth.service.AuthService;
 import pl.kamann.security.jwt.JwtUtils;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -24,6 +29,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AuthController {
     private final AppUserRepository appUserRepository;
+    private final AuthService authService;
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
 
@@ -38,21 +44,16 @@ public class AuthController {
         return ResponseEntity.status(401).body("Invalid credentials");
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        if (appUserRepository.findByEmail(request.email()).isPresent()) {
-            return ResponseEntity.status(400).body("Email already in use");
-        }
+    @PostMapping("/register/client")
+    public ResponseEntity<?> registerClient(@RequestBody RegisterRequest request) {
+        authService.registerClient(request);
+        return ResponseEntity.ok("Client registered successfully");
+    }
 
-        // Create and save the new user
-        AppUser appUser = new AppUser();
-        appUser.setEmail(request.email());
-        appUser.setPassword(passwordEncoder.encode(request.password()));
-        appUser.setFirstName(request.firstName());
-        appUser.setLastName(request.lastName());
-        appUser.setRoles(Set.of("ADMIN"));
-        appUserRepository.save(appUser);
-
-        return ResponseEntity.ok("User registered successfully");
+    @PostMapping("/register/instructor")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> registerInstructor(@RequestBody RegisterRequest request) {
+        authService.registerInstructor(request);
+        return ResponseEntity.ok("Instructor registered successfully");
     }
 }
