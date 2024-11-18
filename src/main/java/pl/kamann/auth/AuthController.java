@@ -31,7 +31,7 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         Optional<AppUser> user = appUserRepository.findByEmail(request.email());
         if (user.isPresent() && passwordEncoder.matches(request.password(), user.get().getPassword())) {
-            String token = jwtUtils.generateToken(user.get().getEmail());
+            String token = jwtUtils.generateToken(user.get().getEmail(), user.get().getRoles());
             return ResponseEntity.ok(new LoginResponse(token));
         }
         log.warn("Failed login attempt for email: {}", request.email());

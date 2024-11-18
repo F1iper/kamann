@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 
 @Component
@@ -21,9 +23,10 @@ public class JwtUtils {
         this.secretKey = Keys.hmacShaKeyFor(decodedKey);
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, Set<String> roles) {
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
+                .claim("roles", roles)
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
