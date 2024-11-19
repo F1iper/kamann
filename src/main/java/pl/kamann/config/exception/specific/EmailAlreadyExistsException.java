@@ -1,4 +1,4 @@
-package pl.kamann.exception.specific;
+package pl.kamann.config.exception.specific;
 
 public class EmailAlreadyExistsException extends RuntimeException {
     public EmailAlreadyExistsException(String email) {

@@ -1,4 +1,4 @@
-package pl.kamann.exception.handler;
+package pl.kamann.config.exception.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -9,10 +9,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import pl.kamann.exception.response.ErrorResponse;
-import pl.kamann.exception.specific.EmailAlreadyExistsException;
-import pl.kamann.exception.specific.RoleNotFoundException;
-import pl.kamann.global.Codes;
+import pl.kamann.config.exception.response.ErrorResponse;
+import pl.kamann.config.exception.specific.EmailAlreadyExistsException;
+import pl.kamann.config.exception.specific.RoleNotFoundException;
+import pl.kamann.config.global.Codes;
 
 import java.time.LocalDateTime;
 
