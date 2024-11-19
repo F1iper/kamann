@@ -27,14 +27,16 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     private static final String[] PUBLIC_URLS = {
-            "/api/auth/**",
+            "/api/auth/login",
+            "/api/auth/register-client",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"
     };
 
     private static final String[] ADMIN_URLS = {
-            "/api/admin/**"
+            "/api/admin/**",
+            "/api/auth/register-instructor"
     };
 
     private static final String[] USER_URLS = {
