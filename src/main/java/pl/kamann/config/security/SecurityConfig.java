@@ -1,6 +1,7 @@
-package pl.kamann.security;
+package pl.kamann.config.security;
 
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import pl.kamann.security.jwt.JwtAuthenticationFilter;
+import pl.kamann.config.security.jwt.JwtAuthenticationFilter;
 
 import java.util.List;
 
@@ -36,11 +37,13 @@ public class SecurityConfig {
 
     private static final String[] ADMIN_URLS = {
             "/api/admin/**",
-            "/api/auth/register-instructor"
+            "/api/auth/register-instructor",
+            "/api/admin/events/**"
     };
 
     private static final String[] USER_URLS = {
-            "/api/user/**"
+            "/api/user/**",
+            "/api/user/events/**"
     };
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -63,14 +66,10 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            // propagate the exception for the global handler
-                            throw authException;
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            // propagate the exception for the global handler
-                            throw accessDeniedException;
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
                 .build();
     }
@@ -78,7 +77,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*")); // todo: set specific origin
+        configuration.setAllowedOrigins(List.of("*"));
+//        configuration.setAllowedOrigins(List.of("my frontend domain here"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));

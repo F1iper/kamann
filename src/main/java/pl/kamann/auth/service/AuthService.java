@@ -11,9 +11,9 @@ import pl.kamann.auth.login.response.LoginResponse;
 import pl.kamann.auth.register.RegisterRequest;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
-import pl.kamann.exception.specific.EmailAlreadyExistsException;
-import pl.kamann.exception.specific.RoleNotFoundException;
-import pl.kamann.security.jwt.JwtUtils;
+import pl.kamann.config.exception.specific.EmailAlreadyExistsException;
+import pl.kamann.config.exception.specific.RoleNotFoundException;
+import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 

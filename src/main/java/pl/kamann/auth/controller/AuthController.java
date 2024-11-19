@@ -15,8 +15,8 @@ import pl.kamann.auth.login.request.LoginRequest;
 import pl.kamann.auth.login.response.LoginResponse;
 import pl.kamann.auth.register.RegisterRequest;
 import pl.kamann.auth.service.AuthService;
-import pl.kamann.exception.response.ErrorResponse;
-import pl.kamann.global.Codes;
+import pl.kamann.config.exception.response.ErrorResponse;
+import pl.kamann.config.global.Codes;
 
 import java.time.LocalDateTime;
 

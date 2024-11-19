@@ -1,11 +1,11 @@
-package pl.kamann.startup;
+package pl.kamann.config.startup;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
-import pl.kamann.exception.specific.RoleNotFoundException;
+import pl.kamann.config.exception.specific.RoleNotFoundException;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 

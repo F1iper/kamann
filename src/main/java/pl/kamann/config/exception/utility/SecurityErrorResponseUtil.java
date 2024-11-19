@@ -1,4 +1,4 @@
-package pl.kamann.exception.utility;
+package pl.kamann.config.exception.utility;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.experimental.UtilityClass;
 import org.springframework.http.HttpStatus;
-import pl.kamann.exception.response.ErrorResponse;
+import pl.kamann.config.exception.response.ErrorResponse;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

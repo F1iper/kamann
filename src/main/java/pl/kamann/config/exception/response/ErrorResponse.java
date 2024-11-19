@@ -1,4 +1,4 @@
-package pl.kamann.exception.response;
+package pl.kamann.config.exception.response;
 
 import java.time.LocalDateTime;
 

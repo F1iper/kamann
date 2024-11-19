@@ -1,4 +1,4 @@
-package pl.kamann.security.jwt;
+package pl.kamann.config.security.jwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

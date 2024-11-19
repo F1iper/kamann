@@ -1,4 +1,4 @@
-package pl.kamann.global;
+package pl.kamann.config.global;
 
 public class Codes {
 
