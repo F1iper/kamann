@@ -2,9 +2,11 @@ package pl.kamann.event.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import pl.kamann.event.model.Event;
-import pl.kamann.event.model.Rating;
 import pl.kamann.event.service.EventService;
 
 import java.util.List;
@@ -27,11 +29,4 @@ public class EventUserController {
         Event event = eventService.getEventById(id);
         return event != null ? ResponseEntity.ok(event) : ResponseEntity.notFound().build();
     }
-
-    //todo: for future implementation (19.11.2024)
-//    @PostMapping("/{eventId}/rate")
-//    public ResponseEntity<Void> rateEvent(@PathVariable Long eventId, @RequestBody Rating rating) {
-//        boolean success = ratingService.addRating(rating);
-//        return success ? ResponseEntity.ok().build() : ResponseEntity.badRequest().build();
-//    }
 }
