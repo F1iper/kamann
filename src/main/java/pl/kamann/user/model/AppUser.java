@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import pl.kamann.auth.role.model.Role;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +51,9 @@ public class AppUser implements UserDetails {
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .collect(Collectors.toSet());
     }
+
+    @Column(name = "card_expiry_date")
+    private LocalDate cardExpiryDate;
 
     @Override
     public String getUsername() {
