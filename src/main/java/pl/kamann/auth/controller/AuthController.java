@@ -43,16 +43,8 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
-        AppUser user = appUserRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UsernameNotFoundException("Invalid email"));
-
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            return ResponseEntity.status(401)
-                    .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), INVALID_CREDENTIALS, "Invalid password", LocalDateTime.now()));
-        }
-
-        String token = jwtUtils.generateToken(user.getEmail(), user.getRoles());
-        return ResponseEntity.ok(new LoginResponse(token));
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register/client")

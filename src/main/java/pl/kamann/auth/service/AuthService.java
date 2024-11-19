@@ -1,13 +1,19 @@
 package pl.kamann.auth.service;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import pl.kamann.auth.login.request.LoginRequest;
+import pl.kamann.auth.login.response.LoginResponse;
 import pl.kamann.auth.register.RegisterRequest;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
 import pl.kamann.exception.specific.EmailAlreadyExistsException;
 import pl.kamann.exception.specific.RoleNotFoundException;
+import pl.kamann.security.jwt.JwtUtils;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 
@@ -16,15 +22,30 @@ import java.util.Set;
 @Service
 @Slf4j
 public class AuthService {
-
     private final AppUserRepository appUserRepository;
+
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
 
-    public AuthService(AppUserRepository appUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(AppUserRepository appUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils) {
         this.appUserRepository = appUserRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtils = jwtUtils;
+    }
+
+    public LoginResponse login(@Valid LoginRequest request) {
+        AppUser user = appUserRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid email"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new AuthenticationException("Invalid password") {
+            };
+        }
+
+        String token = jwtUtils.generateToken(user.getEmail(), user.getRoles());
+        return new LoginResponse(token);
     }
 
     public void registerClient(RegisterRequest request) {
