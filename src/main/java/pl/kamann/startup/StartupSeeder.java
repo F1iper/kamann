@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.exception.specific.RoleNotFoundException;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 
@@ -29,7 +30,7 @@ public class StartupSeeder implements CommandLineRunner {
 
         if (appUserRepository.findByEmail("admin@admin.com").isEmpty()) {
             Role adminRole = roleRepository.findByName("ADMIN")
-                    .orElseThrow(() -> new RuntimeException("Admin role not found"));
+                    .orElseThrow(() -> new RoleNotFoundException("ADMIN role not found in the system"));
 
             AppUser adminUser = new AppUser();
             adminUser.setEmail("admin@admin.com");

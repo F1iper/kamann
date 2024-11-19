@@ -1,16 +1,20 @@
 package pl.kamann.auth.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.kamann.auth.register.RegisterRequest;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.exception.specific.EmailAlreadyExistsException;
+import pl.kamann.exception.specific.RoleNotFoundException;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 
 import java.util.Set;
 
 @Service
+@Slf4j
 public class AuthService {
 
     private final AppUserRepository appUserRepository;
@@ -24,42 +28,35 @@ public class AuthService {
     }
 
     public void registerClient(RegisterRequest request) {
-        if (appUserRepository.findByEmail(request.email()).isPresent()) {
-            throw new RuntimeException("Email already in use");
-        }
-
-        // Assign default USER role
         Role userRole = roleRepository.findByName("USER")
-                //todo: specific exception please :)
-                .orElseThrow(() -> new RuntimeException("Default role not found"));
-
-        AppUser appUser = new AppUser();
-        appUser.setEmail(request.email());
-        appUser.setPassword(passwordEncoder.encode(request.password()));
-        appUser.setFirstName(request.firstName());
-        appUser.setLastName(request.lastName());
-        appUser.setRoles(Set.of(userRole));
-
-        appUserRepository.save(appUser);
+                .orElseThrow(() -> new RoleNotFoundException("Default USER role not found in the system"));
+        registerUser(request, userRole);
     }
 
     public void registerInstructor(RegisterRequest request) {
-        if (appUserRepository.findByEmail(request.email()).isPresent()) {
-            throw new RuntimeException("Email already in use");
-        }
-
-        // Assign INSTRUCTOR role
         Role instructorRole = roleRepository.findByName("INSTRUCTOR")
-                //todo: specific exception please :)
-                .orElseThrow(() -> new RuntimeException("Instructor role not found"));
+                .orElseThrow(() -> new RoleNotFoundException("INSTRUCTOR role not found in the system"));
+        registerUser(request, instructorRole);
+    }
+
+    private void registerUser(RegisterRequest request, Role role) {
+        validateEmailNotTaken(request.email());
 
         AppUser appUser = new AppUser();
         appUser.setEmail(request.email());
         appUser.setPassword(passwordEncoder.encode(request.password()));
         appUser.setFirstName(request.firstName());
         appUser.setLastName(request.lastName());
-        appUser.setRoles(Set.of(instructorRole));
+        appUser.setRoles(Set.of(role));
 
         appUserRepository.save(appUser);
+        log.info("User registered successfully with email: {} and role: {}", request.email(), role.getName());
+    }
+
+    private void validateEmailNotTaken(String email) {
+        if (appUserRepository.findByEmail(email).isPresent()) {
+            log.warn("Registration attempt with existing email: {}", email);
+            throw new EmailAlreadyExistsException(email);
+        }
     }
 }

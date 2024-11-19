@@ -33,22 +33,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
         String token = extractTokenFromRequest(request);
 
         if (token != null && jwtUtils.validateToken(token)) {
             String email = jwtUtils.extractEmail(token);
-            AppUser user = appUserRepository.findByEmail(email)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-            List<GrantedAuthority> authorities = user.getRoles().stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .collect(Collectors.toList());
+            try {
+                AppUser user = appUserRepository.findByEmail(email)
+                        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    user.getEmail(), null, authorities);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                List<GrantedAuthority> authorities = user.getRoles().stream()
+                        .map(role -> {
+                            String authorityName = "ROLE_" + role.getName();
+                            return new SimpleGrantedAuthority(authorityName);
+                        })
+                        .collect(Collectors.toList());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        user.getEmail(), null, authorities);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
+            }
         }
 
         filterChain.doFilter(request, response);
