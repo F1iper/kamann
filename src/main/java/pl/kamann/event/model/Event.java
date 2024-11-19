@@ -35,4 +35,19 @@ public class Event {
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
     private AppUser createdBy;
+
+    @ManyToOne
+    @JoinColumn(name = "instructor_id", nullable = false)
+    private AppUser instructor;
+
+    @Column(nullable = false)
+    private int maxParticipants;
+
+    @ManyToOne
+    @JoinColumn(name = "event_type_id", nullable = false)
+    private EventType eventType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EventStatus status;
 }
