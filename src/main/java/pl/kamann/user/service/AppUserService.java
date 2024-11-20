@@ -7,6 +7,7 @@ import pl.kamann.auth.role.repository.RoleRepository;
 import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.mapper.AppUserMapper;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.repository.AppUserRepository;
 
 import java.time.LocalDate;
@@ -84,5 +85,13 @@ public class AppUserService {
     public List<AppUserDto> getUsersWithExpiringMembershipCards(LocalDate expiryDate) {
         List<AppUser> users = appUserRepository.findUsersWithExpiringMembershipCards(expiryDate);
         return appUserMapper.toDtoList(users);
+    }
+
+    public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+        user.setStatus(status);
+        AppUser updatedUser = appUserRepository.save(user);
+        return appUserMapper.toDto(updatedUser);
     }
 }

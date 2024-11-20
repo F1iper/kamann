@@ -14,6 +14,7 @@ import pl.kamann.event.dto.EventDto;
 import pl.kamann.event.service.EventService;
 import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.service.AppUserService;
 
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("api/admin")
 @RequiredArgsConstructor
-public class AppUserAdminController {
+public class AdminController {
 
     private final AppUserService appUserService;
     private final AuthService authService;
@@ -64,5 +65,17 @@ public class AppUserAdminController {
     public ResponseEntity<List<AppUserDto>> getAllClients() {
         List<AppUserDto> clients = appUserService.getUsersByRole("CLIENT");
         return ResponseEntity.ok(clients);
+    }
+
+    @PutMapping("/users/{userId}/activate")
+    public ResponseEntity<AppUserDto> activateUser(@PathVariable Long userId) {
+        AppUserDto updatedUser = appUserService.changeUserStatus(userId, AppUserStatus.ACTIVE);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/users/{userId}/deactivate")
+    public ResponseEntity<AppUserDto> deactivateUser(@PathVariable Long userId) {
+        AppUserDto updatedUser = appUserService.changeUserStatus(userId, AppUserStatus.INACTIVE);
+        return ResponseEntity.ok(updatedUser);
     }
 }

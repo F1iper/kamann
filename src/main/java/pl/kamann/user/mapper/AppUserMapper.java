@@ -26,6 +26,7 @@ public class AppUserMapper {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .roles(user.getRoles())
+                .status(user.getStatus())
                 .build();
     }
 
@@ -40,6 +41,7 @@ public class AppUserMapper {
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setRoles(roles);
+        user.setStatus(dto.getStatus());
         return user;
     }
 

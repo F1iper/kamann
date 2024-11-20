@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import pl.kamann.auth.role.model.Role;
+import pl.kamann.user.model.AppUserStatus;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -19,5 +20,6 @@ public class AppUserDto {
     private String firstName;
     private String lastName;
     private Set<Role> roles;
+    private AppUserStatus status;
     private LocalDate cardExpiryDate;
 }

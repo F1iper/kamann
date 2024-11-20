@@ -37,6 +37,9 @@ public class AppUser implements UserDetails {
     @Column(nullable = false)
     private String lastName;
 
+    @Enumerated(EnumType.STRING)
+    private AppUserStatus status = AppUserStatus.ACTIVE;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
