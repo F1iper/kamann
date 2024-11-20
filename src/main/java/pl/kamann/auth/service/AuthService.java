@@ -1,6 +1,8 @@
 package pl.kamann.auth.service;
 
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,21 +21,15 @@ import pl.kamann.user.repository.AppUserRepository;
 
 import java.util.Set;
 
-@Service
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class AuthService {
-    private final AppUserRepository appUserRepository;
 
+    private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-
-    public AuthService(AppUserRepository appUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils) {
-        this.appUserRepository = appUserRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtils = jwtUtils;
-    }
 
     public LoginResponse login(@Valid LoginRequest request) {
         AppUser user = appUserRepository.findByEmail(request.email())
@@ -54,10 +50,19 @@ public class AuthService {
         registerUser(request, userRole);
     }
 
-    public void registerInstructor(RegisterRequest request) {
+    @Transactional
+    public AppUser registerInstructor(RegisterRequest request) {
+        AppUser newUser = new AppUser();
+        newUser.setEmail(request.email());
+        newUser.setPassword(request.password());
+        newUser.setFirstName(request.firstName());
+        newUser.setLastName(request.lastName());
+
         Role instructorRole = roleRepository.findByName("INSTRUCTOR")
-                .orElseThrow(() -> new RoleNotFoundException("INSTRUCTOR role not found in the system"));
-        registerUser(request, instructorRole);
+                .orElseThrow(() -> new RoleNotFoundException("Role 'INSTRUCTOR' not found"));
+        newUser.setRoles(Set.of(instructorRole));
+
+        return appUserRepository.save(newUser);
     }
 
     private void registerUser(RegisterRequest request, Role role) {

@@ -2,66 +2,81 @@ package pl.kamann.user.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pl.kamann.attendance.model.Attendance;
-import pl.kamann.attendance.model.AttendanceStatus;
-import pl.kamann.attendance.repository.AttendanceRepository;
-import pl.kamann.card.model.Card;
-import pl.kamann.card.repository.CardRepository;
-import pl.kamann.event.model.Event;
-import pl.kamann.event.model.EventStatus;
+import pl.kamann.auth.role.model.Role;
+import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.user.dto.AppUserDto;
+import pl.kamann.user.mapper.AppUserMapper;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.repository.AppUserRepository;
 
-import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class AppUserService {
 
-    private final CardRepository cardRepository;
-    private final AttendanceRepository attendanceRepository;
+    private final AppUserRepository appUserRepository;
+    private final RoleRepository roleRepository;
+    private final AppUserMapper appUserMapper;
 
-    /**
-     * Handle user attendance for an event.
-     * Validates card status, entrances left, and marks attendance.
-     */
-    public void attendEvent(AppUser user, Event event) {
-        if (!isEventAvailableForAttendance(event)) {
-            throw new IllegalArgumentException("This event is not eligible for attendance.");
-        }
-
-        Card card = cardRepository.findActiveCardByUser(user)
-                .orElseThrow(() -> new IllegalArgumentException("User has no active card."));
-
-        if (card.getEntrancesLeft() <= 0) {
-            throw new IllegalArgumentException("User's card has no entrances left.");
-        }
-
-        decrementCardEntrances(card);
-
-        recordAttendance(user, event);
+    public List<AppUserDto> getAllUsers() {
+        List<AppUser> users = appUserRepository.findAll();
+        return appUserMapper.toDtoList(users);
     }
 
-    private boolean isEventAvailableForAttendance(Event event) {
-        return event.getStatus() == EventStatus.UPCOMING &&
-                event.getStartTime().isAfter(LocalDateTime.now());
+    public AppUserDto getUserById(Long id) {
+        AppUser user = appUserRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        return appUserMapper.toDto(user);
     }
 
-    private void decrementCardEntrances(Card card) {
-        card.setEntrancesLeft(card.getEntrancesLeft() - 1);
-        if (card.getEntrancesLeft() == 0) {
-            card.setActive(false);
+    public AppUserDto createUser(AppUserDto userDto) {
+        Set<Role> roles = roleRepository.findByNameIn(userDto.getRoles());
+        AppUser user = appUserMapper.toEntity(userDto, roles);
+        AppUser savedUser = appUserRepository.save(user);
+        return appUserMapper.toDto(savedUser);
+    }
+
+    public AppUserDto updateUser(Long id, AppUserDto userDto) {
+        AppUser existingUser = appUserRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+
+        Set<Role> roles = roleRepository.findByNameIn(userDto.getRoles());
+        existingUser.setEmail(userDto.getEmail());
+        existingUser.setFirstName(userDto.getFirstName());
+        existingUser.setLastName(userDto.getLastName());
+        existingUser.setRoles(roles);
+
+        AppUser updatedUser = appUserRepository.save(existingUser);
+        return appUserMapper.toDto(updatedUser);
+    }
+
+    public void deleteUser(Long id) {
+        AppUser user = appUserRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        appUserRepository.delete(user);
+    }
+
+    public AppUserDto updateUserRoles(Long userId, Set<Role> roleNames) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        Set<Role> roles = roleRepository.findByNameIn(roleNames);
+        if (roles.isEmpty()) {
+            throw new RuntimeException("No roles found for the provided names");
         }
-        cardRepository.save(card);
+
+        user.setRoles(roles);
+
+        AppUser updatedUser = appUserRepository.save(user);
+        return appUserMapper.toDto(updatedUser);
     }
 
-    private void recordAttendance(AppUser user, Event event) {
-        Attendance attendance = new Attendance();
-        attendance.setUser(user);
-        attendance.setEvent(event);
-        attendance.setTimestamp(LocalDateTime.now());
-        attendance.setStatus(AttendanceStatus.PRESENT);
-        attendance.setNotes(null);
-
-        attendanceRepository.save(attendance);
+    public List<AppUserDto> getUsersByRole(String roleName) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found with name: " + roleName));
+        List<AppUser> users = appUserRepository.findByRolesContaining(role);
+        return appUserMapper.toDtoList(users);
     }
 }
