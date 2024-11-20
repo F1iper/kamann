@@ -13,4 +13,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             LocalDateTime start,
             LocalDateTime end
     );
+
+    List<Event> findByInstructor(AppUser instructor);
 }

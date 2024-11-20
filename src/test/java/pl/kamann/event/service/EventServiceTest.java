@@ -11,6 +11,8 @@ import pl.kamann.attendance.repository.AttendanceRepository;
 import pl.kamann.config.exception.specific.EventNotFoundException;
 import pl.kamann.config.exception.specific.InstructorBusyException;
 import pl.kamann.config.exception.specific.InstructorNotFoundException;
+import pl.kamann.event.dto.EventDto;
+import pl.kamann.event.mapper.EventMapper;
 import pl.kamann.event.model.Event;
 import pl.kamann.event.model.EventStatus;
 import pl.kamann.event.model.EventType;
@@ -44,12 +46,16 @@ class EventServiceTest {
     @Mock
     private AttendanceRepository attendanceRepository;
 
+    @Mock
+    private EventMapper eventMapper;
+
     @InjectMocks
     private EventService eventService;
 
     private AppUser instructor;
     private EventType eventType;
     private Event event;
+    private EventDto eventDto;
 
     @BeforeEach
     void setUp() {
@@ -74,6 +80,19 @@ class EventServiceTest {
         event.setMaxParticipants(10);
         event.setRecurring(false);
         event.setStatus(EventStatus.UPCOMING);
+
+        // Create a sample DTO
+        eventDto = EventDto.builder()
+                .id(1L)
+                .title("Beginner Pole Dance")
+                .instructorId(1L)
+                .eventTypeName("Pole Dance")
+                .startTime(event.getStartTime())
+                .endTime(event.getEndTime())
+                .maxParticipants(10)
+                .recurring(false)
+                .status(EventStatus.UPCOMING)
+                .build();
     }
 
     @Test
@@ -92,13 +111,19 @@ class EventServiceTest {
         when(eventRepository.save(any(Event.class)))
                 .thenReturn(event);
 
+        when(eventMapper.toEntity(eventDto, instructor, instructor, eventType))
+                .thenReturn(event);
+
+        when(eventMapper.toDTO(event))
+                .thenReturn(eventDto);
+
         // when
-        Event createdEvent = eventService.createEvent(event);
+        EventDto createdEvent = eventService.createEvent(eventDto);
 
         // then
         assertNotNull(createdEvent);
         assertEquals(EventStatus.UPCOMING, createdEvent.getStatus());
-        verify(eventRepository).save(event);
+        verify(eventRepository).save(any(Event.class));
     }
 
     @Test
@@ -109,7 +134,7 @@ class EventServiceTest {
 
         // when & then
         assertThrows(InstructorNotFoundException.class,
-                () -> eventService.createEvent(event));
+                () -> eventService.createEvent(eventDto));
     }
 
     @Test
@@ -124,11 +149,11 @@ class EventServiceTest {
 
         when(eventRepository.findByInstructorAndStartTimeBetween(
                 any(), any(), any()))
-                .thenReturn(Arrays.asList(existingEvent));
+                .thenReturn(List.of(existingEvent));
 
         // when & then
         assertThrows(InstructorBusyException.class,
-                () -> eventService.createEvent(event));
+                () -> eventService.createEvent(eventDto));
     }
 
     @Test
@@ -143,22 +168,22 @@ class EventServiceTest {
         when(eventRepository.findById(1L))
                 .thenReturn(Optional.of(existingEvent));
 
-        when(eventTypeRepository.findByName(eventType.getName()))
+        when(eventTypeRepository.findByName(eventDto.getEventTypeName()))
                 .thenReturn(Optional.of(eventType));
 
         when(eventRepository.findByInstructorAndStartTimeBetween(
                 any(), any(), any()))
                 .thenReturn(List.of());
 
-        when(eventRepository.save(any(Event.class)))
-                .thenReturn(event);
+        when(eventMapper.toDTO(any(Event.class)))
+                .thenReturn(eventDto);
 
         // when
-        Event updatedEvent = eventService.updateEvent(1L, event);
+        EventDto updatedEvent = eventService.updateEvent(1L, eventDto);
 
         // then
         assertNotNull(updatedEvent);
-        verify(eventRepository).save(existingEvent);
+        verify(eventRepository).save(any(Event.class));
     }
 
     @Test
