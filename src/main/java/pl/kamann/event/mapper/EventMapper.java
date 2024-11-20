@@ -10,7 +10,7 @@ import pl.kamann.user.model.AppUser;
 @Component
 public class EventMapper {
 
-    public EventDto toDTO(Event event) {
+    public EventDto toDto(Event event) {
         return EventDto.builder()
                 .id(event.getId())
                 .title(event.getTitle())

@@ -2,6 +2,10 @@ package pl.kamann.event.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +14,7 @@ import pl.kamann.config.global.Codes;
 import pl.kamann.event.dto.EventDto;
 import pl.kamann.event.service.EventService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @PreAuthorize("hasRole('" + Codes.ADMIN + "')")
@@ -19,6 +24,19 @@ import java.util.List;
 public class EventAdminController {
 
     private final EventService eventService;
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<EventDto>> searchEvents(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long instructorId,
+            @RequestParam(required = false) String eventType,
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        Page<EventDto> events = eventService.searchEvents(startDate, endDate, instructorId, eventType, keyword, pageable);
+        return ResponseEntity.ok(events);
+    }
 
     @GetMapping
     public ResponseEntity<List<EventDto>> getAllEvents() {

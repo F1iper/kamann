@@ -1,6 +1,8 @@
 package pl.kamann.event.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import pl.kamann.attendance.model.AttendanceStatus;
@@ -16,6 +18,7 @@ import pl.kamann.event.repository.EventTypeRepository;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,19 +54,31 @@ public class EventService {
         eventDto.setStatus(EventStatus.UPCOMING);
 
         Event event = eventMapper.toEntity(eventDto, createdBy, instructor, eventType);
-        return eventMapper.toDTO(eventRepository.save(event));
+        return eventMapper.toDto(eventRepository.save(event));
+    }
+
+    public Page<EventDto> searchEvents(
+            LocalDate startDate,
+            LocalDate endDate,
+            Long instructorId,
+            String eventType,
+            String keyword,
+            Pageable pageable) {
+
+        Page<Event> events = eventRepository.findFilteredEvents(startDate, endDate, instructorId, eventType, keyword, pageable);
+        return events.map(eventMapper::toDto);
     }
 
     public List<EventDto> getAllEvents() {
         return eventRepository.findAll().stream()
-                .map(eventMapper::toDTO)
+                .map(eventMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     public EventDto getEventById(Long id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
-        return eventMapper.toDTO(event);
+        return eventMapper.toDto(event);
     }
 
     public EventDto updateEvent(Long id, EventDto updatedEventDto) {
@@ -107,7 +122,7 @@ public class EventService {
         existingEvent.setInstructor(instructor);
         existingEvent.setEventType(eventType);
 
-        return eventMapper.toDTO(eventRepository.save(existingEvent));
+        return eventMapper.toDto(eventRepository.save(existingEvent));
     }
 
     public void deleteEvent(Long id) {
@@ -144,7 +159,7 @@ public class EventService {
 
         List<Event> events = eventRepository.findByInstructor(instructor);
         return events.stream()
-                .map(eventMapper::toDTO)
+                .map(eventMapper::toDto)
                 .collect(Collectors.toList());
     }
 }
