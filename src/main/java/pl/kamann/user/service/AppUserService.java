@@ -9,6 +9,7 @@ import pl.kamann.user.mapper.AppUserMapper;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.repository.AppUserRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -77,6 +78,11 @@ public class AppUserService {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found with name: " + roleName));
         List<AppUser> users = appUserRepository.findByRolesContaining(role);
+        return appUserMapper.toDtoList(users);
+    }
+
+    public List<AppUserDto> getUsersWithExpiringMembershipCards(LocalDate expiryDate) {
+        List<AppUser> users = appUserRepository.findUsersWithExpiringMembershipCards(expiryDate);
         return appUserMapper.toDtoList(users);
     }
 }
