@@ -2,6 +2,7 @@ package pl.kamann.config.global;
 
 public class Codes {
 
+    // auth
     public static final String SUCCESS = "SUCCESS";
     public static final String ACCESS_DENIED = "ACCESS_DENIED";
     public static final String UNAUTHORIZED = "UNAUTHORIZED";
@@ -12,8 +13,9 @@ public class Codes {
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 
-
-
-
+    // roles
+    public static final String ADMIN = "ADMIN";
+    public static final String INSTRUCTOR = "INSTRUCTOR";
+    public static final String CLIENT = "CLIENT";
 
 }

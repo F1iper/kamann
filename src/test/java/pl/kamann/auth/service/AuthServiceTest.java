@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AuthServiceExtendedTest {
+class AuthServiceTest {
 
     @Mock
     private AppUserRepository appUserRepository;
