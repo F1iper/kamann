@@ -1,7 +1,9 @@
 package pl.kamann.user.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import pl.kamann.auth.role.model.Role;
 
 import java.time.LocalDate;
@@ -9,6 +11,8 @@ import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AppUserDto {
     private Long id;
     private String email;
