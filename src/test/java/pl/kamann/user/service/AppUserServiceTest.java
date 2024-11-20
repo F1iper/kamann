@@ -7,6 +7,7 @@ import pl.kamann.auth.role.repository.RoleRepository;
 import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.mapper.AppUserMapper;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.repository.AppUserRepository;
 
 import java.util.List;
@@ -123,5 +124,37 @@ class AppUserServiceTest {
         verify(appUserRepository, times(1)).findById(1L);
         verify(roleRepository, times(1)).findByNameIn(any());
         verify(appUserRepository, times(1)).save(user);
+    }
+
+    @Test
+    void shouldChangeUserStatus() {
+        // given
+        Long userId = 1L;
+        AppUserStatus newStatus = AppUserStatus.INACTIVE;
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setStatus(AppUserStatus.ACTIVE);
+
+        AppUser updatedUser = new AppUser();
+        updatedUser.setId(userId);
+        updatedUser.setStatus(newStatus);
+
+        AppUserDto updatedUserDto = new AppUserDto();
+        updatedUserDto.setId(userId);
+
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(appUserRepository.save(user)).thenReturn(updatedUser);
+        when(appUserMapper.toDto(updatedUser)).thenReturn(updatedUserDto);
+
+        // when
+        AppUserDto result = appUserService.changeUserStatus(userId, newStatus);
+
+        // then
+        assertNotNull(result);
+        assertEquals(userId, result.getId());
+        verify(appUserRepository, times(1)).findById(userId);
+        verify(appUserRepository, times(1)).save(user);
+        verify(appUserMapper, times(1)).toDto(updatedUser);
     }
 }
