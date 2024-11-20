@@ -1,6 +1,9 @@
 package pl.kamann.card.model;
 
-public enum CardType {
+import lombok.Getter;
+
+@Getter
+public enum MembershipCardType {
     SINGLE_ENTRY("Single Entry"),
     MONTHLY_4("Monthly - 4 Entrances"),
     MONTHLY_8("Monthly - 8 Entrances"),
@@ -8,12 +11,8 @@ public enum CardType {
 
     private final String displayName;
 
-    CardType(String displayName) {
+    MembershipCardType(String displayName) {
         this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
     }
 
     @Override

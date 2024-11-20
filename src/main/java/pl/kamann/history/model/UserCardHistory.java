@@ -3,6 +3,7 @@ package pl.kamann.history.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import pl.kamann.card.model.MembershipCardType;
 import pl.kamann.user.model.AppUser;
 
 import java.time.LocalDateTime;
@@ -20,7 +21,7 @@ public class UserCardHistory {
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
-    private String cardType; // e.g., Monthly, Single Entry, etc.
+    private MembershipCardType membershipCardType;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private int entrances;
