@@ -33,6 +33,4 @@ public class Attendance {
 
     @Column(nullable = false)
     private LocalDateTime timestamp;
-
-    private String notes;
 }

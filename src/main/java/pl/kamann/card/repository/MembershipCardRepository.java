@@ -9,9 +9,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MembershipCardRepository extends JpaRepository<MembershipCard, Long> {
+
     List<MembershipCard> findByValidUntilBetween(LocalDate startDate, LocalDate endDate);
 
     List<MembershipCard> findByEntrancesLeftGreaterThanAndIsActiveTrue(int entrancesLeft);
 
     Optional<MembershipCard> findActiveCardByUser(AppUser user);
+
+    List<MembershipCard> findByUserIdOrderByPurchaseDateDesc(Long userId);
 }

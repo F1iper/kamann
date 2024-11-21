@@ -22,10 +22,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByInstructor(AppUser instructor);
 
     @Query("SELECT e FROM Event e WHERE " +
-            "(e.date BETWEEN :startDate AND :endDate OR :startDate IS NULL OR :endDate IS NULL) " +
+            "((e.startTime BETWEEN :startDate AND :endDate OR " +
+            "e.endTime BETWEEN :startDate AND :endDate) OR :startDate IS NULL OR :endDate IS NULL) " +
             "AND (e.instructor.id = :instructorId OR :instructorId IS NULL) " +
-            "AND (e.type = :eventType OR :eventType IS NULL) " +
-            "AND (LOWER(e.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "AND (e.eventType.name = :eventType OR :eventType IS NULL) " +
+            "AND (LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword IS NULL)")
     Page<Event> findFilteredEvents(
             @Param("startDate") LocalDate startDate,

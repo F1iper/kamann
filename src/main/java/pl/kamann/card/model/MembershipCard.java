@@ -29,8 +29,14 @@ public class MembershipCard {
     @Column(nullable = false)
     private LocalDate validUntil;
 
+    @Column(nullable = false)
+    private LocalDate purchaseDate;
+
     private boolean isActive;
 
     @Column(nullable = false)
     private int entrancesLeft;
+
+    @Column(nullable = false)
+    private boolean paymentApproved;
 }
