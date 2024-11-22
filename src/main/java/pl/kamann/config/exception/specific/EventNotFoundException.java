@@ -1,8 +1,12 @@
 package pl.kamann.config.exception.specific;
 
 
-public class EventNotFoundException extends RuntimeException {
-    public EventNotFoundException(String message) {
-        super(message);
+import org.springframework.http.HttpStatus;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
+
+public class EventNotFoundException extends ApiException {
+    public EventNotFoundException() {
+        super("Event not found.", HttpStatus.NOT_FOUND, Codes.EVENT_NOT_FOUND);
     }
 }

@@ -1,7 +1,11 @@
 package pl.kamann.config.exception.specific;
 
-public class RoleNotFoundException extends RuntimeException {
-    public RoleNotFoundException(String message) {
-        super(message);
+import org.springframework.http.HttpStatus;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
+
+public class RoleNotFoundException extends ApiException {
+    public RoleNotFoundException() {
+        super("Role not found.", HttpStatus.NOT_FOUND, Codes.ROLE_NOT_FOUND);
     }
 }
