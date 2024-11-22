@@ -32,5 +32,12 @@ public class Attendance {
     private AttendanceStatus status;
 
     @Column(nullable = false)
-    private LocalDateTime timestamp;
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+    @PrePersist
+    public void setDefaultTimestamp() {
+        if (timestamp == null) {
+            timestamp = LocalDateTime.now();
+        }
+    }
 }
