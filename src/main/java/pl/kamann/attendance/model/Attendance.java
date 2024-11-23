@@ -40,4 +40,8 @@ public class Attendance {
             timestamp = LocalDateTime.now();
         }
     }
+
+    public void setCancelledByInstructor(boolean b) {
+
+    }
 }

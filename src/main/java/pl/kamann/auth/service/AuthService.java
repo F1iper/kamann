@@ -4,8 +4,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.kamann.auth.login.request.LoginRequest;
@@ -13,10 +12,11 @@ import pl.kamann.auth.login.response.LoginResponse;
 import pl.kamann.auth.register.RegisterRequest;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
-import pl.kamann.config.exception.specific.EmailAlreadyExistsException;
-import pl.kamann.config.exception.specific.RoleNotFoundException;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.repository.AppUserRepository;
 
 import java.util.Set;
@@ -33,56 +33,76 @@ public class AuthService {
 
     public LoginResponse login(@Valid LoginRequest request) {
         AppUser user = appUserRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UsernameNotFoundException("Invalid email"));
+                .orElseThrow(() -> new ApiException(
+                        "Invalid email address.",
+                        HttpStatus.NOT_FOUND,
+                        Codes.USER_NOT_FOUND
+                ));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new AuthenticationException("Invalid password") {
-            };
+            log.warn("Invalid login attempt for email: {}", request.email());
+            throw new ApiException(
+                    "Invalid password.",
+                    HttpStatus.UNAUTHORIZED,
+                    Codes.UNAUTHORIZED
+            );
         }
 
         String token = jwtUtils.generateToken(user.getEmail(), user.getRoles());
+        log.info("User logged in successfully: email={}", user.getEmail());
         return new LoginResponse(token);
     }
 
+    @Transactional
     public void registerClient(RegisterRequest request) {
-        Role userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RoleNotFoundException("Default USER role not found in the system"));
-        registerUser(request, userRole);
+        Role clientRole = findRoleByName(Codes.CLIENT);
+        registerUser(request, clientRole);
     }
 
     @Transactional
     public AppUser registerInstructor(RegisterRequest request) {
-        AppUser newUser = new AppUser();
-        newUser.setEmail(request.email());
-        newUser.setPassword(request.password());
-        newUser.setFirstName(request.firstName());
-        newUser.setLastName(request.lastName());
-
-        Role instructorRole = roleRepository.findByName("INSTRUCTOR")
-                .orElseThrow(() -> new RoleNotFoundException("Role 'INSTRUCTOR' not found"));
-        newUser.setRoles(Set.of(instructorRole));
-
-        return appUserRepository.save(newUser);
+        Role instructorRole = findRoleByName(Codes.INSTRUCTOR);
+        return registerUser(request, instructorRole);
     }
 
-    private void registerUser(RegisterRequest request, Role role) {
+    private AppUser registerUser(RegisterRequest request, Role role) {
         validateEmailNotTaken(request.email());
 
-        AppUser appUser = new AppUser();
-        appUser.setEmail(request.email());
-        appUser.setPassword(passwordEncoder.encode(request.password()));
-        appUser.setFirstName(request.firstName());
-        appUser.setLastName(request.lastName());
-        appUser.setRoles(Set.of(role));
+        AppUser user = createAppUser(request, role);
+        AppUser savedUser = appUserRepository.save(user);
 
-        appUserRepository.save(appUser);
-        log.info("User registered successfully with email: {} and role: {}", request.email(), role.getName());
+        log.info("User registered successfully: email={}, role={}", request.email(), role.getName());
+        return savedUser;
+    }
+
+    private AppUser createAppUser(RegisterRequest request, Role role) {
+        AppUser user = new AppUser();
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setRoles(Set.of(role));
+        user.setStatus(AppUserStatus.ACTIVE);
+        return user;
     }
 
     private void validateEmailNotTaken(String email) {
         if (appUserRepository.findByEmail(email).isPresent()) {
-            log.warn("Registration attempt with existing email: {}", email);
-            throw new EmailAlreadyExistsException(email);
+            log.warn("Attempted registration with existing email: {}", email);
+            throw new ApiException(
+                    "Email is already registered: " + email,
+                    HttpStatus.CONFLICT,
+                    Codes.EMAIL_ALREADY_EXISTS
+            );
         }
+    }
+
+    private Role findRoleByName(String roleName) {
+        return roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ApiException(
+                        "Role not found: " + roleName,
+                        HttpStatus.NOT_FOUND,
+                        Codes.ROLE_NOT_FOUND
+                ));
     }
 }
