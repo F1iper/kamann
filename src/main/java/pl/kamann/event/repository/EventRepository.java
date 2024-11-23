@@ -35,4 +35,25 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("eventType") String eventType,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    @Query("""
+                SELECT e FROM Event e
+                WHERE e.startTime > :now
+                AND EXISTS (
+                    SELECT p FROM e.participants p
+                    WHERE p.user = :user
+                )
+            """)
+    List<Event> findUpcomingEventsForUser(@Param("user") AppUser user, @Param("now") LocalDateTime now);
+
+    @Query("SELECT e FROM Event e WHERE e.instructor.id = :instructorId AND e.endTime < :currentTime")
+    List<Event> findPastEventsByInstructor(@Param("instructorId") Long instructorId, @Param("currentTime") LocalDateTime currentTime);
+
+    @Query("""
+                SELECT e FROM Event e
+                WHERE e.instructor.id = :instructorId
+                AND e.startTime > :currentTime
+                ORDER BY e.startTime ASC
+            """)
+    List<Event> findUpcomingEventsForInstructor(@Param("instructorId") Long instructorId, @Param("currentTime") LocalDateTime currentTime);
 }

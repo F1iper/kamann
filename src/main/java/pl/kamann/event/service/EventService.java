@@ -3,20 +3,18 @@ package pl.kamann.event.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import pl.kamann.attendance.model.AttendanceStatus;
-import pl.kamann.attendance.repository.AttendanceRepository;
-import pl.kamann.config.exception.specific.*;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
 import pl.kamann.event.dto.EventDto;
 import pl.kamann.event.mapper.EventMapper;
 import pl.kamann.event.model.Event;
 import pl.kamann.event.model.EventStatus;
 import pl.kamann.event.model.EventType;
 import pl.kamann.event.repository.EventRepository;
-import pl.kamann.event.repository.EventTypeRepository;
 import pl.kamann.user.model.AppUser;
-import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,138 +26,57 @@ import java.util.stream.Collectors;
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final EventTypeRepository eventTypeRepository;
-    private final AppUserRepository appUserRepository;
-    private final AttendanceRepository attendanceRepository;
     private final EventMapper eventMapper;
+    private final EntityLookupService lookupService;
 
     public EventDto createEvent(EventDto eventDto) {
-        AppUser instructor = appUserRepository.findById(eventDto.getInstructorId())
-                .orElseThrow(() -> new InstructorNotFoundException("Instructor not found"));
-
-        AppUser createdBy = appUserRepository.findById(eventDto.getCreatedById())
-                .orElseThrow(() -> new UsernameNotFoundException("Created by user not found"));
-
-        if (isInstructorBusy(instructor, eventDto.getStartTime(), eventDto.getEndTime())) {
-            throw new InstructorBusyException("Instructor is already booked during this time");
-        }
-
-        EventType eventType = eventTypeRepository.findByName(eventDto.getEventTypeName())
-                .orElseThrow(() -> new EventTypeNotFoundException("Event type not found"));
-
-        if (eventDto.getEndTime().isBefore(eventDto.getStartTime())) {
-            throw new InvalidEventTimeException("End time must be after start time");
-        }
-
-        eventDto.setStatus(EventStatus.UPCOMING);
-
+        AppUser createdBy = lookupService.findUserById(eventDto.getCreatedById());
+        AppUser instructor = lookupService.findUserById(eventDto.getInstructorId());
+        EventType eventType = lookupService.findEventTypeById(eventDto.getEventTypeId());
         Event event = eventMapper.toEntity(eventDto, createdBy, instructor, eventType);
-        return eventMapper.toDto(eventRepository.save(event));
+        return eventMapper.toDto(eventRepository.save(event), List.of());
     }
 
-    public Page<EventDto> searchEvents(
-            LocalDate startDate,
-            LocalDate endDate,
-            Long instructorId,
-            String eventType,
-            String keyword,
-            Pageable pageable) {
-
-        Page<Event> events = eventRepository.findFilteredEvents(startDate, endDate, instructorId, eventType, keyword, pageable);
-        return events.map(eventMapper::toDto);
+    public EventDto updateEvent(Long eventId, EventDto updatedEventDto) {
+        Event existingEvent = lookupService.findEventById(eventId);
+        AppUser instructor = lookupService.findUserById(updatedEventDto.getInstructorId());
+        EventType eventType = lookupService.findEventTypeById(updatedEventDto.getEventTypeId());
+        eventMapper.updateEventFromDto(existingEvent, updatedEventDto, instructor, eventType);
+        Event updatedEvent = eventRepository.save(existingEvent);
+        return eventMapper.toDto(updatedEvent, List.of());
     }
 
-    public List<EventDto> getAllEvents() {
-        return eventRepository.findAll().stream()
-                .map(eventMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    public EventDto getEventById(Long id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
-        return eventMapper.toDto(event);
-    }
-
-    public EventDto updateEvent(Long id, EventDto updatedEventDto) {
-        Event existingEvent = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
-
-        if (!existingEvent.getStartTime().equals(updatedEventDto.getStartTime()) ||
-                !existingEvent.getEndTime().equals(updatedEventDto.getEndTime())) {
-            AppUser instructor = appUserRepository.findById(updatedEventDto.getInstructorId())
-                    .orElseThrow(() -> new InstructorNotFoundException("Instructor not found"));
-
-            if (isInstructorBusy(instructor,
-                    updatedEventDto.getStartTime(),
-                    updatedEventDto.getEndTime())) {
-                throw new InstructorBusyException("Instructor is already booked during this time");
-            }
-        }
-
-        if (updatedEventDto.getEndTime().isBefore(updatedEventDto.getStartTime())) {
-            throw new InvalidEventTimeException("End time must be after start time");
-        }
-
-        EventType eventType = existingEvent.getEventType();
-        if (updatedEventDto.getEventTypeName() != null) {
-            eventType = eventTypeRepository.findByName(updatedEventDto.getEventTypeName())
-                    .orElseThrow(() -> new EventTypeNotFoundException("Event type not found"));
-        }
-
-        AppUser instructor = existingEvent.getInstructor();
-        if (updatedEventDto.getInstructorId() != null) {
-            instructor = appUserRepository.findById(updatedEventDto.getInstructorId())
-                    .orElseThrow(() -> new InstructorNotFoundException("Instructor not found"));
-        }
-
-        existingEvent.setTitle(updatedEventDto.getTitle());
-        existingEvent.setDescription(updatedEventDto.getDescription());
-        existingEvent.setStartTime(updatedEventDto.getStartTime());
-        existingEvent.setEndTime(updatedEventDto.getEndTime());
-        existingEvent.setRecurring(updatedEventDto.isRecurring());
-        existingEvent.setMaxParticipants(updatedEventDto.getMaxParticipants());
-        existingEvent.setInstructor(instructor);
-        existingEvent.setEventType(eventType);
-
-        return eventMapper.toDto(eventRepository.save(existingEvent));
-    }
-
-    public void deleteEvent(Long id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
+    public void deleteEvent(Long eventId) {
+        Event event = lookupService.findEventById(eventId);
         eventRepository.delete(event);
     }
 
-    public boolean isEventFull(Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId));
-        int currentParticipants = attendanceRepository.countByEventAndStatus(
-                event, AttendanceStatus.PRESENT
-        );
-        return currentParticipants >= event.getMaxParticipants();
+    public void cancelEvent(Long eventId) {
+        Event event = lookupService.findEventById(eventId);
+
+        if (event.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new ApiException("Cannot cancel an event that has already started.", HttpStatus.BAD_REQUEST, Codes.CANNOT_CANCEL_STARTED_EVENT);
+        }
+
+        event.setStatus(EventStatus.CANCELLED);
+        eventRepository.save(event);
     }
 
-    private boolean isInstructorBusy(AppUser instructor, LocalDateTime start, LocalDateTime end) {
-        List<Event> overlappingEvents = eventRepository.findByInstructorAndStartTimeBetween(
-                instructor,
-                start.minusHours(2),
-                end.plusHours(2)
-        );
-
-        return overlappingEvents.stream().anyMatch(existingEvent ->
-                !(end.isBefore(existingEvent.getStartTime()) ||
-                        start.isAfter(existingEvent.getEndTime()))
-        );
+    public EventDto getEventById(Long eventId) {
+        Event event = lookupService.findEventById(eventId);
+        return eventMapper.toDto(event, List.of());
     }
 
-    public List<EventDto> getEventsByInstructor(Long instructorId) {
-        AppUser instructor = appUserRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+    public Page<EventDto> searchEvents(LocalDate startDate, LocalDate endDate, String keyword, Pageable pageable) {
+        return eventRepository.findFilteredEvents(startDate, endDate, null, null, keyword, pageable)
+                .map(event -> eventMapper.toDto(event, List.of()));
+    }
 
-        List<Event> events = eventRepository.findByInstructor(instructor);
+    public List<EventDto> getUpcomingEvents(Long userId) {
+        AppUser user = lookupService.findUserById(userId);
+        List<Event> events = eventRepository.findUpcomingEventsForUser(user, LocalDateTime.now());
         return events.stream()
-                .map(eventMapper::toDto)
+                .map(event -> eventMapper.toDto(event, List.of()))
                 .collect(Collectors.toList());
     }
 }

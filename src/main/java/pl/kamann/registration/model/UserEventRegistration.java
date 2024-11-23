@@ -1,17 +1,20 @@
-package pl.kamann.event.registration.model;
+package pl.kamann.registration.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import pl.kamann.event.model.Event;
 import pl.kamann.user.model.AppUser;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserEventRegistration {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,7 +27,13 @@ public class UserEventRegistration {
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    private LocalDateTime registrationDate;
-
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserEventRegistrationStatus status;
+
+    @Column
+    private Integer waitlistPosition;
+
+    @Column(nullable = false)
+    private LocalDateTime registrationDate;
 }

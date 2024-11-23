@@ -22,6 +22,8 @@ public class EventDto {
     private Long createdById;
     private Long instructorId;
     private int maxParticipants;
+    private Long eventTypeId;
     private String eventTypeName;
     private EventStatus status;
+    private Integer attendanceSummary;
 }
