@@ -1,14 +1,18 @@
 package pl.kamann.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
 import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.mapper.AppUserMapper;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,77 +25,71 @@ public class AppUserService {
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
     private final AppUserMapper appUserMapper;
+    private final EntityLookupService entityLookupService;
 
     public List<AppUserDto> getAllUsers() {
-        List<AppUser> users = appUserRepository.findAll();
-        return appUserMapper.toDtoList(users);
+        return appUserMapper.toDtoList(appUserRepository.findAll());
     }
 
     public AppUserDto getUserById(Long id) {
-        AppUser user = appUserRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        AppUser user = entityLookupService.findUserById(id);
         return appUserMapper.toDto(user);
     }
 
     public AppUserDto createUser(AppUserDto userDto) {
-        Set<Role> roles = roleRepository.findByNameIn(userDto.getRoles());
+        entityLookupService.validateEmailNotTaken(userDto.getEmail());
+
+        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.getRoles());
+
         AppUser user = appUserMapper.toEntity(userDto, roles);
-        AppUser savedUser = appUserRepository.save(user);
-        return appUserMapper.toDto(savedUser);
+
+        if (user.getStatus() == null) {
+            user.setStatus(AppUserStatus.ACTIVE);
+        }
+
+        return appUserMapper.toDto(appUserRepository.save(user));
     }
 
     public AppUserDto updateUser(Long id, AppUserDto userDto) {
-        AppUser existingUser = appUserRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        AppUser existingUser = entityLookupService.findUserById(id);
 
-        Set<Role> roles = roleRepository.findByNameIn(userDto.getRoles());
+        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.getRoles());
+        if (roles.isEmpty()) {
+            throw new ApiException("No valid roles provided for the user.", HttpStatus.BAD_REQUEST, Codes.INVALID_ROLE);
+        }
+
         existingUser.setEmail(userDto.getEmail());
         existingUser.setFirstName(userDto.getFirstName());
         existingUser.setLastName(userDto.getLastName());
         existingUser.setRoles(roles);
 
-        AppUser updatedUser = appUserRepository.save(existingUser);
-        return appUserMapper.toDto(updatedUser);
+        return appUserMapper.toDto(appUserRepository.save(existingUser));
     }
 
     public void deleteUser(Long id) {
-        AppUser user = appUserRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
-        appUserRepository.delete(user);
+        appUserRepository.delete(entityLookupService.findUserById(id));
     }
 
     public AppUserDto updateUserRoles(Long userId, Set<Role> roleNames) {
-        AppUser user = appUserRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-
-        Set<Role> roles = roleRepository.findByNameIn(roleNames);
-        if (roles.isEmpty()) {
-            throw new RuntimeException("No roles found for the provided names");
-        }
+        AppUser user = entityLookupService.findUserById(userId);
+        Set<Role> roles = entityLookupService.findRolesByNameIn(roleNames);
 
         user.setRoles(roles);
-
-        AppUser updatedUser = appUserRepository.save(user);
-        return appUserMapper.toDto(updatedUser);
+        return appUserMapper.toDto(appUserRepository.save(user));
     }
 
     public List<AppUserDto> getUsersByRole(String roleName) {
-        Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new RuntimeException("Role not found with name: " + roleName));
-        List<AppUser> users = appUserRepository.findByRolesContaining(role);
-        return appUserMapper.toDtoList(users);
+        Role role = entityLookupService.findRoleByName(roleName);
+        return appUserMapper.toDtoList(appUserRepository.findByRolesContaining(role));
     }
 
     public List<AppUserDto> getUsersWithExpiringMembershipCards(LocalDate expiryDate) {
-        List<AppUser> users = appUserRepository.findUsersWithExpiringMembershipCards(expiryDate);
-        return appUserMapper.toDtoList(users);
+        return appUserMapper.toDtoList(appUserRepository.findUsersWithExpiringMembershipCards(expiryDate));
     }
 
     public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
-        AppUser user = appUserRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+        AppUser user = entityLookupService.findUserById(userId);
         user.setStatus(status);
-        AppUser updatedUser = appUserRepository.save(user);
-        return appUserMapper.toDto(updatedUser);
+        return appUserMapper.toDto(appUserRepository.save(user));
     }
 }

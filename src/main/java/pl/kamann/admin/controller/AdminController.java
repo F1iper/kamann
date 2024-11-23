@@ -2,80 +2,185 @@ package pl.kamann.admin.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.auth.register.RegisterRequest;
-import pl.kamann.auth.role.model.Role;
-import pl.kamann.auth.service.AuthService;
-import pl.kamann.config.global.Codes;
+import pl.kamann.admin.service.AdminService;
+import pl.kamann.attendance.model.Attendance;
+import pl.kamann.attendance.model.AttendanceStatus;
+import pl.kamann.attendance.service.AttendanceService;
 import pl.kamann.event.dto.EventDto;
 import pl.kamann.event.service.EventService;
-import pl.kamann.user.dto.AppUserDto;
-import pl.kamann.user.model.AppUser;
-import pl.kamann.user.model.AppUserStatus;
-import pl.kamann.user.service.AppUserService;
+import pl.kamann.history.model.ClientMembershipCardHistory;
+import pl.kamann.history.model.ClientEventHistory;
+import pl.kamann.membershipcard.model.MembershipCard;
+import pl.kamann.membershipcard.model.MembershipCardType;
+import pl.kamann.membershipcard.service.MembershipCardService;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
-@PreAuthorize("hasRole('" + Codes.ADMIN + "')")
 @RestController
-@RequestMapping("api/admin")
+@RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
 public class AdminController {
 
-    private final AppUserService appUserService;
-    private final AuthService authService;
+    private final AdminService adminService;
     private final EventService eventService;
+    private final AttendanceService attendanceService;
+    private final MembershipCardService membershipCardService;
 
-    @PostMapping("/instructors/assign")
-    public ResponseEntity<AppUserDto> assignInstructorRole(@RequestParam Long userId) {
-        AppUserDto updatedUser = appUserService.updateUserRoles(userId, Set.of(new Role("INSTRUCTOR")));
-        return ResponseEntity.ok(updatedUser);
+    // Event end-points
+    @GetMapping("/events/{eventId}")
+    public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
+        EventDto eventDto = eventService.getEventById(eventId);
+        return ResponseEntity.ok(eventDto);
     }
 
-    @PostMapping("/instructors/create")
-        public ResponseEntity<AppUserDto> createInstructor(@RequestBody @Valid RegisterRequest request) {
-        AppUser instructor = authService.registerInstructor(request);
-        AppUserDto response = appUserService.getUserById(instructor.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @PostMapping("/events")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<EventDto> createEvent(@RequestBody @Valid EventDto eventDto) {
+        EventDto createdEvent = eventService.createEvent(eventDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
     }
 
-    @PutMapping("/instructors/{id}")
-    public ResponseEntity<AppUserDto> updateInstructor(@PathVariable Long id, @RequestBody @Valid AppUserDto userDto) {
-        AppUserDto updatedUser = appUserService.updateUser(id, userDto);
-        return ResponseEntity.ok(updatedUser);
+    @PutMapping("/events/{eventId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<EventDto> updateEvent(@PathVariable Long eventId, @RequestBody @Valid EventDto eventDto) {
+        EventDto updatedEvent = eventService.updateEvent(eventId, eventDto);
+        return ResponseEntity.ok(updatedEvent);
     }
 
-    @DeleteMapping("/instructors/{id}")
-    public ResponseEntity<Void> removeInstructor(@PathVariable Long id) {
-        appUserService.deleteUser(id);
+    @DeleteMapping("/events/{eventId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long eventId) {
+        eventService.deleteEvent(eventId);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/instructors/{id}/history")
-    public ResponseEntity<List<EventDto>> getInstructorEventHistory(@PathVariable Long id) {
-        List<EventDto> eventHistory = eventService.getEventsByInstructor(id);
-        return ResponseEntity.ok(eventHistory);
+    @PostMapping("/events/{eventId}/cancel")
+    public ResponseEntity<Void> cancelEvent(@PathVariable Long eventId) {
+        eventService.cancelEvent(eventId);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/clients")
-    public ResponseEntity<List<AppUserDto>> getAllClients() {
-        List<AppUserDto> clients = appUserService.getUsersByRole("CLIENT");
-        return ResponseEntity.ok(clients);
+    @GetMapping("/events/search")
+    public ResponseEntity<Page<EventDto>> searchEvents(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<EventDto> events = eventService.searchEvents(startDate, endDate, keyword, pageable);
+        return ResponseEntity.ok(events);
     }
 
-    @PutMapping("/users/{userId}/activate")
-    public ResponseEntity<AppUserDto> activateUser(@PathVariable Long userId) {
-        AppUserDto updatedUser = appUserService.changeUserStatus(userId, AppUserStatus.ACTIVE);
-        return ResponseEntity.ok(updatedUser);
+    // Attendance end-points
+    @PostMapping("/attendance/events/{eventId}/mark")
+    public ResponseEntity<Void> markAttendance(
+            @PathVariable Long eventId,
+            @RequestParam Long userId,
+            @RequestParam AttendanceStatus status) {
+        attendanceService.markAttendance(eventId, userId, status);
+        return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/users/{userId}/deactivate")
-    public ResponseEntity<AppUserDto> deactivateUser(@PathVariable Long userId) {
-        AppUserDto updatedUser = appUserService.changeUserStatus(userId, AppUserStatus.INACTIVE);
-        return ResponseEntity.ok(updatedUser);
+    @PostMapping("/attendance/events/{eventId}/cancel")
+    public ResponseEntity<Attendance> cancelAttendance(
+            @PathVariable Long eventId,
+            @RequestParam Long userId) {
+        Attendance attendance = attendanceService.cancelAttendance(eventId, userId, true);
+        return ResponseEntity.ok(attendance);
+    }
+
+    @GetMapping("/attendance/upcoming")
+    public ResponseEntity<List<EventDto>> getUpcomingEvents(@RequestParam Long userId) {
+        List<EventDto> events = adminService.getUpcomingEvents(userId);
+        return ResponseEntity.ok(events);
+    }
+
+    // Membership end-points
+    @PostMapping("/membership-cards/purchase")
+    public ResponseEntity<MembershipCard> purchaseMembershipCard(
+            @RequestParam Long userId,
+            @RequestParam MembershipCardType type) {
+        MembershipCard card = membershipCardService.purchaseMembershipCard(userId, type);
+        return ResponseEntity.status(HttpStatus.CREATED).body(card);
+    }
+
+    @PutMapping("/membership-cards/{cardId}/approve-payment")
+    public ResponseEntity<Void> approvePayment(@PathVariable Long cardId) {
+        membershipCardService.approvePayment(cardId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/membership-cards/{cardId}/use-entrance")
+    public ResponseEntity<Void> useEntrance(@PathVariable Long cardId) {
+        membershipCardService.useEntrance(cardId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/membership-cards/{userId}/history")
+    public ResponseEntity<List<MembershipCard>> getMembershipCardHistory(@PathVariable Long userId) {
+        return ResponseEntity.ok(membershipCardService.getMembershipCardHistory(userId));
+    }
+
+    @GetMapping("/membership-cards/expiring")
+    public ResponseEntity<Void> notifyExpiringCards() {
+        membershipCardService.notifyExpiringCards();
+        return ResponseEntity.ok().build();
+    }
+
+    // History end-points
+    @GetMapping("/history/events/user/{userId}")
+    public ResponseEntity<List<ClientEventHistory>> getEventHistoryByUser(@PathVariable Long userId) {
+        List<ClientEventHistory> history = adminService.getEventHistoryByUser(userId);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/history/events/{eventId}")
+    public ResponseEntity<List<ClientEventHistory>> getEventHistoryByEvent(@PathVariable Long eventId) {
+        List<ClientEventHistory> history = adminService.getEventHistoryByEvent(eventId);
+        return ResponseEntity.ok(history);
+    }
+
+    @PostMapping("/history/events")
+    public ResponseEntity<ClientEventHistory> addEventHistory(@RequestParam Long userId,
+                                                              @RequestParam Long eventId,
+                                                              @RequestParam AttendanceStatus status,
+                                                              @RequestParam int entrancesUsed) {
+        ClientEventHistory history = adminService.addEventHistory(userId, eventId, status, entrancesUsed);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/history/events/self")
+    public ResponseEntity<List<ClientEventHistory>> getOwnEventHistory() {
+        List<ClientEventHistory> history = adminService.getOwnEventHistory();
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/history/cards/user/{userId}")
+    public ResponseEntity<List<ClientMembershipCardHistory>> getCardHistoryByUser(@PathVariable Long userId) {
+        List<ClientMembershipCardHistory> history = adminService.getCardHistoryByUser(userId);
+        return ResponseEntity.ok(history);
+    }
+
+    @PostMapping("/history/cards")
+    public ResponseEntity<ClientMembershipCardHistory> addCardHistory(@RequestParam Long userId,
+                                                                      @RequestParam MembershipCardType cardType,
+                                                                      @RequestParam LocalDateTime startDate,
+                                                                      @RequestParam LocalDateTime endDate,
+                                                                      @RequestParam int entrances,
+                                                                      @RequestParam int remainingEntrances,
+                                                                      @RequestParam boolean paid) {
+        ClientMembershipCardHistory history = adminService.addCardHistory(userId, cardType, startDate, endDate,
+                entrances, remainingEntrances, paid);
+        return ResponseEntity.ok(history);
     }
 }

@@ -2,20 +2,22 @@ package pl.kamann.user.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.mapper.AppUserMapper;
 import pl.kamann.user.model.AppUser;
 import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AppUserServiceTest {
@@ -23,6 +25,7 @@ class AppUserServiceTest {
     private AppUserRepository appUserRepository;
     private RoleRepository roleRepository;
     private AppUserMapper appUserMapper;
+    private EntityLookupService entityLookupService;
     private AppUserService appUserService;
 
     @BeforeEach
@@ -30,105 +33,137 @@ class AppUserServiceTest {
         appUserRepository = mock(AppUserRepository.class);
         roleRepository = mock(RoleRepository.class);
         appUserMapper = mock(AppUserMapper.class);
-        appUserService = new AppUserService(appUserRepository, roleRepository, appUserMapper);
+        entityLookupService = mock(EntityLookupService.class);
+        appUserService = new AppUserService(appUserRepository, roleRepository, appUserMapper, entityLookupService);
     }
 
     @Test
     void shouldGetAllUsers() {
-        // given
         List<AppUser> users = List.of(new AppUser(), new AppUser());
         when(appUserRepository.findAll()).thenReturn(users);
         when(appUserMapper.toDtoList(users)).thenReturn(List.of(new AppUserDto(), new AppUserDto()));
 
-        // when
         List<AppUserDto> result = appUserService.getAllUsers();
 
-        // then
         assertNotNull(result);
         assertEquals(2, result.size());
-        verify(appUserRepository, times(1)).findAll();
-        verify(appUserMapper, times(1)).toDtoList(users);
+        verify(appUserRepository).findAll();
+        verify(appUserMapper).toDtoList(users);
     }
 
     @Test
     void shouldGetUserById() {
-        // given
         AppUser user = new AppUser();
         user.setId(1L);
-        when(appUserRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(entityLookupService.findUserById(1L)).thenReturn(user);
         when(appUserMapper.toDto(user)).thenReturn(new AppUserDto());
 
-        // when
         AppUserDto result = appUserService.getUserById(1L);
 
-        // then
         assertNotNull(result);
-        verify(appUserRepository, times(1)).findById(1L);
-        verify(appUserMapper, times(1)).toDto(user);
+        verify(entityLookupService).findUserById(1L);
+        verify(appUserMapper).toDto(user);
     }
 
     @Test
     void shouldCreateUser() {
-        // given
         AppUserDto userDto = new AppUserDto();
-        userDto.setRoles(Set.of(new Role("ROLE_USER")));
+        Role mockRole = new Role();
+        mockRole.setName("ROLE_USER");
+        userDto.setRoles(Set.of(mockRole));
 
         AppUser user = new AppUser();
         AppUser savedUser = new AppUser();
         savedUser.setId(1L);
 
-        Role mockRole = new Role();
-        mockRole.setName("ROLE_USER");
+        when(entityLookupService.findRolesByNameIn(userDto.getRoles())).thenReturn(Set.of(mockRole));
+        when(appUserMapper.toEntity(userDto, Set.of(mockRole))).thenReturn(user);
+        when(appUserRepository.save(user)).thenReturn(savedUser);
+        when(appUserMapper.toDto(savedUser)).thenReturn(userDto);
 
-        when(roleRepository.findByNameIn(eq(userDto.getRoles())))
-                .thenReturn(Set.of(mockRole));
-
-        when(appUserMapper.toEntity(eq(userDto), anySet()))
-                .thenReturn(user);
-
-        when(appUserRepository.save(eq(user)))
-                .thenReturn(savedUser);
-
-        when(appUserMapper.toDto(eq(savedUser)))
-                .thenReturn(userDto);
-
-        // when
         AppUserDto result = appUserService.createUser(userDto);
 
-        // then
         assertNotNull(result);
+        verify(entityLookupService).findRolesByNameIn(userDto.getRoles());
+        verify(appUserRepository).save(user);
+        verify(appUserMapper).toDto(savedUser);
+    }
 
-        // verify
-        verify(roleRepository, times(1)).findByNameIn(eq(userDto.getRoles()));
-        verify(appUserRepository, times(1)).save(eq(user));
-        verify(appUserMapper, times(1)).toDto(eq(savedUser));
+    @Test
+    void validateEmailNotTakenShouldThrowExceptionWhenEmailExists() {
+        String email = "test@example.com";
+        when(appUserRepository.findByEmail(email))
+                .thenReturn(Optional.of(new AppUser()));
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> entityLookupService.validateEmailNotTaken(email));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Email is already registered: " + email, exception.getMessage());
+        verify(appUserRepository, times(1)).findByEmail(email); // Ensure method is called
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCreatingUserWithDuplicateEmail() {
+        AppUserDto userDto = new AppUserDto();
+        userDto.setEmail("duplicate@example.com");
+
+        when(appUserRepository.findByEmail("duplicate@example.com")).thenReturn(Optional.of(new AppUser()));
+
+        ApiException exception = assertThrows(ApiException.class, () -> appUserService.createUser(userDto));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Email is already registered: duplicate@example.com", exception.getMessage());
+        verify(appUserRepository).findByEmail("duplicate@example.com");
+        verifyNoInteractions(roleRepository, appUserMapper);
     }
 
     @Test
     void shouldUpdateUser() {
-        // given
         AppUserDto userDto = new AppUserDto();
+        Role mockRole = new Role();
+        mockRole.setName("ROLE_USER");
+        userDto.setRoles(Set.of(mockRole));
+
         AppUser user = new AppUser();
         AppUser updatedUser = new AppUser();
 
-        when(appUserRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(roleRepository.findByNameIn(any())).thenReturn(Set.of(new Role()));
+        when(entityLookupService.findUserById(1L)).thenReturn(user);
+        when(entityLookupService.findRolesByNameIn(userDto.getRoles())).thenReturn(Set.of(mockRole));
         when(appUserRepository.save(user)).thenReturn(updatedUser);
         when(appUserMapper.toDto(updatedUser)).thenReturn(userDto);
 
-        // when
         AppUserDto result = appUserService.updateUser(1L, userDto);
 
-        // then
         assertNotNull(result);
-        verify(appUserRepository, times(1)).findById(1L);
-        verify(roleRepository, times(1)).findByNameIn(any());
-        verify(appUserRepository, times(1)).save(user);
+        verify(entityLookupService).findUserById(1L);
+        verify(entityLookupService).findRolesByNameIn(userDto.getRoles());
+        verify(appUserRepository).save(user);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingUserWithInvalidRoles() {
+        AppUserDto userDto = new AppUserDto();
+        Role invalidRole = new Role();
+        invalidRole.setName("INVALID_ROLE");
+        userDto.setRoles(Set.of(invalidRole));
+
+        AppUser user = new AppUser();
+
+        when(entityLookupService.findUserById(1L)).thenReturn(user);
+        when(entityLookupService.findRolesByNameIn(userDto.getRoles())).thenReturn(Set.of());
+
+        ApiException exception = assertThrows(ApiException.class, () -> appUserService.updateUser(1L, userDto));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("No valid roles provided for the user.", exception.getMessage());
+        verify(entityLookupService).findUserById(1L);
+        verify(entityLookupService).findRolesByNameIn(userDto.getRoles());
+        verifyNoInteractions(appUserRepository);
     }
 
     @Test
     void shouldChangeUserStatus() {
-        // given
         Long userId = 1L;
         AppUserStatus newStatus = AppUserStatus.INACTIVE;
 
@@ -143,18 +178,16 @@ class AppUserServiceTest {
         AppUserDto updatedUserDto = new AppUserDto();
         updatedUserDto.setId(userId);
 
-        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(entityLookupService.findUserById(userId)).thenReturn(user);
         when(appUserRepository.save(user)).thenReturn(updatedUser);
         when(appUserMapper.toDto(updatedUser)).thenReturn(updatedUserDto);
 
-        // when
         AppUserDto result = appUserService.changeUserStatus(userId, newStatus);
 
-        // then
         assertNotNull(result);
         assertEquals(userId, result.getId());
-        verify(appUserRepository, times(1)).findById(userId);
-        verify(appUserRepository, times(1)).save(user);
-        verify(appUserMapper, times(1)).toDto(updatedUser);
+        verify(entityLookupService).findUserById(userId);
+        verify(appUserRepository).save(user);
+        verify(appUserMapper).toDto(updatedUser);
     }
 }
