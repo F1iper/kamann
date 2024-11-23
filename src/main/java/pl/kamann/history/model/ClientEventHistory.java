@@ -1,7 +1,9 @@
-package pl.kamann.history;
+package pl.kamann.history.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.kamann.attendance.model.AttendanceStatus;
 import pl.kamann.event.model.Event;
@@ -12,7 +14,9 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-public class UserEventHistory {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ClientEventHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
