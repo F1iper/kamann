@@ -1,7 +1,7 @@
 package pl.kamann.admin.service;
 
 import lombok.RequiredArgsConstructor;
-import org.antlr.v4.runtime.misc.LogManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -12,6 +12,8 @@ import pl.kamann.admin.repository.ClientEventRepository;
 import pl.kamann.attendance.model.Attendance;
 import pl.kamann.attendance.model.AttendanceStatus;
 import pl.kamann.attendance.repository.AttendanceRepository;
+import pl.kamann.auth.role.model.Role;
+import pl.kamann.auth.service.AuthService;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.event.dto.EventDto;
@@ -20,13 +22,15 @@ import pl.kamann.event.model.Event;
 import pl.kamann.event.model.EventStatus;
 import pl.kamann.event.model.EventType;
 import pl.kamann.event.repository.EventRepository;
-import pl.kamann.history.model.ClientMembershipCardHistory;
 import pl.kamann.history.model.ClientEventHistory;
+import pl.kamann.history.model.ClientMembershipCardHistory;
 import pl.kamann.history.repository.UserEventHistoryRepository;
 import pl.kamann.membershipcard.model.MembershipCard;
 import pl.kamann.membershipcard.model.MembershipCardType;
 import pl.kamann.membershipcard.repository.MembershipCardRepository;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.model.AppUserStatus;
+import pl.kamann.user.repository.AppUserRepository;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDate;
@@ -34,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -41,10 +46,14 @@ public class AdminService {
     private final AdminRepository adminRepository;
     private final EventRepository eventRepository;
     private final EntityLookupService lookupService;
+    private final AuthService authService;
+
+    private final EventMapper eventMapper;
+
+    private final AppUserRepository appUserRepository;
     private final AttendanceRepository attendanceRepository;
     private final MembershipCardRepository membershipCardRepository;
     private final ClientEventRepository clientEventRepository;
-    private final EventMapper eventMapper;
     private final UserEventHistoryRepository userEventHistoryRepository;
     private final ClientMemberShipCardHistoryRepository clientMembershipCardHistoryRepository;
 
@@ -96,6 +105,29 @@ public class AdminService {
         return events.stream()
                 .map(event -> eventMapper.toDto(event, List.of()))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AppUser approveInstructor(Long userId) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ApiException("User not found", HttpStatus.NOT_FOUND, Codes.USER_NOT_FOUND));
+
+        if (!user.getStatus().equals(AppUserStatus.PENDING_APPROVAL)) {
+            throw new ApiException("User is not pending approval", HttpStatus.BAD_REQUEST, Codes.INVALID_USER_STATUS);
+        }
+
+        // Assign the INSTRUCTOR role
+        Role instructorRole = authService.findRoleByName(Codes.INSTRUCTOR);
+        user.getRoles().add(instructorRole);
+        user.setStatus(AppUserStatus.ACTIVE);
+
+        AppUser updatedUser = appUserRepository.save(user);
+
+        // Notify the instructor about approval
+        log.info("Send instructor the approval email");
+
+        log.info("Instructor approved: email={}", user.getEmail());
+        return updatedUser;
     }
 
     // Attendance Management

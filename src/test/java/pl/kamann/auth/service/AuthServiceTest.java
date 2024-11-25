@@ -127,9 +127,9 @@ class AuthServiceTest {
                 .orElseThrow();
 
         List<RegisterRequest> registerRequests = List.of(
-                new RegisterRequest("unique1@example.com", "password1", "John", "Doe"),
-                new RegisterRequest("unique2@example.com", "password2", "Jane", "Smith"),
-                new RegisterRequest("unique3@example.com", "password3", "Alice", "Johnson")
+                new RegisterRequest("unique1@example.com", "password1", "John", "Doe", new Role("CLIENT")),
+                new RegisterRequest("unique2@example.com", "password2", "Jane", "Smith", new Role("INSTRUCTOR")),
+                new RegisterRequest("unique3@example.com", "password3", "Alice", "Johnson", new Role("ADMIN"))
         );
 
         when(roleRepository.findByName("USER"))
@@ -161,9 +161,9 @@ class AuthServiceTest {
     void registerInstructorMultipleRoleScenarios() {
         // given
         List<RegisterRequest> instructorRequests = List.of(
-                new RegisterRequest("instructor1@example.com", "pass1", "John", "Trainer"),
-                new RegisterRequest("instructor2@example.com", "pass2", "Jane", "Coach"),
-                new RegisterRequest("instructor3@example.com", "pass3", "Mike", "Mentor")
+                new RegisterRequest("instructor1@example.com", "pass1", "John", "Trainer", new Role("INSTRUCTOR")),
+                new RegisterRequest("instructor2@example.com", "pass2", "Jane", "Coach", new Role("ADMIN")),
+                new RegisterRequest("instructor3@example.com", "pass3", "Mike", "Mentor", new Role("INSTRUCTOR"))
         );
 
         Role instructorRole = testRoles.stream()

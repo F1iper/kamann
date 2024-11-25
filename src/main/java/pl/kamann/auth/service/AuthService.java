@@ -26,10 +26,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final AppUserRepository appUserRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+
+    private final RoleRepository roleRepository;
+    private final AppUserRepository appUserRepository;
 
     public LoginResponse login(@Valid LoginRequest request) {
         AppUser user = appUserRepository.findByEmail(request.email())
@@ -61,8 +62,20 @@ public class AuthService {
 
     @Transactional
     public AppUser registerInstructor(RegisterRequest request) {
-        Role instructorRole = findRoleByName(Codes.INSTRUCTOR);
-        return registerUser(request, instructorRole);
+        validateEmailNotTaken(request.email());
+
+        Role clientRole = findRoleByName(Codes.CLIENT);
+
+        AppUser user = createAppUser(request, clientRole);
+        user.setStatus(AppUserStatus.PENDING_APPROVAL);
+
+        AppUser savedUser = appUserRepository.save(user);
+
+        log.info("Send information about required admin approval of registration");
+
+        log.info("Send to the admin approval email");
+        log.info("Instructor registration pending approval: email={}", request.email());
+        return savedUser;
     }
 
     private AppUser registerUser(RegisterRequest request, Role role) {
@@ -97,7 +110,7 @@ public class AuthService {
         }
     }
 
-    private Role findRoleByName(String roleName) {
+    public Role findRoleByName(String roleName) {
         return roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ApiException(
                         "Role not found: " + roleName,

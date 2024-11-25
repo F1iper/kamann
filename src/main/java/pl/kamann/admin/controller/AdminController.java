@@ -16,11 +16,12 @@ import pl.kamann.attendance.model.AttendanceStatus;
 import pl.kamann.attendance.service.AttendanceService;
 import pl.kamann.event.dto.EventDto;
 import pl.kamann.event.service.EventService;
-import pl.kamann.history.model.ClientMembershipCardHistory;
 import pl.kamann.history.model.ClientEventHistory;
+import pl.kamann.history.model.ClientMembershipCardHistory;
 import pl.kamann.membershipcard.model.MembershipCard;
 import pl.kamann.membershipcard.model.MembershipCardType;
 import pl.kamann.membershipcard.service.MembershipCardService;
+import pl.kamann.user.model.AppUser;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -112,6 +113,14 @@ public class AdminController {
             @RequestParam MembershipCardType type) {
         MembershipCard card = membershipCardService.purchaseMembershipCard(userId, type);
         return ResponseEntity.status(HttpStatus.CREATED).body(card);
+    }
+
+
+    @PostMapping("/approve-instructor/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> approveInstructor(@PathVariable Long userId) {
+        AppUser approvedUser = adminService.approveInstructor(userId);
+        return ResponseEntity.ok("Instructor approved successfully: " + approvedUser.getEmail());
     }
 
     @PutMapping("/membership-cards/{cardId}/approve-payment")

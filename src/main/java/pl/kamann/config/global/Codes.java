@@ -36,4 +36,5 @@ public class Codes {
     public static final String CANNOT_CANCEL_STARTED_EVENT = "CANNOT_CANCEL_STARTED_EVENT";
     public static final String INVALID_ATTENDANCE_STATE = "INVALID_ATTENDANCE_STATE";
 
+    public static final String INVALID_USER_STATUS = "INVALID_USER_STATUS";
 }
