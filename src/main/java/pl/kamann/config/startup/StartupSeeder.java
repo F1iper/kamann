@@ -66,7 +66,7 @@ public class StartupSeeder implements CommandLineRunner {
             roleRepository.saveAll(List.of(
                     new Role("ADMIN"),
                     new Role("INSTRUCTOR"),
-                    new Role("USER")
+                    new Role("CLIENT")
             ));
         }
     }
@@ -101,8 +101,8 @@ public class StartupSeeder implements CommandLineRunner {
     }
 
     private List<AppUser> seedClients() {
-        Role clientRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new IllegalStateException("USER role not found"));
+        Role clientRole = roleRepository.findByName("CLIENT")
+                .orElseThrow(() -> new IllegalStateException("CLIENT role not found"));
 
         return List.of(
                 createUserIfNotExists("client1@client.com", "Alice", "Johnson", clientRole),
