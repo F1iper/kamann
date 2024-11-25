@@ -21,7 +21,10 @@ import pl.kamann.history.model.ClientMembershipCardHistory;
 import pl.kamann.membershipcard.model.MembershipCard;
 import pl.kamann.membershipcard.model.MembershipCardType;
 import pl.kamann.membershipcard.service.MembershipCardService;
+import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.user.service.AppUserService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,8 +38,17 @@ public class AdminController {
 
     private final AdminService adminService;
     private final EventService eventService;
+    private final AppUserService appUserService;
     private final AttendanceService attendanceService;
     private final MembershipCardService membershipCardService;
+
+
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getUsers() {
+        List<AppUserDto> users = appUserService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
 
     // Event end-points
     @GetMapping("/events/{eventId}")

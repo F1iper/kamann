@@ -37,6 +37,9 @@ public class AppUser implements UserDetails {
     @Column(nullable = false)
     private String lastName;
 
+    @Column
+    private String phone;
+
     @Enumerated(EnumType.STRING)
     private AppUserStatus status = AppUserStatus.ACTIVE;
 
@@ -55,8 +58,6 @@ public class AppUser implements UserDetails {
                 .collect(Collectors.toSet());
     }
 
-    @Column(name = "card_expiry_date")
-    private LocalDate cardExpiryDate;
 
     @Override
     public String getUsername() {

@@ -3,6 +3,8 @@ package pl.kamann.config.global;
 public class Codes {
 
     // auth
+
+    //todo: verify duplication
     public static final String SUCCESS = "SUCCESS";
     public static final String ACCESS_DENIED = "ACCESS_DENIED";
     public static final String UNAUTHORIZED = "UNAUTHORIZED";

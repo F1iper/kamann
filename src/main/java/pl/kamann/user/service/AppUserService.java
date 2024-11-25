@@ -83,10 +83,6 @@ public class AppUserService {
         return appUserMapper.toDtoList(appUserRepository.findByRolesContaining(role));
     }
 
-    public List<AppUserDto> getUsersWithExpiringMembershipCards(LocalDate expiryDate) {
-        return appUserMapper.toDtoList(appUserRepository.findUsersWithExpiringMembershipCards(expiryDate));
-    }
-
     public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
         AppUser user = entityLookupService.findUserById(userId);
         user.setStatus(status);

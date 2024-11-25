@@ -13,9 +13,6 @@ import java.util.Optional;
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByEmail(String email);
 
-    @Query("SELECT u FROM AppUser u WHERE u.cardExpiryDate < :expiryDate")
-    List<AppUser> findUsersWithExpiringMembershipCards(@Param("expiryDate") LocalDate expiryDate);
-
     List<AppUser> findByRolesContaining(Role role);
 
 }

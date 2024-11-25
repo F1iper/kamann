@@ -48,6 +48,7 @@ public class MembershipCard {
     @Column(nullable = false)
     private boolean pendingApproval = false;
 
+    //todo : why and what, start date + end date
     @Column(nullable = false)
     private LocalDateTime purchaseDate;
 }
