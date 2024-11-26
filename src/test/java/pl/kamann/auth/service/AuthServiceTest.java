@@ -3,27 +3,26 @@ package pl.kamann.auth.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.auth.login.request.LoginRequest;
 import pl.kamann.auth.login.response.LoginResponse;
 import pl.kamann.auth.register.RegisterRequest;
 import pl.kamann.auth.role.model.Role;
 import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.user.model.AppUser;
+import pl.kamann.user.model.AppUserStatus;
 import pl.kamann.user.repository.AppUserRepository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,222 +43,149 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    private List<AppUser> testUsers;
-    private List<Role> testRoles;
+    private Role clientRole;
 
     @BeforeEach
     void setUp() {
-        testRoles = List.of(
-                createRole("USER"),
-                createRole("INSTRUCTOR"),
-                createRole("ADMIN")
-        );
-
-        testUsers = List.of(
-                createUser("john.doe@example.com", "USER"),
-                createUser("jane.smith@example.com", "INSTRUCTOR"),
-                createUser("admin@admin.com", "ADMIN")
-        );
+        clientRole = new Role();
+        clientRole.setName("CLIENT");
     }
 
-    private Role createRole(String roleName) {
-        Role role = new Role();
-        role.setName(roleName);
-        return role;
-    }
+    @Test
+    void shouldLoginSuccessfully() {
+        // given
+        String email = "user@example.com";
+        String password = "password";
+        String encodedPassword = "encodedPassword";
 
-    private AppUser createUser(String email, String roleName) {
         AppUser user = new AppUser();
         user.setEmail(email);
-        user.setPassword("encodedPassword");
-        user.setFirstName(email.split("\\.")[0]);
-        user.setLastName("Doe");
-        user.setRoles(Set.of(testRoles.stream()
-                .filter(role -> role.getName().equals(roleName))
-                .findFirst()
-                .orElseThrow()));
-        return user;
-    }
+        user.setPassword(encodedPassword);
+        user.setRoles(Set.of(clientRole));
 
-    @ParameterizedTest
-    @CsvSource({
-            "john.doe@example.com, USER",
-            "jane.smith@example.com, INSTRUCTOR",
-            "admin@admin.com, ADMIN"
-    })
-    void loginMultipleUserScenariosSuccess(String email, String roleName) {
-        // given
-        AppUser user = testUsers.stream()
-                .filter(u -> u.getEmail().equals(email))
-                .findFirst()
-                .orElseThrow();
+        LoginRequest loginRequest = new LoginRequest(email, password);
 
-        LoginRequest loginRequest = new LoginRequest(email, "password");
-
-        when(appUserRepository.findByEmail(email))
-                .thenReturn(Optional.of(user));
-
-        when(passwordEncoder.matches(loginRequest.password(), user.getPassword()))
-                .thenReturn(true);
-
-        String expectedToken = "token-" + email;
-        when(jwtUtils.generateToken(email, user.getRoles()))
-                .thenReturn(expectedToken);
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+        when(jwtUtils.generateToken(email, user.getRoles())).thenReturn("token");
 
         // when
         LoginResponse response = authService.login(loginRequest);
 
         // then
         assertNotNull(response);
-        assertEquals(expectedToken, response.token());
+        assertEquals("token", response.token());
 
         verify(appUserRepository).findByEmail(email);
-        verify(passwordEncoder).matches(loginRequest.password(), user.getPassword());
+        verify(passwordEncoder).matches(password, encodedPassword);
         verify(jwtUtils).generateToken(email, user.getRoles());
     }
 
     @Test
-    void registerClientMultipleUsersAllowDifferentEmails() {
+    void shouldThrowExceptionWhenEmailNotFoundDuringLogin() {
         // given
-        Role userRole = testRoles.stream()
-                .filter(role -> role.getName().equals("USER"))
-                .findFirst()
-                .orElseThrow();
+        String email = "nonexistent@example.com";
+        LoginRequest loginRequest = new LoginRequest(email, "password");
 
-        List<RegisterRequest> registerRequests = List.of(
-                new RegisterRequest("unique1@example.com", "password1", "John", "Doe", new Role("CLIENT")),
-                new RegisterRequest("unique2@example.com", "password2", "Jane", "Smith", new Role("INSTRUCTOR")),
-                new RegisterRequest("unique3@example.com", "password3", "Alice", "Johnson", new Role("ADMIN"))
-        );
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        when(roleRepository.findByName("USER"))
-                .thenReturn(Optional.of(userRole));
+        // when & then
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        assertEquals("Invalid email address.", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
-        registerRequests.forEach(request ->
-                when(appUserRepository.findByEmail(request.email()))
-                        .thenReturn(Optional.empty())
-        );
-
-        when(passwordEncoder.encode(any()))
-                .thenAnswer(invocation -> "encoded-" + invocation.getArgument(0));
-
-        // when
-        registerRequests.forEach(authService::registerClient);
-
-        // then
-        verify(appUserRepository, times(registerRequests.size())).save(argThat(user ->
-                registerRequests.stream()
-                        .anyMatch(req ->
-                                user.getEmail().equals(req.email()) &&
-                                        user.getFirstName().equals(req.firstName()) &&
-                                        user.getLastName().equals(req.lastName())
-                        )
-        ));
+        verify(appUserRepository).findByEmail(email);
+        verifyNoInteractions(passwordEncoder, jwtUtils);
     }
 
     @Test
-    void registerInstructorMultipleRoleScenarios() {
+    void shouldThrowExceptionWhenPasswordIsInvalidDuringLogin() {
         // given
-        List<RegisterRequest> instructorRequests = List.of(
-                new RegisterRequest("instructor1@example.com", "pass1", "John", "Trainer", new Role("INSTRUCTOR")),
-                new RegisterRequest("instructor2@example.com", "pass2", "Jane", "Coach", new Role("ADMIN")),
-                new RegisterRequest("instructor3@example.com", "pass3", "Mike", "Mentor", new Role("INSTRUCTOR"))
-        );
+        String email = "user@example.com";
+        String password = "wrongPassword";
+        String encodedPassword = "encodedPassword";
 
-        Role instructorRole = testRoles.stream()
-                .filter(role -> role.getName().equals("INSTRUCTOR"))
-                .findFirst()
-                .orElseThrow();
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPassword(encodedPassword);
 
-        when(roleRepository.findByName("INSTRUCTOR"))
-                .thenReturn(Optional.of(instructorRole));
+        LoginRequest loginRequest = new LoginRequest(email, password);
 
-        instructorRequests.forEach(request ->
-                when(appUserRepository.findByEmail(request.email()))
-                        .thenReturn(Optional.empty())
-        );
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(false);
 
-        when(passwordEncoder.encode(any()))
-                .thenAnswer(invocation -> "encoded-" + invocation.getArgument(0));
+        // when & then
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        assertEquals("Invalid password.", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
 
-        // when
-        instructorRequests.forEach(authService::registerInstructor);
-
-        // then
-        verify(appUserRepository, times(instructorRequests.size())).save(argThat(user ->
-                instructorRequests.stream()
-                        .anyMatch(req ->
-                                user.getEmail().equals(req.email()) &&
-                                        user.getRoles().contains(instructorRole)
-                        )
-        ));
+        verify(appUserRepository).findByEmail(email);
+        verify(passwordEncoder).matches(password, encodedPassword);
+        verifyNoInteractions(jwtUtils);
     }
 
     @Test
-    void loginUserWithMultipleRolesTokenGenerationCorrect() {
+    void shouldRegisterUserSuccessfully() {
         // given
-        AppUser multiRoleUser = new AppUser();
-        multiRoleUser.setEmail("multirole@example.com");
-        multiRoleUser.setPassword("encodedPassword");
-        multiRoleUser.setRoles(Set.of(
-                testRoles.stream().filter(r -> r.getName().equals("USER")).findFirst().orElseThrow(),
-                testRoles.stream().filter(r -> r.getName().equals("INSTRUCTOR")).findFirst().orElseThrow()
-        ));
+        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", clientRole);
 
-        LoginRequest loginRequest = new LoginRequest(multiRoleUser.getEmail(), "password");
-
-        when(appUserRepository.findByEmail(multiRoleUser.getEmail()))
-                .thenReturn(Optional.of(multiRoleUser));
-
-        when(passwordEncoder.matches(loginRequest.password(), multiRoleUser.getPassword()))
-                .thenReturn(true);
-
-        when(jwtUtils.generateToken(multiRoleUser.getEmail(), multiRoleUser.getRoles()))
-                .thenReturn("multi-role-token");
+        when(appUserRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(roleRepository.findByName(clientRole.getName())).thenReturn(Optional.of(clientRole)); // Mocking role retrieval
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
+        when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        LoginResponse response = authService.login(loginRequest);
+        AppUser registeredUser = authService.registerUser(request);
 
         // then
-        assertNotNull(response);
-        assertEquals("multi-role-token", response.token());
+        assertNotNull(registeredUser);
+        assertEquals(request.email(), registeredUser.getEmail());
+        assertEquals(clientRole.getName(), registeredUser.getRoles().iterator().next().getName());
+        assertEquals(AppUserStatus.ACTIVE, registeredUser.getStatus());
 
-        // verify
-        verify(jwtUtils).generateToken(
-                eq(multiRoleUser.getEmail()),
-                argThat(roles ->
-                        roles.stream().anyMatch(r -> r.getName().equals("USER")) &&
-                                roles.stream().anyMatch(r -> r.getName().equals("INSTRUCTOR"))
-                )
-        );
+        verify(appUserRepository).findByEmail(request.email());
+        verify(roleRepository).findByName(clientRole.getName());
+        verify(passwordEncoder).encode(request.password());
+        verify(appUserRepository).save(registeredUser);
     }
 
     @Test
-    void loginEdgeCasesCaseInsensitiveEmail() {
+    void shouldThrowExceptionWhenEmailAlreadyRegisteredDuringRegistration() {
         // given
-        AppUser user = testUsers.getFirst();
-        String email = user.getEmail();
-        String differentCaseEmail = email.toUpperCase();
+        String email = "existing@example.com";
+        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", clientRole);
 
-        lenient().when(appUserRepository.findByEmail(anyString()))
-                .thenReturn(Optional.of(user));
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(new AppUser()));
 
-        LoginRequest loginRequest = new LoginRequest(differentCaseEmail, "password");
+        // when & then
+        ApiException exception = assertThrows(ApiException.class, () -> authService.registerUser(request));
+        assertEquals("Email is already registered: " + email, exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
 
-        when(passwordEncoder.matches(loginRequest.password(), user.getPassword()))
-                .thenReturn(true);
+        verify(appUserRepository).findByEmail(email);
+        verifyNoInteractions(passwordEncoder, roleRepository);
+    }
 
-        when(jwtUtils.generateToken(email, user.getRoles()))
-                .thenReturn("case-insensitive-token");
+    @Test
+    void shouldThrowExceptionWhenRoleNotFoundDuringRegistration() {
+        // given
+        String email = "new@example.com";
+        String roleName = "UNKNOWN_ROLE";
+        Role unknownRole = new Role();
+        unknownRole.setName(roleName);
 
-        // when
-        LoginResponse response = authService.login(loginRequest);
+        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", unknownRole);
 
-        // then
-        assertNotNull(response);
-        assertEquals("case-insensitive-token", response.token());
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(roleRepository.findByName(roleName)).thenReturn(Optional.empty());
 
-        // verify
-        verify(jwtUtils).generateToken(eq(email), eq(user.getRoles()));
+        // when & then
+        ApiException exception = assertThrows(ApiException.class, () -> authService.registerUser(request));
+        assertEquals("Role not found: " + roleName, exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+        verify(appUserRepository).findByEmail(email);
+        verify(roleRepository).findByName(roleName);
+        verifyNoInteractions(passwordEncoder);
     }
 }

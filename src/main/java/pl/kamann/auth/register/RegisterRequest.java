@@ -8,5 +8,5 @@ public record RegisterRequest(
         @NotBlank String password,
         @NotBlank String firstName,
         @NotBlank String lastName,
-        Role role) {
+        @NotBlank Role role) {
 }
