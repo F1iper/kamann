@@ -1,5 +1,6 @@
-package pl.kamann.admin.controller;
+package pl.kamann.controllers.admin;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,10 @@ import pl.kamann.admin.service.AdminService;
 import pl.kamann.attendance.model.Attendance;
 import pl.kamann.attendance.model.AttendanceStatus;
 import pl.kamann.attendance.service.AttendanceService;
+import pl.kamann.auth.register.RegisterRequest;
+import pl.kamann.auth.service.AuthService;
+import pl.kamann.config.exception.response.ErrorResponse;
+import pl.kamann.config.global.Codes;
 import pl.kamann.event.dto.EventDto;
 import pl.kamann.event.service.EventService;
 import pl.kamann.history.model.ClientEventHistory;
@@ -23,7 +28,6 @@ import pl.kamann.membershipcard.model.MembershipCardType;
 import pl.kamann.membershipcard.service.MembershipCardService;
 import pl.kamann.user.dto.AppUserDto;
 import pl.kamann.user.model.AppUser;
-import pl.kamann.user.repository.AppUserRepository;
 import pl.kamann.user.service.AppUserService;
 
 import java.time.LocalDate;
@@ -38,10 +42,23 @@ public class AdminController {
 
     private final AdminService adminService;
     private final EventService eventService;
+    private final AuthService authService;
     private final AppUserService appUserService;
     private final AttendanceService attendanceService;
     private final MembershipCardService membershipCardService;
 
+
+    @PostMapping("/register-user")
+    @Operation(summary = "Register user with role", description = "Registers a user with the specified role which is in request body.")
+    public ResponseEntity<?> registerUser(@RequestBody @Valid RegisterRequest request) {
+        authService.registerUser(request);
+        return ResponseEntity.ok(new ErrorResponse(
+                HttpStatus.OK.value(),
+                Codes.SUCCESS,
+                request.role().getName() + " was created successfully with email: " + request.email(),
+                LocalDateTime.now()
+        ));
+    }
 
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")

@@ -2,7 +2,6 @@ package pl.kamann.config.security;
 
 
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -80,7 +79,9 @@ public class SecurityConfig {
     @Bean
     @Profile(value = "dev")
     public SecurityFilterChain securityFilterChain2(HttpSecurity http) throws Exception {
-        return http.build();
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .build();
     }
 
 

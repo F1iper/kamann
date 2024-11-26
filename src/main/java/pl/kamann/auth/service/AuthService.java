@@ -55,36 +55,15 @@ public class AuthService {
     }
 
     @Transactional
-    public void registerClient(RegisterRequest request) {
-        Role clientRole = findRoleByName(Codes.CLIENT);
-        registerUser(request, clientRole);
-    }
-
-    @Transactional
-    public AppUser registerInstructor(RegisterRequest request) {
+    public AppUser registerUser(RegisterRequest request) {
         validateEmailNotTaken(request.email());
 
-        Role clientRole = findRoleByName(Codes.CLIENT);
+        Role userRole = findRoleByName(request.role().getName());
 
-        AppUser user = createAppUser(request, clientRole);
-        user.setStatus(AppUserStatus.PENDING_APPROVAL);
-
+        AppUser user = createAppUser(request, userRole);
         AppUser savedUser = appUserRepository.save(user);
 
-        log.info("Send information about required admin approval of registration");
-
-        log.info("Send to the admin approval email");
-        log.info("Instructor registration pending approval: email={}", request.email());
-        return savedUser;
-    }
-
-    private AppUser registerUser(RegisterRequest request, Role role) {
-        validateEmailNotTaken(request.email());
-
-        AppUser user = createAppUser(request, role);
-        AppUser savedUser = appUserRepository.save(user);
-
-        log.info("User registered successfully: email={}, role={}", request.email(), role.getName());
+        log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
         return savedUser;
     }
 
