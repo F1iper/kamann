@@ -23,6 +23,7 @@ public class MembershipCardMapper {
                 .active(card.isActive())
                 .pendingApproval(card.isPendingApproval())
                 .purchaseDate(card.getPurchaseDate())
+                .price(card.getPrice())
                 .build();
     }
 
@@ -35,6 +36,7 @@ public class MembershipCardMapper {
         card.setEndDate(LocalDateTime.now().plusDays(dto.getMembershipCardType().getValidDays()));
         card.setPaid(false);
         card.setActive(false);
+        card.setPrice(dto.getPrice());
         return card;
     }
 }

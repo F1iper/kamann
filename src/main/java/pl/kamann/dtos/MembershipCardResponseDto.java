@@ -3,6 +3,7 @@ package pl.kamann.dtos;
 import lombok.*;
 import pl.kamann.entities.MembershipCardType;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -22,5 +23,6 @@ public class MembershipCardResponseDto {
     private boolean active;
     private boolean pendingApproval;
     private LocalDateTime purchaseDate;
+    private BigDecimal price;
 
 }

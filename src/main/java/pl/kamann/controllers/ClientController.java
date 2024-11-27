@@ -4,13 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.entities.Attendance;
-import pl.kamann.dtos.MembershipCardRequestDto;
+import pl.kamann.dtos.ClientMembershipCardRequestDto;
 import pl.kamann.dtos.MembershipCardResponseDto;
+import pl.kamann.entities.Attendance;
 import pl.kamann.entities.EventDto;
 import pl.kamann.services.ClientAttendanceService;
-import pl.kamann.services.EventService;
 import pl.kamann.services.ClientMembershipCardService;
+import pl.kamann.services.EventService;
 
 import java.util.List;
 import java.util.Map;
@@ -62,7 +62,7 @@ public class ClientController {
 
     // Membership cards
     @PostMapping("/membership-cards/request")
-    public ResponseEntity<MembershipCardResponseDto> requestMembershipCard(@RequestBody MembershipCardRequestDto request) {
+    public ResponseEntity<MembershipCardResponseDto> requestMembershipCard(@RequestBody ClientMembershipCardRequestDto request) {
         MembershipCardResponseDto response = membershipCardService.purchaseMembershipCardForClient(request);
         return ResponseEntity.ok(response);
     }

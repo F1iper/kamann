@@ -31,14 +31,14 @@ public class SharedAttendanceService {
 
     @Transactional
     public void deductMembershipEntry(Long userId) {
-        MembershipCard card = membershipCardRepository.findByUserId(userId)
-                .orElseThrow(() -> new ApiException("Membership card not found.", HttpStatus.NOT_FOUND, Codes.CARD_NOT_FOUND));
+//        MembershipCard card = membershipCardRepository.findByUserId(userId)
+//                .orElseThrow(() -> new ApiException("Membership card not found.", HttpStatus.NOT_FOUND, Codes.CARD_NOT_FOUND));
 
-        if (card.getEntrancesLeft() <= 0) {
-            throw new ApiException("No available entries left on membership card.", HttpStatus.BAD_REQUEST, Codes.NO_ENTRANCES_LEFT);
-        }
-
-        card.setEntrancesLeft(card.getEntrancesLeft() - 1);
-        membershipCardRepository.save(card);
+//        if (card.getEntrancesLeft() <= 0) {
+//            throw new ApiException("No available entries left on membership card.", HttpStatus.BAD_REQUEST, Codes.NO_ENTRANCES_LEFT);
+//        }
+//
+//        card.setEntrancesLeft(card.getEntrancesLeft() - 1);
+//        membershipCardRepository.save(card);
     }
 }
