@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -47,7 +48,17 @@ public class MembershipCard {
     @Column(nullable = false)
     private boolean pendingApproval = false;
 
-    //todo : why and what, start date + end date
+    @Column(nullable = false)
+    private BigDecimal price;
+
+    // todo: is required? need client opinion
     @Column(nullable = false)
     private LocalDateTime purchaseDate;
+
+    @PrePersist
+    private void setDefaultPurchaseDate() {
+        if (this.purchaseDate == null) {
+            this.purchaseDate = LocalDateTime.now();
+        }
+    }
 }

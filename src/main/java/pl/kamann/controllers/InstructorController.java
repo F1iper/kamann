@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import pl.kamann.config.global.Codes;
 import pl.kamann.entities.AttendanceStatus;
 import pl.kamann.services.InstructorAttendanceService;
 import pl.kamann.config.exception.handler.ApiException;
@@ -32,8 +33,11 @@ public class InstructorController {
             AttendanceStatus attendanceStatus = AttendanceStatus.valueOf(status.toUpperCase());
             attendanceService.markAttendance(eventId, clientId, attendanceStatus);
             return ResponseEntity.ok("Attendance successfully marked as " + attendanceStatus + ".");
-        } catch (IllegalArgumentException e) {
-            throw new ApiException("Invalid attendance status provided.", HttpStatus.BAD_REQUEST, "INVALID_STATUS");
+        } catch (ApiException e) {
+            throw new ApiException(
+                    "Invalid attendance status provided.",
+                    HttpStatus.BAD_REQUEST,
+                    Codes.INVALID_ATTENDANCE_STATUS);
         }
     }
 }

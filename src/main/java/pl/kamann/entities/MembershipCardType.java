@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum MembershipCardType {
-    SINGLE_ENTRY("Single Entry", 1, null),
+    SINGLE_ENTRY("Single Entry", 1, 30),
     MONTHLY_4("Monthly - 4 Entrances", 4, 30),
     MONTHLY_8("Monthly - 8 Entrances", 8, 30),
     MONTHLY_12("Monthly - 12 Entrances", 12, 30);

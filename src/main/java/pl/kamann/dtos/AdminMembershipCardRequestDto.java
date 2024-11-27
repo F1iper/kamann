@@ -12,9 +12,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MembershipCardRequestDto {
-
+public class AdminMembershipCardRequestDto {
     private MembershipCardType membershipCardType;
     private BigDecimal price;
-
 }
