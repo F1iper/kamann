@@ -9,12 +9,12 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.event.model.Event;
-import pl.kamann.registration.model.UserEventRegistration;
-import pl.kamann.registration.model.UserEventRegistrationStatus;
-import pl.kamann.registration.repository.UserEventRegistrationRepository;
-import pl.kamann.registration.service.ClientEventRegistrationService;
-import pl.kamann.user.model.AppUser;
+import pl.kamann.entities.Event;
+import pl.kamann.entities.UserEventRegistration;
+import pl.kamann.entities.UserEventRegistrationStatus;
+import pl.kamann.repositories.UserEventRegistrationRepository;
+import pl.kamann.services.ClientEventRegistrationService;
+import pl.kamann.entities.AppUser;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
