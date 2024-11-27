@@ -35,9 +35,11 @@ public class InstructorAttendanceService {
     public void markAttendance(Long eventId, Long userId, AttendanceStatus status) {
         Attendance attendance = sharedAttendanceService.getAttendance(eventId, userId);
 
-        // Validate status transition logic (if any)
+        // todo: Validate status transition logic (if any)
         if (!isValidStatusChange(attendance.getStatus(), status)) {
-            throw new ApiException("Invalid attendance status transition.", HttpStatus.BAD_REQUEST, Codes.INVALID_STATUS_CHANGE);
+            throw new ApiException("Invalid attendance status transition.",
+                    HttpStatus.BAD_REQUEST,
+                    Codes.INVALID_STATUS_CHANGE);
         }
 
         attendance.setStatus(status);

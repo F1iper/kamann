@@ -2,8 +2,11 @@ package pl.kamann.config.startup;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
 import pl.kamann.entities.Attendance;
 import pl.kamann.entities.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
@@ -27,6 +30,7 @@ import pl.kamann.repositories.RoleRepository;
 import pl.kamann.entities.AppUser;
 import pl.kamann.repositories.AppUserRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +70,8 @@ public class StartupSeeder implements CommandLineRunner {
         seedUserEventRegistrations(allEvents, clients);
         seedEventsWithEdgeCases(instructors, eventTypes, admin);
         seedAttendance(allEvents, clients);
+        seedClientRequestedCards(clients);
+        seedAdminCreatedCards();
     }
 
     private void seedRoles() {
@@ -180,6 +186,29 @@ public class StartupSeeder implements CommandLineRunner {
         return event;
     }
 
+    private void seedAdminCreatedCards() {
+        if (membershipCardRepository.count() == 0) {
+            MembershipCard promoCard = new MembershipCard();
+            promoCard.setMembershipCardType(MembershipCardType.MONTHLY_8);
+            promoCard.setEntrancesLeft(MembershipCardType.MONTHLY_8.getMaxEntrances());
+            promoCard.setStartDate(LocalDateTime.now());
+            promoCard.setEndDate(LocalDateTime.now().plusDays(MembershipCardType.MONTHLY_8.getValidDays()));
+            promoCard.setPrice(new BigDecimal("40.00"));
+            promoCard.setPaid(false);
+            promoCard.setActive(false);
+            promoCard.setPurchaseDate(LocalDateTime.now());
+
+            AppUser adminUser = appUserRepository.findByEmail("admin@admin.com")
+                    .orElseThrow(() -> new ApiException(
+                            "Admin user not found",
+                            HttpStatus.NOT_FOUND,
+                            Codes.USER_NOT_FOUND));
+            promoCard.setUser(adminUser);
+
+            membershipCardRepository.save(promoCard);
+        }
+    }
+
     private void seedMembershipCards(List<AppUser> clients) {
         for (AppUser client : clients) {
             MembershipCard card = new MembershipCard();
@@ -189,7 +218,23 @@ public class StartupSeeder implements CommandLineRunner {
             card.setStartDate(LocalDateTime.now());
             card.setEndDate(LocalDateTime.now().plusMonths(1));
             card.setPurchaseDate(LocalDateTime.now());
+            card.setPrice(new BigDecimal("49.99"));
             card.setPaid(true);
+            membershipCardRepository.save(card);
+        }
+    }
+
+    private void seedClientRequestedCards(List<AppUser> clients) {
+        for (AppUser client : clients) {
+            MembershipCard card = new MembershipCard();
+            card.setUser(client);
+            card.setMembershipCardType(MembershipCardType.MONTHLY_8);
+            card.setEntrancesLeft(MembershipCardType.MONTHLY_8.getMaxEntrances());
+            card.setStartDate(LocalDateTime.now());
+            card.setEndDate(LocalDateTime.now().plusDays(MembershipCardType.MONTHLY_8.getValidDays()));
+            card.setPrice(new BigDecimal("50.00"));
+            card.setPaid(true);
+            card.setActive(true);
             membershipCardRepository.save(card);
         }
     }

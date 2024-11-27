@@ -6,15 +6,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.kamann.entities.MembershipCardType;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MembershipCardRequestDto {
-
+public class ClientMembershipCardRequestDto {
     private MembershipCardType membershipCardType;
-    private BigDecimal price;
-
 }

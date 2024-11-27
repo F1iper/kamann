@@ -44,6 +44,9 @@ public class Codes {
     public static final String CARD_NOT_ACTIVE = "CARD_NOT_ACTIVE";
     public static final String NO_ENTRANCES_LEFT = "NO_ENTRANCES_LEFT";
     public static final String CARD_EXPIRED = "CARD_EXPIRED";
+    public static final String CARD_ALREADY_ACTIVE = "CARD_ALREADY_ACTIVE";
+    public static final String CARD_PENDING_APPROVAL = "CARD_PENDING_APPROVAL";
+    public static final String INVALID_CARD_STATE = "INVALID_CARD_STATE";
 
     //instructor
     public static final String INSTRUCTOR_BUSY = "INSTRUCTOR_BUSY";
