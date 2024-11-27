@@ -4,5 +4,6 @@ public enum EventStatus {
     UPCOMING,
     ONGOING,
     COMPLETED,
-    SCHEDULED, CANCELLED
+    SCHEDULED,
+    CANCELLED
 }

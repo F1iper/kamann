@@ -1,4 +1,4 @@
-package pl.kamann.event.dto;
+package pl.kamann.entities.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,11 +19,11 @@ public class EventDto {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private boolean recurring;
-    private Long createdById;
-    private Long instructorId;
+    private Long createdById; // ID admina tworzącego wydarzenie
+    private Long instructorId; // ID przypisanego instruktora
     private int maxParticipants;
+    private EventStatus status;
+    private Integer currentParticipants; // Liczba zapisanych uczestników
     private Long eventTypeId;
     private String eventTypeName;
-    private EventStatus status;
-    private Integer attendanceSummary;
 }

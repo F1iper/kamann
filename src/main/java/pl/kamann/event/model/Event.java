@@ -1,20 +1,19 @@
 package pl.kamann.event.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import pl.kamann.registration.model.UserEventRegistration;
+import lombok.*;
+import pl.kamann.attendance.model.Attendance;
 import pl.kamann.user.model.AppUser;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Event {
 
     @Id
@@ -24,6 +23,7 @@ public class Event {
     @Column(nullable = false)
     private String title;
 
+    @Column(nullable = false)
     private String description;
 
     @Column(nullable = false)
@@ -35,25 +35,30 @@ public class Event {
     @Column(nullable = false)
     private boolean recurring;
 
+    @Column(nullable = false)
+    private int maxParticipants;
+
     @ManyToOne
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by_id", nullable = false)
     private AppUser createdBy;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id", nullable = false)
     private AppUser instructor;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private int maxParticipants;
+    private EventStatus status;
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Attendance> participants;
+
+    @ManyToMany
+    @JoinTable(name = "event_waitlist",
+            joinColumns = @JoinColumn(name = "event_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private List<AppUser> waitlist;
 
     @ManyToOne
     @JoinColumn(name = "event_type_id", nullable = false)
     private EventType eventType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private EventStatus status;
-
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<UserEventRegistration> participants = new HashSet<>();
 }

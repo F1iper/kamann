@@ -5,37 +5,35 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.attendance.model.AttendanceStatus;
-import pl.kamann.attendance.service.AttendanceService;
-import pl.kamann.config.global.Codes;
+import pl.kamann.services.attendance.instructor.InstructorAttendanceService;
+import pl.kamann.config.exception.handler.ApiException;
+import org.springframework.http.HttpStatus;
 
 @RestController
-@RequestMapping("api/instructor")
+@RequestMapping("/api/instructor")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('" + Codes.ADMIN + "', '" + Codes.INSTRUCTOR + "')")
+@PreAuthorize("hasRole('INSTRUCTOR')")
 public class InstructorController {
 
-    private final AttendanceService attendanceService;
+    private final InstructorAttendanceService attendanceService;
 
     @PostMapping("/attendance/{eventId}/{clientId}/cancel")
-    public ResponseEntity<Void> cancelAttendanceForClient(
-            @PathVariable Long eventId,
-            @PathVariable Long clientId) {
-        attendanceService.cancelAttendanceByInstructor(eventId, clientId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<String> cancelAttendance(@PathVariable Long eventId, @PathVariable Long clientId) {
+        attendanceService.cancelAttendanceForClient(eventId, clientId);
+        return ResponseEntity.ok("Attendance successfully cancelled by instructor.");
     }
 
     @PostMapping("/attendance/{eventId}/{clientId}/mark")
-    public ResponseEntity<Void> markAttendance(
+    public ResponseEntity<String> markAttendance(
             @PathVariable Long eventId,
             @PathVariable Long clientId,
-            @RequestParam AttendanceStatus status) {
-        attendanceService.markAttendance(eventId, clientId, status);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/membership/{clientId}/mark-paid")
-    public ResponseEntity<Void> markMembershipAsPaid(@PathVariable Long clientId) {
-        attendanceService.markMembershipAsPaid(clientId);
-        return ResponseEntity.ok().build();
+            @RequestParam String status) {
+        try {
+            AttendanceStatus attendanceStatus = AttendanceStatus.valueOf(status.toUpperCase());
+            attendanceService.markAttendance(eventId, clientId, attendanceStatus);
+            return ResponseEntity.ok("Attendance successfully marked as " + attendanceStatus + ".");
+        } catch (IllegalArgumentException e) {
+            throw new ApiException("Invalid attendance status provided.", HttpStatus.BAD_REQUEST, "INVALID_STATUS");
+        }
     }
 }
