@@ -15,6 +15,7 @@ import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -83,17 +84,30 @@ public class MembershipCardService {
         membershipCardRepository.save(card);
     }
 
-    /**
-     * Approves the payment for a membership card, activating it for use.
-     *
-     * @param cardId The membership card ID.
-     */
-    public void approvePayment(Long cardId) {
-        MembershipCard card = findMembershipCardById(cardId);
+    public void approveMembershipCardForUser(Long userId) {
+        AppUser user = lookupService.findUserById(userId);
 
-        card.setPaid(true);
-        card.setActive(true);
-        membershipCardRepository.save(card);
+        List<MembershipCard> userCards = membershipCardRepository.findByUserIdOrderByPurchaseDateDesc(userId);
+
+        if (userCards.isEmpty()) {
+            throw new ApiException(
+                    "No membership card found for user ID: " + userId,
+                    HttpStatus.NOT_FOUND,
+                    "CARD_NOT_FOUND"
+            );
+        }
+
+        MembershipCard latestCard = userCards.stream()
+                .max(Comparator.comparing(MembershipCard::getPurchaseDate))
+                .orElseThrow(() -> new ApiException(
+                        "No active membership card to approve for user ID: " + userId,
+                        HttpStatus.BAD_REQUEST,
+                        Codes.CARD_NOT_ACTIVE
+                ));
+
+        latestCard.setPaid(true);
+        latestCard.setActive(true);
+        membershipCardRepository.save(latestCard);
     }
 
     /**

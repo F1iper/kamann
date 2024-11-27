@@ -40,8 +40,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                 SELECT e FROM Event e
                 WHERE e.startTime > :now
                 AND EXISTS (
-                    SELECT p FROM e.participants p
-                    WHERE p.user = :user
+                    SELECT a FROM Attendance a
+                    WHERE a.event = e AND a.user = :user
                 )
             """)
     List<Event> findUpcomingEventsForUser(@Param("user") AppUser user, @Param("now") LocalDateTime now);
