@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.entities.event.EventDto;
-import pl.kamann.services.events.AdminEventService;
+import pl.kamann.entities.EventDto;
+import pl.kamann.services.AdminEventService;
 
 import java.util.List;
 
