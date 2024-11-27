@@ -12,8 +12,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import pl.kamann.user.model.AppUser;
-import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.entities.AppUser;
+import pl.kamann.repositories.AppUserRepository;
 
 import java.io.IOException;
 import java.util.List;

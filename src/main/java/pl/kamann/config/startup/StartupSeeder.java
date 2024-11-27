@@ -4,30 +4,31 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import pl.kamann.attendance.model.Attendance;
-import pl.kamann.attendance.model.AttendanceStatus;
-import pl.kamann.attendance.repository.AttendanceRepository;
-import pl.kamann.auth.role.model.Role;
-import pl.kamann.auth.role.repository.RoleRepository;
-import pl.kamann.event.model.Event;
-import pl.kamann.event.model.EventStatus;
-import pl.kamann.event.model.EventType;
-import pl.kamann.event.repository.EventRepository;
-import pl.kamann.event.repository.EventTypeRepository;
-import pl.kamann.history.model.ClientEventHistory;
-import pl.kamann.history.model.ClientMembershipCardHistory;
-import pl.kamann.history.repository.UserCardHistoryRepository;
-import pl.kamann.history.repository.UserEventHistoryRepository;
-import pl.kamann.membershipcard.model.MembershipCard;
-import pl.kamann.membershipcard.model.MembershipCardType;
-import pl.kamann.membershipcard.repository.MembershipCardRepository;
-import pl.kamann.registration.model.UserEventRegistration;
-import pl.kamann.registration.model.UserEventRegistrationStatus;
-import pl.kamann.registration.repository.UserEventRegistrationRepository;
-import pl.kamann.user.model.AppUser;
-import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.entities.Attendance;
+import pl.kamann.entities.AttendanceStatus;
+import pl.kamann.repositories.AttendanceRepository;
+import pl.kamann.entities.Event;
+import pl.kamann.entities.EventStatus;
+import pl.kamann.entities.EventType;
+import pl.kamann.entities.Role;
+import pl.kamann.entities.ClientEventHistory;
+import pl.kamann.entities.ClientMembershipCardHistory;
+import pl.kamann.repositories.UserCardHistoryRepository;
+import pl.kamann.repositories.UserEventHistoryRepository;
+import pl.kamann.entities.MembershipCard;
+import pl.kamann.entities.MembershipCardType;
+import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.entities.UserEventRegistration;
+import pl.kamann.entities.UserEventRegistrationStatus;
+import pl.kamann.repositories.UserEventRegistrationRepository;
+import pl.kamann.repositories.EventRepository;
+import pl.kamann.repositories.EventTypeRepository;
+import pl.kamann.repositories.RoleRepository;
+import pl.kamann.entities.AppUser;
+import pl.kamann.repositories.AppUserRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -53,12 +54,18 @@ public class StartupSeeder implements CommandLineRunner {
         List<AppUser> instructors = seedInstructors();
         List<AppUser> clients = seedClients();
         List<EventType> eventTypes = seedEventTypes();
+
         List<Event> events = seedEvents(instructors, eventTypes, admin);
+        List<Event> edgeCaseEvents = seedEventsWithEdgeCases(instructors, eventTypes, admin);
+        List<Event> allEvents = new ArrayList<>(events);
+        allEvents.addAll(edgeCaseEvents);
+
         seedMembershipCards(clients);
-        seedAttendance(events, clients);
-        seedUserEventHistory(events, clients);
+        seedUserEventHistory(allEvents, clients);
         seedUserCardHistory(clients);
-        seedUserEventRegistrations(events, clients);
+        seedUserEventRegistrations(allEvents, clients);
+        seedEventsWithEdgeCases(instructors, eventTypes, admin);
+        seedAttendance(allEvents, clients);
     }
 
     private void seedRoles() {
@@ -259,4 +266,21 @@ public class StartupSeeder implements CommandLineRunner {
                         UserEventRegistrationStatus.WAITLISTED, 2, LocalDateTime.now().minusDays(3))
         ));
     }
+
+    private List<Event> seedEventsWithEdgeCases(List<AppUser> instructors, List<EventType> eventTypes, AppUser createdBy) {
+        List<Event> edgeCaseEvents = List.of(
+                createEvent("Fully Booked Event", "This event is fully booked.",
+                        LocalDateTime.now().plusDays(4).withHour(10), LocalDateTime.now().plusDays(4).withHour(12),
+                        instructors.get(0), eventTypes.get(1), createdBy),
+                createEvent("Recurring Yoga Session", "Weekly yoga session.",
+                        LocalDateTime.now().plusDays(5).withHour(8), LocalDateTime.now().plusDays(5).withHour(9),
+                        instructors.get(1), eventTypes.get(0), createdBy),
+                createEvent("Waitlisted Meditation", "Meditation session with a waitlist.",
+                        LocalDateTime.now().plusDays(6).withHour(19), LocalDateTime.now().plusDays(6).withHour(20),
+                        instructors.get(2), eventTypes.get(4), createdBy)
+        );
+
+        return eventRepository.saveAll(edgeCaseEvents);
+    }
+
 }
