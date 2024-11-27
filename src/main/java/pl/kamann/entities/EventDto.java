@@ -16,11 +16,11 @@ public class EventDto {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private boolean recurring;
-    private Long createdById; // ID admina tworzącego wydarzenie
-    private Long instructorId; // ID przypisanego instruktora
+    private Long createdById;
+    private Long instructorId;
     private int maxParticipants;
     private EventStatus status;
-    private Integer currentParticipants; // Liczba zapisanych uczestników
+    private Integer currentParticipants;
     private Long eventTypeId;
     private String eventTypeName;
 }
