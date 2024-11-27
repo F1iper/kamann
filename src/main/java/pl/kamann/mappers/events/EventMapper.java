@@ -1,22 +1,31 @@
-package pl.kamann.event.mapper;
+package pl.kamann.mappers.events;
 
 import org.springframework.stereotype.Component;
-import pl.kamann.attendance.model.Attendance;
-import pl.kamann.event.dto.EventDto;
+import pl.kamann.entities.event.EventDto;
 import pl.kamann.event.model.Event;
+import pl.kamann.event.model.EventStatus;
 import pl.kamann.event.model.EventType;
 import pl.kamann.user.model.AppUser;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class EventMapper {
 
-    public EventDto toDto(Event event, List<Attendance> attendances) {
-        List<Attendance> attendanceList = Optional.ofNullable(attendances).orElse(List.of());
+    public Event toEntity(EventDto dto, AppUser createdBy, AppUser instructor, EventType eventType) {
+        return Event.builder()
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .startTime(dto.getStartTime())
+                .endTime(dto.getEndTime())
+                .recurring(dto.isRecurring())
+                .maxParticipants(dto.getMaxParticipants())
+                .createdBy(createdBy)
+                .instructor(instructor)
+                .eventType(eventType)
+                .status(dto.getStatus() != null ? dto.getStatus() : EventStatus.SCHEDULED)
+                .build();
+    }
 
+    public EventDto toDto(Event event) {
         return EventDto.builder()
                 .id(event.getId())
                 .title(event.getTitle())
@@ -24,29 +33,13 @@ public class EventMapper {
                 .startTime(event.getStartTime())
                 .endTime(event.getEndTime())
                 .recurring(event.isRecurring())
+                .maxParticipants(event.getMaxParticipants())
                 .createdById(event.getCreatedBy().getId())
                 .instructorId(event.getInstructor().getId())
-                .maxParticipants(event.getMaxParticipants())
                 .eventTypeId(event.getEventType().getId())
                 .eventTypeName(event.getEventType().getName())
                 .status(event.getStatus())
-                .attendanceSummary(attendanceList.size())
                 .build();
-    }
-
-    public Event toEntity(EventDto dto, AppUser createdBy, AppUser instructor, EventType eventType) {
-        Event event = new Event();
-        event.setTitle(dto.getTitle());
-        event.setDescription(dto.getDescription());
-        event.setStartTime(dto.getStartTime());
-        event.setEndTime(dto.getEndTime());
-        event.setRecurring(dto.isRecurring());
-        event.setMaxParticipants(dto.getMaxParticipants());
-        event.setStatus(dto.getStatus());
-        event.setCreatedBy(createdBy);
-        event.setInstructor(instructor);
-        event.setEventType(eventType);
-        return event;
     }
 
     public void updateEventFromDto(Event existingEvent, EventDto updatedEventDto, AppUser instructor, EventType eventType) {
@@ -56,14 +49,11 @@ public class EventMapper {
         existingEvent.setEndTime(updatedEventDto.getEndTime());
         existingEvent.setRecurring(updatedEventDto.isRecurring());
         existingEvent.setMaxParticipants(updatedEventDto.getMaxParticipants());
-        existingEvent.setStatus(updatedEventDto.getStatus());
         existingEvent.setInstructor(instructor);
         existingEvent.setEventType(eventType);
-    }
 
-    public List<EventDto> toDtoList(List<Event> events) {
-        return events.stream()
-                .map(event -> toDto(event, null))
-                .collect(Collectors.toList());
+        if (updatedEventDto.getStatus() != null) {
+            existingEvent.setStatus(updatedEventDto.getStatus());
+        }
     }
 }
