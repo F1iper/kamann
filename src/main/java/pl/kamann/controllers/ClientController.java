@@ -4,12 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.dtos.ClientMembershipCardRequestDto;
-import pl.kamann.dtos.MembershipCardResponseDto;
 import pl.kamann.entities.Attendance;
 import pl.kamann.entities.EventDto;
 import pl.kamann.services.ClientAttendanceService;
-import pl.kamann.services.ClientMembershipCardService;
 import pl.kamann.services.EventService;
 
 import java.util.List;
@@ -23,7 +20,6 @@ public class ClientController {
 
     private final EventService eventService;
     private final ClientAttendanceService attendanceService;
-    private final ClientMembershipCardService membershipCardService;
     private final ClientAttendanceService clientAttendanceService;
 
     // Events
@@ -48,7 +44,7 @@ public class ClientController {
     public ResponseEntity<String> cancelAttendance(@PathVariable Long eventId) {
         try {
             Attendance attendance = attendanceService.cancelAttendanceForClient(eventId);
-            return ResponseEntity.ok().body("Attendance for event: " + attendance.getEvent().getTitle()+ " successfully cancelled.");
+            return ResponseEntity.ok().body("Attendance for event: " + attendance.getEvent().getTitle() + " successfully cancelled.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to cancel attendance: " + e.getMessage());
         }
