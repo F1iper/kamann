@@ -48,7 +48,7 @@ public class ClientController {
     public ResponseEntity<String> cancelAttendance(@PathVariable Long eventId) {
         try {
             Attendance attendance = attendanceService.cancelAttendanceForClient(eventId);
-            return ResponseEntity.ok("Attendance successfully cancelled.");
+            return ResponseEntity.ok().body("Attendance for event: " + attendance.getEvent().getTitle()+ " successfully cancelled.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to cancel attendance: " + e.getMessage());
         }
@@ -58,12 +58,5 @@ public class ClientController {
     public ResponseEntity<Map<String, Object>> getAttendanceSummary() {
         Map<String, Object> summary = attendanceService.getAttendanceSummary();
         return ResponseEntity.ok(summary);
-    }
-
-    // Membership cards
-    @PostMapping("/membership-cards/request")
-    public ResponseEntity<MembershipCardResponseDto> requestMembershipCard(@RequestBody ClientMembershipCardRequestDto request) {
-        MembershipCardResponseDto response = membershipCardService.purchaseMembershipCardForClient(request);
-        return ResponseEntity.ok(response);
     }
 }
