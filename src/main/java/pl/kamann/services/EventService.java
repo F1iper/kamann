@@ -53,6 +53,12 @@ public class EventService {
     @Transactional
     public void deleteEvent(Long eventId) {
         Event event = lookupService.findEventById(eventId);
+
+        if (!event.getParticipants().isEmpty()) {
+            throw new ApiException("Cannot delete an event with participants.",
+                    HttpStatus.BAD_REQUEST, Codes.EVENT_HAS_PARTICIPANTS);
+        }
+
         eventRepository.delete(event);
     }
 
