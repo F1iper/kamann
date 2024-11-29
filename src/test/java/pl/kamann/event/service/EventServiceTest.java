@@ -163,6 +163,19 @@ class EventServiceTest {
     }
 
     @Test
+    void getUpcomingEventsForLoggedInClientShouldReturnEmptyListWhenNoUpcomingEvents() {
+        when(lookupService.getLoggedInUser()).thenReturn(mockClient);
+        when(eventRepository.findUpcomingEventsForUser(eq(mockClient), any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        List<EventDto> result = eventService.getUpcomingEventsForLoggedInClient();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(eventRepository, times(1)).findUpcomingEventsForUser(eq(mockClient), any(LocalDateTime.class));
+    }
+
+    @Test
     void getUpcomingEventsForLoggedInClientShouldReturnUpcomingEvents() {
         when(lookupService.getLoggedInUser()).thenReturn(mockClient);
 
@@ -184,6 +197,8 @@ class EventServiceTest {
 
     @Test
     void deleteEventShouldDeleteEventSuccessfully() {
+        mockEvent.setParticipants(List.of());
+
         when(lookupService.findEventById(1L)).thenReturn(mockEvent);
 
         eventService.deleteEvent(1L);
@@ -192,16 +207,29 @@ class EventServiceTest {
     }
 
     @Test
-    void updateEventShouldUpdateEventSuccessfully() {
+    void deleteEventShouldThrowExceptionWhenEventHasParticipants() {
+        mockEvent.setParticipants(List.of(
+                Attendance.builder().id(1L).user(mockClient).event(mockEvent).build()
+        ));
+
+        when(lookupService.findEventById(1L)).thenReturn(mockEvent);
+
+        ApiException exception = assertThrows(ApiException.class, () -> eventService.deleteEvent(1L));
+
+        assertEquals("Cannot delete an event with participants.", exception.getMessage());
+        assertEquals(Codes.EVENT_HAS_PARTICIPANTS, exception.getCode());
+    }
+
+    @Test
+    void updateEventShouldNotChangeCreatedBy() {
         EventDto updatedEventDto = EventDto.builder()
-                .title("Updated Event Title")
+                .title("Updated Title")
                 .description("Updated Description")
                 .startTime(LocalDateTime.now().plusDays(2))
                 .endTime(LocalDateTime.now().plusDays(2).plusHours(3))
-                .recurring(true)
                 .maxParticipants(50)
-                .instructorId(2L)
                 .eventTypeId(1L)
+                .instructorId(2L)
                 .build();
 
         when(lookupService.findEventById(1L)).thenReturn(mockEvent);
@@ -212,8 +240,8 @@ class EventServiceTest {
 
         EventDto result = eventService.updateEvent(1L, updatedEventDto);
 
-        assertEquals("Updated Event Title", result.getTitle());
-        verify(eventRepository, times(1)).save(mockEvent);
+        assertEquals("Updated Title", result.getTitle());
+        assertEquals(mockAdmin, mockEvent.getCreatedBy(), "CreatedBy should remain unchanged.");
     }
 
     @Test

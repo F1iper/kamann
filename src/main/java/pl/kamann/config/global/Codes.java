@@ -33,6 +33,7 @@ public class Codes {
     public static final String EVENT_FULL = "EVENT_FULL";
     public static final String INVALID_EVENT_TIME = "INVALID_EVENT_TIME";
     public static final String CANNOT_CANCEL_STARTED_EVENT = "CANNOT_CANCEL_STARTED_EVENT";
+    public static final String EVENT_HAS_PARTICIPANTS = "EVENT_HAS_PARTICIPANTS";
 
     //attendance
     public static final String INVALID_ATTENDANCE_STATE = "INVALID_ATTENDANCE_STATE";
