@@ -1,8 +1,8 @@
 package pl.kamann.dtos;
 
 import lombok.*;
-import pl.kamann.entities.Role;
-import pl.kamann.entities.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.AppUserStatus;
 
 import java.time.LocalDate;
 import java.util.Set;

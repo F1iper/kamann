@@ -1,8 +1,8 @@
 package pl.kamann.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.kamann.entities.Role;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.util.List;
 import java.util.Optional;

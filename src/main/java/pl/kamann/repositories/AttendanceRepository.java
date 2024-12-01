@@ -3,10 +3,10 @@ package pl.kamann.repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.Attendance;
-import pl.kamann.entities.AttendanceStatus;
-import pl.kamann.entities.Event;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.attendance.Attendance;
+import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.entities.event.Event;
 
 import java.time.LocalDateTime;
 import java.util.List;

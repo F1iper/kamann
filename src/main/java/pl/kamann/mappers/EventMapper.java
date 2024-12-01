@@ -1,11 +1,11 @@
 package pl.kamann.mappers;
 
 import org.springframework.stereotype.Component;
-import pl.kamann.entities.EventDto;
-import pl.kamann.entities.Event;
-import pl.kamann.entities.EventStatus;
-import pl.kamann.entities.EventType;
-import pl.kamann.entities.AppUser;
+import pl.kamann.dtos.EventDto;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.EventType;
+import pl.kamann.entities.appuser.AppUser;
 
 @Component
 public class EventMapper {

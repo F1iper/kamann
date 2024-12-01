@@ -2,7 +2,7 @@ package pl.kamann.dtos;
 
 import lombok.Getter;
 import lombok.Setter;
-import pl.kamann.entities.AttendanceStatus;
+import pl.kamann.entities.attendance.AttendanceStatus;
 
 @Getter
 @Setter

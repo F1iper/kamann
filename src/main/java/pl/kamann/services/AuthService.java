@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 import pl.kamann.dtos.LoginRequest;
 import pl.kamann.dtos.LoginResponse;
 import pl.kamann.dtos.RegisterRequest;
-import pl.kamann.entities.Role;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.config.security.jwt.JwtUtils;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.AppUserStatus;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.repositories.AppUserRepository;
 
 import java.util.Set;

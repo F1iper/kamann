@@ -3,9 +3,9 @@ package pl.kamann.mappers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import pl.kamann.entities.Role;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.util.List;
 import java.util.Set;

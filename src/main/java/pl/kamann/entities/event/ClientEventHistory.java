@@ -1,10 +1,12 @@
-package pl.kamann.entities;
+package pl.kamann.entities.event;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.attendance.AttendanceStatus;
 
 import java.time.LocalDateTime;
 

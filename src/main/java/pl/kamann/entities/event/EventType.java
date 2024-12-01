@@ -1,4 +1,4 @@
-package pl.kamann.entities;
+package pl.kamann.entities.event;
 
 import jakarta.persistence.*;
 import lombok.*;

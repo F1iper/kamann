@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.entities.EventDto;
+import pl.kamann.dtos.AppUserDto;
+import pl.kamann.dtos.EventDto;
+import pl.kamann.services.AppUserService;
 import pl.kamann.services.admin.AdminEventService;
 import pl.kamann.utility.EntityLookupService;
 
@@ -20,8 +22,8 @@ public class AdminEventController {
     private final AdminEventService adminEventService;
     private final EntityLookupService lookupService;
 
-    @Operation(summary = "Create a new event", description = "Creates a new event with the provided details.")
     @PostMapping
+    @Operation(summary = "Create a new event", description = "Creates a new event with the provided details.")
     public ResponseEntity<EventDto> createEvent(@RequestBody EventDto eventDto) {
         var createdBy = lookupService.getLoggedInUser();
         var instructor = lookupService.findUserById(eventDto.getInstructorId());
@@ -29,16 +31,16 @@ public class AdminEventController {
         return ResponseEntity.ok(adminEventService.createEvent(eventDto, createdBy, instructor, eventType));
     }
 
-    @Operation(summary = "Update an existing event", description = "Updates an existing event with the given details.")
     @PutMapping("/{eventId}")
+    @Operation(summary = "Update an existing event", description = "Updates an existing event with the given details.")
     public ResponseEntity<EventDto> updateEvent(@PathVariable Long eventId, @RequestBody EventDto eventDto) {
         var instructor = lookupService.findUserById(eventDto.getInstructorId());
         var eventType = adminEventService.findEventTypeById(eventDto.getEventTypeId());
         return ResponseEntity.ok(adminEventService.updateEvent(eventId, eventDto, instructor, eventType));
     }
 
-    @Operation(summary = "Delete an event", description = "Deletes an event by its ID. Cannot delete events with participants.")
     @DeleteMapping("/{eventId}")
+    @Operation(summary = "Delete an event", description = "Deletes an event by its ID. Cannot delete events with participants.")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long eventId) {
         adminEventService.deleteEvent(eventId);
         return ResponseEntity.noContent().build();
@@ -51,14 +53,14 @@ public class AdminEventController {
         return ResponseEntity.ok("Event successfully canceled.");
     }
 
-    @Operation(summary = "List all events", description = "Retrieves a list of all events.")
     @GetMapping
+    @Operation(summary = "List all events", description = "Retrieves a list of all events.")
     public ResponseEntity<List<EventDto>> listAllEvents() {
         return ResponseEntity.ok(adminEventService.listAllEvents());
     }
 
-    @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event by its ID.")
     @GetMapping("/{eventId}")
+    @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event by its ID.")
     public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
         var event = adminEventService.getEventById(eventId);
         return ResponseEntity.ok(event);

@@ -1,10 +1,10 @@
 package pl.kamann.mappers;
 
 import org.springframework.stereotype.Component;
-import pl.kamann.entities.Event;
+import pl.kamann.entities.event.Event;
 import pl.kamann.dtos.UserEventHistoryDto;
-import pl.kamann.entities.ClientEventHistory;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.event.ClientEventHistory;
+import pl.kamann.entities.appuser.AppUser;
 
 @Component
 public class UserEventHistoryMapper {

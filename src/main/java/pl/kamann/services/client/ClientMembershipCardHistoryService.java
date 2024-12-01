@@ -2,10 +2,10 @@ package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.MembershipCard;
-import pl.kamann.entities.MembershipCardAction;
-import pl.kamann.entities.MembershipCardHistory;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.membershipcard.MembershipCardAction;
+import pl.kamann.entities.membershipcard.MembershipCardHistory;
 import pl.kamann.repositories.client.ClientMembershipCardHistoryRepository;
 
 import java.time.LocalDateTime;

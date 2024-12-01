@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.entities.Attendance;
+import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.services.client.ClientAttendanceService;
 
 import java.util.Map;

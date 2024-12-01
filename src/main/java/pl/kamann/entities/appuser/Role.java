@@ -1,4 +1,4 @@
-package pl.kamann.entities;
+package pl.kamann.entities.appuser;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

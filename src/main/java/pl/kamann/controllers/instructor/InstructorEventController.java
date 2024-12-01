@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.entities.EventDto;
+import pl.kamann.dtos.EventDto;
 import pl.kamann.services.instructor.InstructorEventService;
 
 import java.util.List;
