@@ -18,6 +18,7 @@ public class Codes {
     public static final String INVALID_ATTENDANCE_STATUS = "INVALID_STATUS";
     public static final String INVALID_USER_STATUS = "INVALID_USER_STATUS";
     public static final String INVALID_STATUS_CHANGE = "INVALID_STATUS_CHANGE";
+    public static final String INVALID_REQUEST = "INVALID_REQUEST";
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 

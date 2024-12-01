@@ -1,4 +1,4 @@
-package pl.kamann.services;
+package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -8,6 +8,7 @@ import pl.kamann.entities.AppUser;
 import pl.kamann.entities.MembershipCard;
 import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.services.MembershipCardService;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;

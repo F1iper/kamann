@@ -1,4 +1,4 @@
-package pl.kamann.services;
+package pl.kamann.services.admin;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.AdminMembershipCardRequestDto;
-import pl.kamann.dtos.MembershipCardRequestDto;
 import pl.kamann.entities.MembershipCard;
 import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.services.MembershipCardService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package pl.kamann.services;
+package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
