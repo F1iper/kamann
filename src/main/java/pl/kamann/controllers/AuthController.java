@@ -35,8 +35,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Register user by ADMIN with Role assigned")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Register user by ADMIN with Role assigned")
     public ResponseEntity<AppUser> registerUser(@RequestBody RegisterRequest request) {
         AppUser registeredUser = authService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);

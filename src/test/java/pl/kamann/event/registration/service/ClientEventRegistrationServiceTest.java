@@ -13,7 +13,7 @@ import pl.kamann.entities.Event;
 import pl.kamann.entities.UserEventRegistration;
 import pl.kamann.entities.UserEventRegistrationStatus;
 import pl.kamann.repositories.UserEventRegistrationRepository;
-import pl.kamann.services.ClientEventRegistrationService;
+import pl.kamann.services.client.ClientEventRegistrationService;
 import pl.kamann.entities.AppUser;
 import pl.kamann.utility.EntityLookupService;
 
