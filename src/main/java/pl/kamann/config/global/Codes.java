@@ -49,6 +49,7 @@ public class Codes {
     public static final String CARD_ALREADY_ACTIVE = "CARD_ALREADY_ACTIVE";
     public static final String CARD_PENDING_APPROVAL = "CARD_PENDING_APPROVAL";
     public static final String INVALID_CARD_STATE = "INVALID_CARD_STATE";
+    public static final String CARD_ALREADY_EXISTS = "CARD_ALREADY_EXISTS";
 
     //instructor
     public static final String INSTRUCTOR_BUSY = "INSTRUCTOR_BUSY";

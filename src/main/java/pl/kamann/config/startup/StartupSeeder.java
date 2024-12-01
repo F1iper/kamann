@@ -88,22 +88,33 @@ public class StartupSeeder implements CommandLineRunner {
         return appUserRepository.findByEmail("admin@admin.com")
                 .orElseGet(() -> {
                     Role adminRole = roleRepository.findByName("ADMIN")
-                            .orElseThrow(() -> new IllegalStateException("ADMIN role not found"));
+                            .orElseThrow(() -> new ApiException(
+                                    "ADMIN role not found",
+                                    HttpStatus.NOT_FOUND,
+                                    Codes.ROLE_NOT_FOUND));
+
+                    Role instructorRole = roleRepository.findByName("INSTRUCTOR")
+                            .orElseThrow(() -> new ApiException(
+                                    "INSTRUCTOR role not found",
+                                    HttpStatus.NOT_FOUND,
+                                    Codes.ROLE_NOT_FOUND));
 
                     AppUser adminUser = new AppUser();
                     adminUser.setEmail("admin@admin.com");
                     adminUser.setPassword(passwordEncoder.encode("admin"));
                     adminUser.setFirstName("Admin");
                     adminUser.setLastName("Admin");
-                    adminUser.setRoles(Set.of(adminRole));
-
+                    adminUser.setRoles(Set.of(adminRole, instructorRole));
                     return appUserRepository.save(adminUser);
                 });
     }
 
     private List<AppUser> seedInstructors() {
         Role instructorRole = roleRepository.findByName("INSTRUCTOR")
-                .orElseThrow(() -> new IllegalStateException("INSTRUCTOR role not found"));
+                .orElseThrow(() -> new ApiException(
+                        "INSTRUCTOR role not found",
+                        HttpStatus.NOT_FOUND,
+                        Codes.ROLE_NOT_FOUND));
 
         return List.of(
                 createUserIfNotExists("instructor1@yoga.com", "Jane", "Doe", instructorRole),
@@ -115,7 +126,10 @@ public class StartupSeeder implements CommandLineRunner {
 
     private List<AppUser> seedClients() {
         Role clientRole = roleRepository.findByName("CLIENT")
-                .orElseThrow(() -> new IllegalStateException("CLIENT role not found"));
+                .orElseThrow(() -> new ApiException(
+                        "CLIENT role not found",
+                        HttpStatus.NOT_FOUND,
+                        Codes.ROLE_NOT_FOUND));
 
         return List.of(
                 createUserIfNotExists("client1@client.com", "Alice", "Johnson", clientRole),
@@ -214,12 +228,13 @@ public class StartupSeeder implements CommandLineRunner {
             MembershipCard card = new MembershipCard();
             card.setUser(client);
             card.setMembershipCardType(MembershipCardType.MONTHLY_8);
-            card.setEntrancesLeft(8);
+            card.setEntrancesLeft(MembershipCardType.MONTHLY_8.getMaxEntrances());
             card.setStartDate(LocalDateTime.now());
             card.setEndDate(LocalDateTime.now().plusMonths(1));
             card.setPurchaseDate(LocalDateTime.now());
             card.setPrice(new BigDecimal("49.99"));
             card.setPaid(true);
+            card.setActive(true);
             membershipCardRepository.save(card);
         }
     }
@@ -250,10 +265,14 @@ public class StartupSeeder implements CommandLineRunner {
 
     private void seedUserEventHistory(List<Event> events, List<AppUser> clients) {
         userEventHistoryRepository.saveAll(List.of(
-                new ClientEventHistory(null, clients.get(0), events.get(0), AttendanceStatus.PRESENT, LocalDateTime.now().minusDays(1), 1),
-                new ClientEventHistory(null, clients.get(1), events.get(1), AttendanceStatus.LATE_CANCEL, LocalDateTime.now().minusDays(2), 0),
-                new ClientEventHistory(null, clients.get(2), events.get(2), AttendanceStatus.ABSENT, LocalDateTime.now().minusDays(3), 0),
-                new ClientEventHistory(null, clients.get(3), events.get(3), AttendanceStatus.PRESENT, LocalDateTime.now().minusDays(4), 1)
+                new ClientEventHistory(null, clients.get(0), events.get(0), AttendanceStatus.PRESENT,
+                        LocalDateTime.now().minusDays(1), 1, LocalDateTime.now(), LocalDateTime.now()),
+                new ClientEventHistory(null, clients.get(1), events.get(1), AttendanceStatus.LATE_CANCEL,
+                        LocalDateTime.now().minusDays(2), 0, LocalDateTime.now(), LocalDateTime.now()),
+                new ClientEventHistory(null, clients.get(2), events.get(2), AttendanceStatus.ABSENT,
+                        LocalDateTime.now().minusDays(3), 0, LocalDateTime.now(), LocalDateTime.now()),
+                new ClientEventHistory(null, clients.get(3), events.get(3), AttendanceStatus.PRESENT,
+                        LocalDateTime.now().minusDays(4), 1, LocalDateTime.now(), LocalDateTime.now())
         ));
     }
 

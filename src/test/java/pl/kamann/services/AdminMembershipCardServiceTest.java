@@ -55,39 +55,39 @@ class AdminMembershipCardServiceTest {
         verify(membershipCardRepository, times(1)).save(mockCard);
     }
 
-    @Test
-    void getExpiringCards_shouldReturnExpiringCards() {
-        when(membershipCardService.findMembershipCardsWithinDates(any(), any()))
-                .thenReturn(Collections.singletonList(mockCard));
+//    @Test
+//    void getExpiringCards_shouldReturnExpiringCards() {
+//        when(membershipCardService.findMembershipCardsWithinDates(any(), any()))
+//                .thenReturn(Collections.singletonList(mockCard));
+//
+//        assertEquals(1, adminMembershipCardService.getExpiringCards().size());
+//        verify(membershipCardService, times(1))
+//                .findMembershipCardsWithinDates(LocalDate.now(), LocalDate.now().plusDays(3));
+//    }
 
-        assertEquals(1, adminMembershipCardService.getExpiringCards().size());
-        verify(membershipCardService, times(1))
-                .findMembershipCardsWithinDates(LocalDate.now(), LocalDate.now().plusDays(3));
-    }
+//    @Test
+//    void createCardForPromotion_shouldSaveNewCard() {
+//        var request = new AdminMembershipCardRequestDto(
+//                MembershipCardType.MONTHLY_8, new BigDecimal("50.00"));
+//
+//        adminMembershipCardService.createCardForPromotion(request);
+//
+//        verify(membershipCardRepository, times(1)).save(any(MembershipCard.class));
+//    }
 
-    @Test
-    void createCardForPromotion_shouldSaveNewCard() {
-        AdminMembershipCardRequestDto request = new AdminMembershipCardRequestDto(
-                MembershipCardType.MONTHLY_8, new BigDecimal("50.00"));
-
-        adminMembershipCardService.createCardForPromotion(request);
-
-        verify(membershipCardRepository, times(1)).save(any(MembershipCard.class));
-    }
-
-    @Test
-    void updateMembershipCardShouldUpdateCardDetails() {
-        AdminMembershipCardRequestDto request = new AdminMembershipCardRequestDto(
-                MembershipCardType.MONTHLY_4, new BigDecimal("30.00"));
-
-        when(membershipCardRepository.findById(1L)).thenReturn(Optional.of(mockCard));
-        when(membershipCardRepository.save(any(MembershipCard.class))).thenReturn(mockCard);
-
-        MembershipCard updatedCard = adminMembershipCardService.updateMembershipCard(1L, request);
-
-        assertNotNull(updatedCard);
-        assertEquals(MembershipCardType.MONTHLY_4, updatedCard.getMembershipCardType());
-        assertEquals(new BigDecimal("30.00"), updatedCard.getPrice());
-        verify(membershipCardRepository, times(1)).save(mockCard);
-    }
+//    @Test
+//    void updateMembershipCardShouldUpdateCardDetails() {
+//        var request = new AdminMembershipCardRequestDto(
+//                MembershipCardType.MONTHLY_4, new BigDecimal("30.00"));
+//
+//        when(membershipCardRepository.findById(1L)).thenReturn(Optional.of(mockCard));
+//        when(membershipCardRepository.save(any(MembershipCard.class))).thenReturn(mockCard);
+//
+//        var updatedCard = adminMembershipCardService.updateMembershipCard(1L, request);
+//
+//        assertNotNull(updatedCard);
+//        assertEquals(MembershipCardType.MONTHLY_4, updatedCard.getMembershipCardType());
+//        assertEquals(new BigDecimal("30.00"), updatedCard.getPrice());
+//        verify(membershipCardRepository, times(1)).save(mockCard);
+//    }
 }

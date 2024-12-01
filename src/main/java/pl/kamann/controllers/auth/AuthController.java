@@ -1,4 +1,4 @@
-package pl.kamann.controllers;
+package pl.kamann.controllers.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;

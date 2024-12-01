@@ -1,4 +1,4 @@
-package pl.kamann.repositories;
+package pl.kamann.repositories.client;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import pl.kamann.entities.ClientEventHistory;
