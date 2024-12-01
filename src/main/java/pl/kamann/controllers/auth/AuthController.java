@@ -16,7 +16,7 @@ import pl.kamann.dtos.LoginRequest;
 import pl.kamann.dtos.LoginResponse;
 import pl.kamann.dtos.RegisterRequest;
 import pl.kamann.services.AuthService;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.appuser.AppUser;
 
 @RestController
 @RequestMapping("/api/auth")

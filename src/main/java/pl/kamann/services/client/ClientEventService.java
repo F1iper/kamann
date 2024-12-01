@@ -6,7 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.entities.*;
+import pl.kamann.dtos.EventDto;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.repositories.EventRepository;
@@ -32,11 +36,25 @@ public class ClientEventService {
                 .toList();
     }
 
-    public List<EventDto> getRegisteredEvents(AppUser client) {
-        validateClient(client);
 
-        return eventRepository.findRegisteredEvents(client)
-                .stream()
+    public List<EventDto> getRegisteredEvents(AppUser user) {
+        if (user == null) {
+            throw new ApiException("User cannot be null", HttpStatus.BAD_REQUEST, Codes.INVALID_REQUEST);
+        }
+
+        var registeredEvents = eventRepository.findEventsByUserAndStatus(user, AttendanceStatus.REGISTERED);
+        return registeredEvents.stream()
+                .map(eventMapper::toDto)
+                .toList();
+    }
+
+    public List<EventDto> getAllEvents(AppUser user) {
+        if (user == null) {
+            throw new ApiException("User cannot be null", HttpStatus.BAD_REQUEST, Codes.INVALID_REQUEST);
+        }
+
+        var allEvents = eventRepository.findAllEventsByUser(user);
+        return allEvents.stream()
                 .map(eventMapper::toDto)
                 .toList();
     }

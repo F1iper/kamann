@@ -2,7 +2,7 @@ package pl.kamann.repositories;
 
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.kamann.entities.EventType;
+import pl.kamann.entities.event.EventType;
 
 import java.util.Optional;
 

@@ -5,17 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import pl.kamann.dtos.AdminMembershipCardRequestDto;
-import pl.kamann.entities.MembershipCard;
-import pl.kamann.entities.MembershipCardType;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.membershipcard.MembershipCardType;
 import pl.kamann.repositories.MembershipCardRepository;
 import pl.kamann.services.admin.AdminMembershipCardService;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

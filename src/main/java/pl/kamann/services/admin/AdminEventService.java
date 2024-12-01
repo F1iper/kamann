@@ -6,7 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.entities.*;
+import pl.kamann.dtos.EventDto;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.EventType;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.EventTypeRepository;
@@ -41,7 +45,7 @@ public class AdminEventService {
     @Transactional
     public void deleteEvent(Long eventId) {
         var event = findEventById(eventId);
-        if (!event.getParticipants().isEmpty()) {
+        if (!event.getAttendances().isEmpty()) {
             throw new ApiException("Cannot delete an event with participants.",
                     HttpStatus.BAD_REQUEST,
                     Codes.EVENT_HAS_PARTICIPANTS);

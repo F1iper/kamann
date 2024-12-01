@@ -1,8 +1,8 @@
 package pl.kamann.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.kamann.entities.ClientMembershipCardHistory;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.membershipcard.ClientMembershipCardHistory;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.util.List;
 

@@ -3,14 +3,14 @@ package pl.kamann.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import pl.kamann.entities.Role;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.mappers.AppUserMapper;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.AppUserStatus;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.utility.EntityLookupService;
 

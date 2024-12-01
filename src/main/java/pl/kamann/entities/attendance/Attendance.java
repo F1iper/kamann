@@ -1,7 +1,9 @@
-package pl.kamann.entities;
+package pl.kamann.entities.attendance;
 
 import jakarta.persistence.*;
 import lombok.*;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.event.Event;
 
 import java.time.LocalDateTime;
 

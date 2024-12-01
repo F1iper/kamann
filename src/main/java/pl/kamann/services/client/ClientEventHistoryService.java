@@ -2,10 +2,10 @@ package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.AttendanceStatus;
-import pl.kamann.entities.ClientEventHistory;
-import pl.kamann.entities.Event;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.entities.event.ClientEventHistory;
+import pl.kamann.entities.event.Event;
 import pl.kamann.repositories.UserEventHistoryRepository;
 
 import java.time.LocalDateTime;

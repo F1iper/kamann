@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.entities.AttendanceStatus;
+import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.services.client.ClientEventHistoryService;
 import pl.kamann.services.client.ClientMembershipCardService;

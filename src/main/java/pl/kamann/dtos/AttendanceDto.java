@@ -1,7 +1,7 @@
 package pl.kamann.dtos;
 
 import lombok.*;
-import pl.kamann.entities.AttendanceStatus;
+import pl.kamann.entities.attendance.AttendanceStatus;
 
 import java.time.LocalDateTime;
 

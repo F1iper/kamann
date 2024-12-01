@@ -1,15 +1,12 @@
 package pl.kamann.services;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import pl.kamann.dtos.ClientMembershipCardRequestDto;
-import pl.kamann.dtos.MembershipCardResponseDto;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.MembershipCard;
-import pl.kamann.entities.MembershipCardType;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.membershipcard.MembershipCardType;
 import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
 import pl.kamann.services.client.ClientMembershipCardService;
@@ -18,7 +15,6 @@ import pl.kamann.utility.EntityLookupService;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.*;
 
 class ClientMembershipCardServiceTest {
 

@@ -3,19 +3,18 @@ package pl.kamann.user.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import pl.kamann.entities.Role;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.mappers.AppUserMapper;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.AppUserStatus;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.AppUserService;
 import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;

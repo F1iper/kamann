@@ -2,14 +2,15 @@ package pl.kamann.event.registration.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.entities.*;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.UserEventRegistrationStatus;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.repositories.UserEventRegistrationRepository;
 import pl.kamann.services.client.ClientEventHistoryService;

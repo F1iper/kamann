@@ -1,4 +1,4 @@
-package pl.kamann.entities;
+package pl.kamann.entities.membershipcard;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

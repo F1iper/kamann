@@ -3,8 +3,8 @@ package pl.kamann.repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import pl.kamann.entities.MembershipCard;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.time.LocalDate;
 import java.util.List;

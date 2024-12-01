@@ -4,8 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import pl.kamann.entities.ClientEventHistory;
-import pl.kamann.entities.ClientMembershipCardHistory;
+import pl.kamann.entities.event.ClientEventHistory;
+import pl.kamann.entities.membershipcard.ClientMembershipCardHistory;
 
 import java.util.List;
 
