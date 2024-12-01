@@ -6,5 +6,7 @@ public enum AttendanceStatus {
     EARLY_CANCEL,
     LATE_CANCEL,
     REGISTERED,
+    WAITLISTED,
+    CANCELED_BY_CLIENT,
     CANCELED_BY_INSTRUCTOR
 }

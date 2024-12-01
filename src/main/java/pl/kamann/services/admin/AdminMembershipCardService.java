@@ -7,10 +7,13 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.AdminMembershipCardRequestDto;
+import pl.kamann.dtos.MembershipCardResponseDto;
+import pl.kamann.entities.AppUser;
 import pl.kamann.entities.MembershipCard;
 import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
 import pl.kamann.services.MembershipCardService;
+import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,24 +26,26 @@ public class AdminMembershipCardService {
     private final MembershipCardService membershipCardService;
     private final MembershipCardRepository membershipCardRepository;
     private final MembershipCardMapper membershipCardMapper;
+    private final EntityLookupService lookupService;
 
     public void approvePayment(Long cardId) {
-        MembershipCard card = membershipCardService.findMembershipCardById(cardId);
+        var card = membershipCardService.findMembershipCardById(cardId);
         card.setPaid(true);
         card.setActive(true);
         membershipCardRepository.save(card);
     }
 
-    public List<MembershipCard> getExpiringCards() {
+    public List<MembershipCardResponseDto> getExpiringCards() {
         return membershipCardService.findMembershipCardsWithinDates(
-                LocalDate.now(),
-                LocalDate.now().plusDays(3)
-        );
+                        LocalDate.now(), LocalDate.now().plusDays(3))
+                .stream()
+                .map(membershipCardMapper::toDto)
+                .toList();
     }
 
     @Transactional
-    public MembershipCard createCardForPromotion(AdminMembershipCardRequestDto request) {
-        MembershipCard card = new MembershipCard();
+    public MembershipCardResponseDto createCardForPromotion(AdminMembershipCardRequestDto request) {
+        var card = new MembershipCard();
         card.setMembershipCardType(request.getMembershipCardType());
         card.setEntrancesLeft(request.getMembershipCardType().getMaxEntrances());
         card.setStartDate(LocalDateTime.now());
@@ -49,12 +54,13 @@ public class AdminMembershipCardService {
         card.setPaid(false);
         card.setActive(false);
 
-        return membershipCardRepository.save(card);
+        MembershipCard savedCard = membershipCardRepository.save(card);
+        return membershipCardMapper.toDto(savedCard);
     }
 
     @Transactional
-    public MembershipCard updateMembershipCard(Long cardId, AdminMembershipCardRequestDto request) {
-        MembershipCard card = membershipCardRepository.findById(cardId)
+    public MembershipCardResponseDto updateMembershipCard(Long cardId, AdminMembershipCardRequestDto request) {
+        var card = membershipCardRepository.findById(cardId)
                 .orElseThrow(() -> new ApiException(
                         "Membership card not found.",
                         HttpStatus.NOT_FOUND,
@@ -78,6 +84,25 @@ public class AdminMembershipCardService {
             }
         }
 
-        return membershipCardRepository.save(card);
+        var updatedCard = membershipCardRepository.save(card);
+        return membershipCardMapper.toDto(updatedCard);
+    }
+
+    public List<MembershipCardResponseDto> getClientMembershipCards(Long clientId) {
+        var client = lookupService.findUserById(clientId);
+        return membershipCardRepository.findAllByUser(client)
+                .stream()
+                .map(membershipCardMapper::toDto)
+                .toList();
+    }
+
+    public void deleteMembershipCard(Long cardId) {
+        if (!membershipCardRepository.existsById(cardId)) {
+            throw new ApiException(
+                    "Membership card not found.",
+                    HttpStatus.NOT_FOUND,
+                    Codes.CARD_NOT_FOUND);
+        }
+        membershipCardRepository.deleteById(cardId);
     }
 }
