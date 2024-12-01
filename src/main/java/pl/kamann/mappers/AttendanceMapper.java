@@ -2,9 +2,9 @@ package pl.kamann.mappers;
 
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.AttendanceDto;
-import pl.kamann.entities.Attendance;
-import pl.kamann.entities.Event;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.attendance.Attendance;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.appuser.AppUser;
 
 @Component
 public class AttendanceMapper {

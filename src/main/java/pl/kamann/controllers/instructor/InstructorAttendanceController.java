@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.entities.AttendanceStatus;
+import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.services.instructor.InstructorAttendanceService;
 
 @RestController

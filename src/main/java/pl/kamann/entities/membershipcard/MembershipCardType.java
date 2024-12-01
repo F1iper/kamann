@@ -1,4 +1,4 @@
-package pl.kamann.entities;
+package pl.kamann.entities.membershipcard;
 
 import lombok.Getter;
 

@@ -1,7 +1,9 @@
-package pl.kamann.entities;
+package pl.kamann.entities.event;
 
 import jakarta.persistence.*;
 import lombok.*;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.attendance.Attendance;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,7 +50,7 @@ public class Event {
     @Column(nullable = false)
     private EventStatus status;
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Attendance> participants;
+    private List<Attendance> attendances;
 
     @ManyToMany
     @JoinTable(name = "event_waitlist",

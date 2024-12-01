@@ -1,7 +1,7 @@
 package pl.kamann.dtos;
 
 import lombok.*;
-import pl.kamann.entities.UserEventRegistrationStatus;
+import pl.kamann.entities.event.UserEventRegistrationStatus;
 
 import java.time.LocalDateTime;
 

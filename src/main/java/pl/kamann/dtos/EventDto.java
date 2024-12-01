@@ -1,6 +1,7 @@
-package pl.kamann.entities;
+package pl.kamann.dtos;
 
 import lombok.*;
+import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
 

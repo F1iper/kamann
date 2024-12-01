@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pl.kamann.entities.MembershipCardType;
+import pl.kamann.entities.membershipcard.MembershipCardType;
 
 @Getter
 @Setter

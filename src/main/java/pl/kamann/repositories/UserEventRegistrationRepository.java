@@ -1,10 +1,10 @@
 package pl.kamann.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.kamann.entities.Event;
-import pl.kamann.entities.UserEventRegistration;
-import pl.kamann.entities.UserEventRegistrationStatus;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.UserEventRegistration;
+import pl.kamann.entities.event.UserEventRegistrationStatus;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.util.List;
 import java.util.Optional;

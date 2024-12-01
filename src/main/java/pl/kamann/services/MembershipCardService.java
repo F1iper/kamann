@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.MembershipCardRequestDto;
-import pl.kamann.entities.AppUser;
-import pl.kamann.entities.MembershipCard;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
 

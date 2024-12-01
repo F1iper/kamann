@@ -1,7 +1,7 @@
 package pl.kamann.dtos;
 
 import lombok.*;
-import pl.kamann.entities.MembershipCardType;
+import pl.kamann.entities.membershipcard.MembershipCardType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

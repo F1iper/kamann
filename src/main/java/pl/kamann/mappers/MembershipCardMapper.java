@@ -3,8 +3,8 @@ package pl.kamann.mappers;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.MembershipCardRequestDto;
 import pl.kamann.dtos.MembershipCardResponseDto;
-import pl.kamann.entities.MembershipCard;
-import pl.kamann.entities.AppUser;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.appuser.AppUser;
 
 import java.time.LocalDateTime;
 
