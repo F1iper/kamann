@@ -1,4 +1,4 @@
-package pl.kamann.services;
+package pl.kamann.services.client;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

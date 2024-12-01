@@ -12,6 +12,7 @@ import pl.kamann.entities.MembershipCard;
 import pl.kamann.entities.MembershipCardType;
 import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.services.client.ClientMembershipCardService;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;

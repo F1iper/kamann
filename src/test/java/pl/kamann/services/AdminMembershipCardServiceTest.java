@@ -9,6 +9,7 @@ import pl.kamann.dtos.AdminMembershipCardRequestDto;
 import pl.kamann.entities.MembershipCard;
 import pl.kamann.entities.MembershipCardType;
 import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.services.admin.AdminMembershipCardService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

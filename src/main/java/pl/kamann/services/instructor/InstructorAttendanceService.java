@@ -1,4 +1,4 @@
-package pl.kamann.services;
+package pl.kamann.services.instructor;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +9,7 @@ import pl.kamann.config.global.Codes;
 import pl.kamann.entities.Attendance;
 import pl.kamann.entities.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
+import pl.kamann.services.SharedAttendanceService;
 
 @Service
 @RequiredArgsConstructor
