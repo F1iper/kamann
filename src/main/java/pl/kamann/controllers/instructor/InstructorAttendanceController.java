@@ -19,7 +19,7 @@ public class InstructorAttendanceController {
     @Operation(summary = "Cancel client attendance", description = "Cancels the attendance of a client for a specific event.")
     @PostMapping("/{eventId}/{clientId}/cancel")
     public ResponseEntity<String> cancelAttendance(@PathVariable Long eventId, @PathVariable Long clientId) {
-        instructorAttendanceService.cancelAttendanceForClient(eventId, clientId);
+        instructorAttendanceService.cancelClientAttendance(eventId, clientId);
         return ResponseEntity.ok("Attendance successfully cancelled by instructor.");
     }
 

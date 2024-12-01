@@ -6,47 +6,68 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.entities.Attendance;
 import pl.kamann.entities.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.services.SharedAttendanceService;
+import pl.kamann.services.client.ClientEventHistoryService;
+import pl.kamann.services.client.ClientMembershipCardService;
+import pl.kamann.utility.EntityLookupService;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class InstructorAttendanceService {
 
-    private final SharedAttendanceService sharedAttendanceService;
     private final AttendanceRepository attendanceRepository;
+    private final EntityLookupService lookupService;
+    private final ClientMembershipCardService clientMembershipCardService;
+    private final ClientEventHistoryService clientEventHistoryService;
 
     @Transactional
-    public void cancelAttendanceForClient(Long eventId, Long clientId) {
-        Attendance attendance = sharedAttendanceService.getAttendance(eventId, clientId);
+    public void cancelClientAttendance(Long eventId, Long clientId) {
+        var attendance = attendanceRepository.findByUserAndEvent(
+                        lookupService.findUserById(clientId), lookupService.findEventById(eventId))
+                .orElseThrow(() -> new ApiException(
+                        "Attendance not found.",
+                        HttpStatus.NOT_FOUND,
+                        Codes.ATTENDANCE_NOT_FOUND));
 
-        if (!sharedAttendanceService.isAttendanceValidForCancellation(attendance)) {
-            throw new ApiException("Cannot cancel attendance already marked as PRESENT.",
-                    HttpStatus.BAD_REQUEST, Codes.INVALID_ATTENDANCE_STATE);
+        if (attendance.getStatus() == AttendanceStatus.PRESENT) {
+            throw new ApiException(
+                    "Cannot cancel attendance already marked as PRESENT.",
+                    HttpStatus.BAD_REQUEST,
+                    Codes.INVALID_ATTENDANCE_STATE);
         }
 
-        attendance.setStatus(AttendanceStatus.EARLY_CANCEL);
+        var event = attendance.getEvent();
+        var user = attendance.getUser();
+
+        var currentDateTime = LocalDateTime.now();
+        var cancellationType = currentDateTime.isBefore(event.getStartTime().minusHours(24))
+                ? AttendanceStatus.EARLY_CANCEL
+                : AttendanceStatus.LATE_CANCEL;
+
+        attendance.setStatus(cancellationType);
         attendanceRepository.save(attendance);
+
+        clientEventHistoryService.logEventHistory(user, event, cancellationType);
     }
 
     @Transactional
-    public void markAttendance(Long eventId, Long userId, AttendanceStatus status) {
-        Attendance attendance = sharedAttendanceService.getAttendance(eventId, userId);
+    public void markAttendance(Long eventId, Long clientId, AttendanceStatus status) {
+        var attendance = attendanceRepository.findByUserAndEvent(
+                        lookupService.findUserById(clientId), lookupService.findEventById(eventId))
+                .orElseThrow(() -> new ApiException(
+                        "Attendance not found.",
+                        HttpStatus.NOT_FOUND,
+                        Codes.ATTENDANCE_NOT_FOUND));
 
-        // Add validation for valid status transitions
-        if (!isValidStatusChange(attendance.getStatus(), status)) {
-            throw new ApiException("Invalid attendance status transition.",
-                    HttpStatus.BAD_REQUEST, Codes.INVALID_STATUS_CHANGE);
+
+        if (status == AttendanceStatus.PRESENT) {
+            clientMembershipCardService.deductEntry(clientId);
         }
 
         attendance.setStatus(status);
         attendanceRepository.save(attendance);
-    }
-
-    private boolean isValidStatusChange(AttendanceStatus currentStatus, AttendanceStatus newStatus) {
-        // todo: Logic for validating status transitions (customize as needed)
-        return !(currentStatus == AttendanceStatus.PRESENT && newStatus != AttendanceStatus.PRESENT);
     }
 }

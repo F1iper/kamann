@@ -19,10 +19,11 @@ public interface MembershipCardRepository extends JpaRepository<MembershipCard, 
 
     Optional<MembershipCard> findByIdAndUser(Long id, AppUser user);
 
-    boolean existsByUserAndPendingApproval(AppUser user, boolean pendingApproval);
-
-    List<MembershipCard> findAllByUser(AppUser user);
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM MembershipCard m WHERE m.user.id = :userId AND m.active = true AND m.paid = true")
+    boolean existsActiveCardByUserId(@Param("userId") Long userId);
 
     @Query("SELECT m FROM MembershipCard m WHERE m.endDate BETWEEN :startDate AND :endDate")
-    List<MembershipCard> findMembershipCardsWithinDates(LocalDate startDate, LocalDate endDate);
+    List<MembershipCard> findMembershipCardsWithinDates(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    List<MembershipCard> findAllByUser(AppUser user);
 }

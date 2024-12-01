@@ -31,5 +31,20 @@ public class ClientEventHistory {
     private AttendanceStatus status;
 
     private LocalDateTime attendedDate;
+
     private int entrancesUsed;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
