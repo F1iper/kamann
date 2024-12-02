@@ -1,6 +1,8 @@
 package pl.kamann.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.auth.role.model.Role;
@@ -27,8 +29,9 @@ public class AppUserService {
     private final AppUserMapper appUserMapper;
     private final EntityLookupService entityLookupService;
 
-    public List<AppUserDto> getAllUsers() {
-        return appUserMapper.toDtoList(appUserRepository.findAll());
+    public Page<AppUserDto> getAllUsers(Pageable pageable) {
+        return appUserRepository.findAll(pageable)
+                .map(appUserMapper::toDto);
     }
 
     public AppUserDto getUserById(Long id) {

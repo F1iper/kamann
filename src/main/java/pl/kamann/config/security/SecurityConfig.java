@@ -78,10 +78,28 @@ public class SecurityConfig {
 
     @Bean
     @Profile(value = "dev")
-    public SecurityFilterChain securityFilterChain2(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChainDevOriented(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSourceDevOriented()))
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
+                )
                 .build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSourceDevOriented() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
 
