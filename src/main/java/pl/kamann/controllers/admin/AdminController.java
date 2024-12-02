@@ -62,8 +62,9 @@ public class AdminController {
 
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUsers() {
-        List<AppUserDto> users = appUserService.getAllUsers();
+    @Operation(summary = "Retrieve paginated list of users", description = "Retrieves a paginated list of all users.")
+    public ResponseEntity<Page<AppUserDto>> getUsers(@PageableDefault(size = 10) Pageable pageable) {
+        Page<AppUserDto> users = appUserService.getAllUsers(pageable);
         return ResponseEntity.ok(users);
     }
 
