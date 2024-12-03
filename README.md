@@ -26,8 +26,8 @@ It exposes a REST API for frontend and mobile clients.
 ### :ticket: Karnets
 - Types: 1, 4, 8, or 12 entries (valid for 1 month).
 - Rules:
--Cannot purchase a new karnet if an active one exists.
--Entries are deducted upon attendance or late cancellation.
+- Cannot purchase a new karnet if an active one exists.
+- Entries are deducted upon attendance or late cancellation.
 - Expiration reminders are sent 3 days before expiry.
 ### :calendar: Class Booking
 - Requirements: An active karnet or pending payment confirmation.
