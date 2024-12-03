@@ -9,9 +9,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.dtos.AttendanceReportDto;
-import pl.kamann.dtos.EventReportDto;
-import pl.kamann.dtos.RevenueReportDto;
+import pl.kamann.entities.reports.AttendanceStatEntity;
+import pl.kamann.entities.reports.EventStatEntity;
+import pl.kamann.entities.reports.RevenueStatEntity;
 import pl.kamann.services.admin.AdminReportsService;
 
 @RestController
@@ -24,22 +24,19 @@ public class AdminReportsController {
 
     @GetMapping("/events")
     @Operation(summary = "Get event reports with pagination", description = "Retrieves a paginated report of all events with types, completion, and cancellation stats.")
-    public ResponseEntity<Page<EventReportDto>> getEventReports(Pageable pageable) {
-        Page<EventReportDto> reports = adminReportsService.getEventReports(pageable);
-        return ResponseEntity.ok(reports);
+    public ResponseEntity<Page<EventStatEntity>> getEventReports(Pageable pageable) {
+        return ResponseEntity.ok(adminReportsService.getEventReports(pageable));
     }
 
     @GetMapping("/attendance")
     @Operation(summary = "Get attendance reports with pagination", description = "Retrieves a paginated report of attendance rates, absence trends, and late cancellations.")
-    public ResponseEntity<Page<AttendanceReportDto>> getAttendanceReports(Pageable pageable) {
-        Page<AttendanceReportDto> reports = adminReportsService.getAttendanceReports(pageable);
-        return ResponseEntity.ok(reports);
+    public ResponseEntity<Page<AttendanceStatEntity>> getAttendanceReports(Pageable pageable) {
+        return ResponseEntity.ok(adminReportsService.getAttendanceReports(pageable));
     }
 
     @GetMapping("/revenue")
     @Operation(summary = "Get revenue reports with pagination", description = "Retrieves a paginated report of revenue data by membership type and total revenue.")
-    public ResponseEntity<Page<RevenueReportDto>> getRevenueReports(Pageable pageable) {
-        Page<RevenueReportDto> reports = adminReportsService.getRevenueReports(pageable);
-        return ResponseEntity.ok(reports);
+    public ResponseEntity<Page<RevenueStatEntity>> getRevenueReports(Pageable pageable) {
+        return ResponseEntity.ok(adminReportsService.getRevenueReports(pageable));
     }
 }
