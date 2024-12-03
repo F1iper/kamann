@@ -102,6 +102,10 @@ Open **http://localhost:8080/swagger-ui/index.html** in your browser.
 - `pl.kamann.entities`: Data models for users, membership cards, and classes.
 - `pl.kamann.config`: Configuration for security, database, and global exception handling.
 
+## :snowflake: Front-end (React)
+### Is here:
+  https://github.com/remkro/kamann-fe
+
 ### Remaining To-Do List
 
 #### **Core Features**
