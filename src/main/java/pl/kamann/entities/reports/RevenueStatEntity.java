@@ -2,6 +2,9 @@ package pl.kamann.entities.reports;
 
 import jakarta.persistence.*;
 import lombok.*;
+import pl.kamann.entities.membershipcard.MembershipCardType;
+
+import java.math.BigDecimal;
 
 @Entity
 @Getter
@@ -17,10 +20,10 @@ public class RevenueStatEntity {
     private Long id;
 
     @Column(nullable = false)
-    private String membershipType;
+    private MembershipCardType membershipType;
 
     @Column(nullable = false)
-    private double totalRevenue;
+    private BigDecimal totalRevenue;
 
     @Column(nullable = false)
     private long totalTransactions;
