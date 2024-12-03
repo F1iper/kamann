@@ -2,32 +2,37 @@ package pl.kamann.config.startup;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import pl.kamann.attendance.model.Attendance;
-import pl.kamann.attendance.model.AttendanceStatus;
-import pl.kamann.attendance.repository.AttendanceRepository;
-import pl.kamann.auth.role.model.Role;
-import pl.kamann.auth.role.repository.RoleRepository;
-import pl.kamann.event.model.Event;
-import pl.kamann.event.model.EventStatus;
-import pl.kamann.event.model.EventType;
-import pl.kamann.event.repository.EventRepository;
-import pl.kamann.event.repository.EventTypeRepository;
-import pl.kamann.history.model.ClientEventHistory;
-import pl.kamann.history.model.ClientMembershipCardHistory;
-import pl.kamann.history.repository.UserCardHistoryRepository;
-import pl.kamann.history.repository.UserEventHistoryRepository;
-import pl.kamann.membershipcard.model.MembershipCard;
-import pl.kamann.membershipcard.model.MembershipCardType;
-import pl.kamann.membershipcard.repository.MembershipCardRepository;
-import pl.kamann.registration.model.UserEventRegistration;
-import pl.kamann.registration.model.UserEventRegistrationStatus;
-import pl.kamann.registration.repository.UserEventRegistrationRepository;
-import pl.kamann.user.model.AppUser;
-import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.global.Codes;
+import pl.kamann.entities.attendance.Attendance;
+import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.repositories.AttendanceRepository;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.EventType;
+import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.event.ClientEventHistory;
+import pl.kamann.entities.membershipcard.ClientMembershipCardHistory;
+import pl.kamann.repositories.UserCardHistoryRepository;
+import pl.kamann.repositories.UserEventHistoryRepository;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.membershipcard.MembershipCardType;
+import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.entities.event.UserEventRegistration;
+import pl.kamann.entities.event.UserEventRegistrationStatus;
+import pl.kamann.repositories.UserEventRegistrationRepository;
+import pl.kamann.repositories.EventRepository;
+import pl.kamann.repositories.EventTypeRepository;
+import pl.kamann.repositories.RoleRepository;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.repositories.AppUserRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -53,12 +58,20 @@ public class StartupSeeder implements CommandLineRunner {
         List<AppUser> instructors = seedInstructors();
         List<AppUser> clients = seedClients();
         List<EventType> eventTypes = seedEventTypes();
+
         List<Event> events = seedEvents(instructors, eventTypes, admin);
+        List<Event> edgeCaseEvents = seedEventsWithEdgeCases(instructors, eventTypes, admin);
+        List<Event> allEvents = new ArrayList<>(events);
+        allEvents.addAll(edgeCaseEvents);
+
         seedMembershipCards(clients);
-        seedAttendance(events, clients);
-        seedUserEventHistory(events, clients);
+        seedUserEventHistory(allEvents, clients);
         seedUserCardHistory(clients);
-        seedUserEventRegistrations(events, clients);
+        seedUserEventRegistrations(allEvents, clients);
+        seedEventsWithEdgeCases(instructors, eventTypes, admin);
+        seedAttendance(allEvents, clients);
+        seedClientRequestedCards(clients);
+        seedAdminCreatedCards();
     }
 
     private void seedRoles() {
@@ -75,22 +88,33 @@ public class StartupSeeder implements CommandLineRunner {
         return appUserRepository.findByEmail("admin@admin.com")
                 .orElseGet(() -> {
                     Role adminRole = roleRepository.findByName("ADMIN")
-                            .orElseThrow(() -> new IllegalStateException("ADMIN role not found"));
+                            .orElseThrow(() -> new ApiException(
+                                    "ADMIN role not found",
+                                    HttpStatus.NOT_FOUND,
+                                    Codes.ROLE_NOT_FOUND));
+
+                    Role instructorRole = roleRepository.findByName("INSTRUCTOR")
+                            .orElseThrow(() -> new ApiException(
+                                    "INSTRUCTOR role not found",
+                                    HttpStatus.NOT_FOUND,
+                                    Codes.ROLE_NOT_FOUND));
 
                     AppUser adminUser = new AppUser();
                     adminUser.setEmail("admin@admin.com");
                     adminUser.setPassword(passwordEncoder.encode("admin"));
                     adminUser.setFirstName("Admin");
                     adminUser.setLastName("Admin");
-                    adminUser.setRoles(Set.of(adminRole));
-
+                    adminUser.setRoles(Set.of(adminRole, instructorRole));
                     return appUserRepository.save(adminUser);
                 });
     }
 
     private List<AppUser> seedInstructors() {
         Role instructorRole = roleRepository.findByName("INSTRUCTOR")
-                .orElseThrow(() -> new IllegalStateException("INSTRUCTOR role not found"));
+                .orElseThrow(() -> new ApiException(
+                        "INSTRUCTOR role not found",
+                        HttpStatus.NOT_FOUND,
+                        Codes.ROLE_NOT_FOUND));
 
         return List.of(
                 createUserIfNotExists("instructor1@yoga.com", "Jane", "Doe", instructorRole),
@@ -102,7 +126,10 @@ public class StartupSeeder implements CommandLineRunner {
 
     private List<AppUser> seedClients() {
         Role clientRole = roleRepository.findByName("CLIENT")
-                .orElseThrow(() -> new IllegalStateException("CLIENT role not found"));
+                .orElseThrow(() -> new ApiException(
+                        "CLIENT role not found",
+                        HttpStatus.NOT_FOUND,
+                        Codes.ROLE_NOT_FOUND));
 
         return List.of(
                 createUserIfNotExists("client1@client.com", "Alice", "Johnson", clientRole),
@@ -173,16 +200,56 @@ public class StartupSeeder implements CommandLineRunner {
         return event;
     }
 
+    private void seedAdminCreatedCards() {
+        if (membershipCardRepository.count() == 0) {
+            MembershipCard promoCard = new MembershipCard();
+            promoCard.setMembershipCardType(MembershipCardType.MONTHLY_8);
+            promoCard.setEntrancesLeft(MembershipCardType.MONTHLY_8.getMaxEntrances());
+            promoCard.setStartDate(LocalDateTime.now());
+            promoCard.setEndDate(LocalDateTime.now().plusDays(MembershipCardType.MONTHLY_8.getValidDays()));
+            promoCard.setPrice(new BigDecimal("40.00"));
+            promoCard.setPaid(false);
+            promoCard.setActive(false);
+            promoCard.setPurchaseDate(LocalDateTime.now());
+
+            AppUser adminUser = appUserRepository.findByEmail("admin@admin.com")
+                    .orElseThrow(() -> new ApiException(
+                            "Admin user not found",
+                            HttpStatus.NOT_FOUND,
+                            Codes.USER_NOT_FOUND));
+            promoCard.setUser(adminUser);
+
+            membershipCardRepository.save(promoCard);
+        }
+    }
+
     private void seedMembershipCards(List<AppUser> clients) {
         for (AppUser client : clients) {
             MembershipCard card = new MembershipCard();
             card.setUser(client);
             card.setMembershipCardType(MembershipCardType.MONTHLY_8);
-            card.setEntrancesLeft(8);
+            card.setEntrancesLeft(MembershipCardType.MONTHLY_8.getMaxEntrances());
             card.setStartDate(LocalDateTime.now());
             card.setEndDate(LocalDateTime.now().plusMonths(1));
             card.setPurchaseDate(LocalDateTime.now());
+            card.setPrice(new BigDecimal("49.99"));
             card.setPaid(true);
+            card.setActive(true);
+            membershipCardRepository.save(card);
+        }
+    }
+
+    private void seedClientRequestedCards(List<AppUser> clients) {
+        for (AppUser client : clients) {
+            MembershipCard card = new MembershipCard();
+            card.setUser(client);
+            card.setMembershipCardType(MembershipCardType.MONTHLY_8);
+            card.setEntrancesLeft(MembershipCardType.MONTHLY_8.getMaxEntrances());
+            card.setStartDate(LocalDateTime.now());
+            card.setEndDate(LocalDateTime.now().plusDays(MembershipCardType.MONTHLY_8.getValidDays()));
+            card.setPrice(new BigDecimal("50.00"));
+            card.setPaid(true);
+            card.setActive(true);
             membershipCardRepository.save(card);
         }
     }
@@ -198,10 +265,14 @@ public class StartupSeeder implements CommandLineRunner {
 
     private void seedUserEventHistory(List<Event> events, List<AppUser> clients) {
         userEventHistoryRepository.saveAll(List.of(
-                new ClientEventHistory(null, clients.get(0), events.get(0), AttendanceStatus.PRESENT, LocalDateTime.now().minusDays(1), 1),
-                new ClientEventHistory(null, clients.get(1), events.get(1), AttendanceStatus.LATE_CANCEL, LocalDateTime.now().minusDays(2), 0),
-                new ClientEventHistory(null, clients.get(2), events.get(2), AttendanceStatus.ABSENT, LocalDateTime.now().minusDays(3), 0),
-                new ClientEventHistory(null, clients.get(3), events.get(3), AttendanceStatus.PRESENT, LocalDateTime.now().minusDays(4), 1)
+                new ClientEventHistory(null, clients.get(0), events.get(0), AttendanceStatus.PRESENT,
+                        LocalDateTime.now().minusDays(1), 1, LocalDateTime.now(), LocalDateTime.now()),
+                new ClientEventHistory(null, clients.get(1), events.get(1), AttendanceStatus.LATE_CANCEL,
+                        LocalDateTime.now().minusDays(2), 0, LocalDateTime.now(), LocalDateTime.now()),
+                new ClientEventHistory(null, clients.get(2), events.get(2), AttendanceStatus.ABSENT,
+                        LocalDateTime.now().minusDays(3), 0, LocalDateTime.now(), LocalDateTime.now()),
+                new ClientEventHistory(null, clients.get(3), events.get(3), AttendanceStatus.PRESENT,
+                        LocalDateTime.now().minusDays(4), 1, LocalDateTime.now(), LocalDateTime.now())
         ));
     }
 
@@ -259,4 +330,21 @@ public class StartupSeeder implements CommandLineRunner {
                         UserEventRegistrationStatus.WAITLISTED, 2, LocalDateTime.now().minusDays(3))
         ));
     }
+
+    private List<Event> seedEventsWithEdgeCases(List<AppUser> instructors, List<EventType> eventTypes, AppUser createdBy) {
+        List<Event> edgeCaseEvents = List.of(
+                createEvent("Fully Booked Event", "This event is fully booked.",
+                        LocalDateTime.now().plusDays(4).withHour(10), LocalDateTime.now().plusDays(4).withHour(12),
+                        instructors.get(0), eventTypes.get(1), createdBy),
+                createEvent("Recurring Yoga Session", "Weekly yoga session.",
+                        LocalDateTime.now().plusDays(5).withHour(8), LocalDateTime.now().plusDays(5).withHour(9),
+                        instructors.get(1), eventTypes.get(0), createdBy),
+                createEvent("Waitlisted Meditation", "Meditation session with a waitlist.",
+                        LocalDateTime.now().plusDays(6).withHour(19), LocalDateTime.now().plusDays(6).withHour(20),
+                        instructors.get(2), eventTypes.get(4), createdBy)
+        );
+
+        return eventRepository.saveAll(edgeCaseEvents);
+    }
+
 }

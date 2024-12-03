@@ -1,4 +1,4 @@
-# :dancer: PoleDance Studio Reservation System - Backend
+# :dancer: Dance Studio Reservation System - Backend
 Welcome to the Dance Studio Reservation System, built with Java 21 and Spring Boot 3. 
 This application manages user authentication, class scheduling, karnets (subscriptions), 
 and encompasses all business logic for the dance studio. 
@@ -26,8 +26,8 @@ It exposes a REST API for frontend and mobile clients.
 ### :ticket: Karnets
 - Types: 1, 4, 8, or 12 entries (valid for 1 month).
 - Rules:
--Cannot purchase a new karnet if an active one exists.
--Entries are deducted upon attendance or late cancellation.
+- Cannot purchase a new karnet if an active one exists.
+- Entries are deducted upon attendance or late cancellation.
 - Expiration reminders are sent 3 days before expiry.
 ### :calendar: Class Booking
 - Requirements: An active karnet or pending payment confirmation.
