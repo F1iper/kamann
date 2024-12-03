@@ -9,6 +9,9 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.entities.reports.AttendanceStatEntity;
+import pl.kamann.entities.reports.EventStatEntity;
+import pl.kamann.entities.reports.RevenueStatEntity;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
@@ -29,6 +32,9 @@ import pl.kamann.repositories.EventTypeRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.admin.AttendanceStatRepository;
+import pl.kamann.repositories.admin.EventStatRepository;
+import pl.kamann.repositories.admin.RevenueStatRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -50,6 +56,9 @@ public class StartupSeeder implements CommandLineRunner {
     private final UserCardHistoryRepository userCardHistoryRepository;
     private final UserEventHistoryRepository userEventHistoryRepository;
     private final UserEventRegistrationRepository userEventRegistrationRepository;
+    private final EventStatRepository eventStatRepository;
+    private final AttendanceStatRepository attendanceStatRepository;
+    private final RevenueStatRepository revenueStatRepository;
 
     @Override
     public void run(String... args) {
@@ -72,6 +81,9 @@ public class StartupSeeder implements CommandLineRunner {
         seedAttendance(allEvents, clients);
         seedClientRequestedCards(clients);
         seedAdminCreatedCards();
+        seedEventStats();
+        seedAttendanceStats();
+        seedRevenueStats();
     }
 
     private void seedRoles() {
@@ -345,6 +357,108 @@ public class StartupSeeder implements CommandLineRunner {
         );
 
         return eventRepository.saveAll(edgeCaseEvents);
+    }
+
+
+    private void seedEventStats() {
+        if (eventStatRepository.count() == 0) {
+            eventStatRepository.saveAll(List.of(
+                    EventStatEntity.builder()
+                            .eventType("Yoga")
+                            .totalEvents(50)
+                            .completedEvents(45)
+                            .cancelledEvents(5)
+                            .build(),
+                    EventStatEntity.builder()
+                            .eventType("Dance")
+                            .totalEvents(30)
+                            .completedEvents(28)
+                            .cancelledEvents(2)
+                            .build(),
+                    EventStatEntity.builder()
+                            .eventType("Pilates")
+                            .totalEvents(20)
+                            .completedEvents(18)
+                            .cancelledEvents(2)
+                            .build(),
+                    EventStatEntity.builder()
+                            .eventType("CrossFit")
+                            .totalEvents(25)
+                            .completedEvents(20)
+                            .cancelledEvents(5)
+                            .build(),
+                    EventStatEntity.builder()
+                            .eventType("Meditation")
+                            .totalEvents(15)
+                            .completedEvents(15)
+                            .cancelledEvents(0)
+                            .build()
+            ));
+        }
+    }
+
+    private void seedAttendanceStats() {
+        if (attendanceStatRepository.count() == 0) {
+            attendanceStatRepository.saveAll(List.of(
+                    AttendanceStatEntity.builder()
+                            .eventName("Yoga Morning Class")
+                            .totalParticipants(40)
+                            .attended(35)
+                            .absent(3)
+                            .lateCancellations(2)
+                            .build(),
+                    AttendanceStatEntity.builder()
+                            .eventName("Evening Dance Session")
+                            .totalParticipants(25)
+                            .attended(22)
+                            .absent(2)
+                            .lateCancellations(1)
+                            .build(),
+                    AttendanceStatEntity.builder()
+                            .eventName("Pilates Beginners")
+                            .totalParticipants(18)
+                            .attended(15)
+                            .absent(2)
+                            .lateCancellations(1)
+                            .build(),
+                    AttendanceStatEntity.builder()
+                            .eventName("CrossFit Extreme")
+                            .totalParticipants(20)
+                            .attended(18)
+                            .absent(1)
+                            .lateCancellations(1)
+                            .build(),
+                    AttendanceStatEntity.builder()
+                            .eventName("Mindful Meditation")
+                            .totalParticipants(15)
+                            .attended(14)
+                            .absent(1)
+                            .lateCancellations(0)
+                            .build()
+            ));
+        }
+    }
+
+    private void seedRevenueStats() {
+        if (revenueStatRepository.count() == 0) {
+            revenueStatRepository.saveAll(List.of(
+                    RevenueStatEntity.builder()
+                            .membershipType(MembershipCardType.MONTHLY_4)
+                            .totalRevenue(BigDecimal.valueOf(5000))
+                            .totalTransactions(100)
+                            .build(),
+                    RevenueStatEntity.builder()
+                            .membershipType(MembershipCardType.MONTHLY_4)
+                            .totalRevenue(BigDecimal.valueOf(2000))
+                            .totalTransactions(50)
+                            .build(),
+                    RevenueStatEntity.builder()
+                            .membershipType(MembershipCardType.SINGLE_ENTRY)
+                            .totalRevenue(BigDecimal.valueOf(1000))
+                            .totalTransactions(20)
+                            .build()
+            ));
+        }
     }
 
 }

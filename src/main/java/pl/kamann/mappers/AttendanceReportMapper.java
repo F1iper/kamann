@@ -1,13 +1,13 @@
 package pl.kamann.mappers;
 
 import org.springframework.stereotype.Component;
-import pl.kamann.dtos.AttendanceReportDto;
-import pl.kamann.dtos.AttendanceStat;
+import pl.kamann.dtos.reports.AttendanceReportDto;
+import pl.kamann.entities.reports.AttendanceStatEntity;
 
 @Component
 public class AttendanceReportMapper {
 
-    public AttendanceReportDto toDto(AttendanceStat stat) {
+    public AttendanceReportDto toDto(AttendanceStatEntity stat) {
         return new AttendanceReportDto(
                 stat.getEventName(),
                 stat.getTotalParticipants(),
