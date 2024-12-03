@@ -1,4 +1,4 @@
-# :dancer: PoleDance Studio Reservation System - Backend
+# :dancer: Dance Studio Reservation System - Backend
 Welcome to the Dance Studio Reservation System, built with Java 21 and Spring Boot 3. 
 This application manages user authentication, class scheduling, karnets (subscriptions), 
 and encompasses all business logic for the dance studio. 
