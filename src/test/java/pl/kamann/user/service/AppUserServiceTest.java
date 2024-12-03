@@ -2,6 +2,9 @@ package pl.kamann.user.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.RoleRepository;
@@ -38,17 +41,20 @@ class AppUserServiceTest {
     }
 
     @Test
-    void shouldGetAllUsers() {
+    void shouldGetAllUsersPaginated() {
         List<AppUser> users = List.of(new AppUser(), new AppUser());
-        when(appUserRepository.findAll()).thenReturn(users);
-        when(appUserMapper.toDtoList(users)).thenReturn(List.of(new AppUserDto(), new AppUserDto()));
+        Page<AppUser> userPage = new PageImpl<>(users);
+        PageRequest pageRequest = PageRequest.of(0, 10);
 
-        List<AppUserDto> result = appUserService.getAllUsers();
+        when(appUserRepository.findAll(pageRequest)).thenReturn(userPage);
+        when(appUserMapper.toDto(any(AppUser.class))).thenAnswer(invocation -> new AppUserDto());
+
+        Page<AppUserDto> result = appUserService.getAllUsers(pageRequest);
 
         assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(appUserRepository).findAll();
-        verify(appUserMapper).toDtoList(users);
+        assertEquals(2, result.getContent().size());
+        verify(appUserRepository).findAll(pageRequest);
+        verify(appUserMapper, times(2)).toDto(any(AppUser.class));
     }
 
     @Test
