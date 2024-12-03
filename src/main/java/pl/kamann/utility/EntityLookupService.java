@@ -4,16 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import pl.kamann.auth.role.model.Role;
-import pl.kamann.auth.role.repository.RoleRepository;
+import pl.kamann.entities.appuser.Role;
+import pl.kamann.repositories.RoleRepository;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.event.model.Event;
-import pl.kamann.event.model.EventType;
-import pl.kamann.event.repository.EventRepository;
-import pl.kamann.event.repository.EventTypeRepository;
-import pl.kamann.user.model.AppUser;
-import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventType;
+import pl.kamann.repositories.EventRepository;
+import pl.kamann.repositories.EventTypeRepository;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.repositories.AppUserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -56,7 +56,8 @@ public class EntityLookupService {
     }
 
     public void validateUserRegistration(AppUser user, Event event, boolean exists) {
-        boolean isRegistered = event.getParticipants().contains(user);
+        //todo : attendances do not contain users entities.
+        boolean isRegistered = event.getAttendances().contains(user);
         if (exists && !isRegistered) {
             throw new ApiException(
                     "User is not registered for this event.",
