@@ -1,8 +1,11 @@
 package pl.kamann.repositories;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import pl.kamann.dtos.AttendanceStat;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
@@ -13,6 +16,20 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+
+    @Query("""
+                SELECT new pl.kamann.models.AttendanceStat(
+                    a.event.name,
+                    COUNT(a),
+                    SUM(CASE WHEN a.status = 'ATTENDED' THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN a.status = 'ABSENT' THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN a.status = 'LATE_CANCELLATION' THEN 1 ELSE 0 END)
+                )
+                FROM Attendance a
+                GROUP BY a.event.name
+            """)
+    Page<AttendanceStat> findAttendanceStats(Pageable pageable);
+
     Optional<Attendance> findByUserAndEvent(AppUser user, Event event);
 
     List<Attendance> findByEvent(Event event);

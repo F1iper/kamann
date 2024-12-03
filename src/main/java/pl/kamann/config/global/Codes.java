@@ -2,9 +2,7 @@ package pl.kamann.config.global;
 
 public class Codes {
 
-    // auth
-
-    //todo: verify duplication
+    //auth
     public static final String SUCCESS = "SUCCESS";
     public static final String ACCESS_DENIED = "ACCESS_DENIED";
     public static final String UNAUTHORIZED = "UNAUTHORIZED";
@@ -22,7 +20,7 @@ public class Codes {
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 
-    // roles
+    //roles
     public static final String ADMIN = "ADMIN";
     public static final String INSTRUCTOR = "INSTRUCTOR";
     public static final String CLIENT = "CLIENT";
@@ -35,7 +33,6 @@ public class Codes {
     public static final String INVALID_EVENT_TIME = "INVALID_EVENT_TIME";
     public static final String CANNOT_CANCEL_STARTED_EVENT = "CANNOT_CANCEL_STARTED_EVENT";
     public static final String EVENT_HAS_PARTICIPANTS = "EVENT_HAS_PARTICIPANTS";
-    public static final String NO_EVENT_STATS = "NO_EVENT_STATS";
 
     //attendance
     public static final String INVALID_ATTENDANCE_STATE = "INVALID_ATTENDANCE_STATE";
@@ -60,4 +57,9 @@ public class Codes {
     //pagination
     public static final String INVALID_PAGE_INDEX = "INVALID_PAGE_INDEX";
     public static final String INVALID_PAGE_SIZE = "INVALID_PAGE_SIZE";
+
+    //reports
+    public static final String NO_EVENT_STATS = "NO_EVENT_STATS";
+    public static final String NO_REVENUE_STATS = "NO_REVENUE_STATS";
+    public static final String NO_ATTENDANCE_STATS = "NO_ATTENDANCE_STATS";
 }
