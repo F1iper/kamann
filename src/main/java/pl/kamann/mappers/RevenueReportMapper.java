@@ -1,17 +1,17 @@
 package pl.kamann.mappers;
 
 import org.springframework.stereotype.Component;
-import pl.kamann.dtos.RevenueReportDto;
-import pl.kamann.dtos.RevenueStat;
+import pl.kamann.dtos.reports.RevenueReportDto;
+import pl.kamann.entities.reports.RevenueStatEntity;
 
 @Component
 public class RevenueReportMapper {
 
-    public RevenueReportDto toDto(RevenueStat stat) {
+    public RevenueReportDto toDto(RevenueStatEntity entity) {
         return new RevenueReportDto(
-                stat.getMembershipType(),
-                stat.getTotalRevenue(),
-                stat.getCount()
+                entity.getMembershipType().getDisplayName(),
+                entity.getTotalRevenue(),
+                entity.getTotalTransactions()
         );
     }
 }
