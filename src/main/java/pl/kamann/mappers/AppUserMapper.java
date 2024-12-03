@@ -3,9 +3,9 @@ package pl.kamann.mappers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import pl.kamann.entities.appuser.Role;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.Role;
 
 import java.util.List;
 import java.util.Set;
@@ -35,14 +35,14 @@ public class AppUserMapper {
             return null;
         }
 
-        AppUser user = new AppUser();
-        user.setId(dto.getId());
-        user.setEmail(dto.getEmail());
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
-        user.setRoles(roles);
-        user.setStatus(dto.getStatus());
-        return user;
+        return AppUser.builder()
+                .id(dto.id())
+                .email(dto.email())
+                .firstName(dto.firstName())
+                .lastName(dto.lastName())
+                .roles(roles)
+                .status(dto.status()).build();
+
     }
 
     public List<AppUserDto> toDtoList(List<AppUser> users) {
