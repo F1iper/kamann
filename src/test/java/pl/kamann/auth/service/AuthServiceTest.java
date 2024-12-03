@@ -8,16 +8,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pl.kamann.auth.login.request.LoginRequest;
-import pl.kamann.auth.login.response.LoginResponse;
-import pl.kamann.auth.register.RegisterRequest;
-import pl.kamann.auth.role.model.Role;
-import pl.kamann.auth.role.repository.RoleRepository;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
-import pl.kamann.user.model.AppUser;
-import pl.kamann.user.model.AppUserStatus;
-import pl.kamann.user.repository.AppUserRepository;
+import pl.kamann.dtos.LoginRequest;
+import pl.kamann.dtos.LoginResponse;
+import pl.kamann.dtos.RegisterRequest;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
+import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.RoleRepository;
+import pl.kamann.services.AuthService;
 
 import java.util.Optional;
 import java.util.Set;
@@ -53,7 +54,6 @@ class AuthServiceTest {
 
     @Test
     void shouldLoginSuccessfully() {
-        // given
         String email = "user@example.com";
         String password = "password";
         String encodedPassword = "encodedPassword";
@@ -69,10 +69,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
         when(jwtUtils.generateToken(email, user.getRoles())).thenReturn("token");
 
-        // when
         LoginResponse response = authService.login(loginRequest);
 
-        // then
         assertNotNull(response);
         assertEquals("token", response.token());
 
@@ -83,13 +81,11 @@ class AuthServiceTest {
 
     @Test
     void shouldThrowExceptionWhenEmailNotFoundDuringLogin() {
-        // given
         String email = "nonexistent@example.com";
         LoginRequest loginRequest = new LoginRequest(email, "password");
 
         when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        // when & then
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
         assertEquals("Invalid email address.", exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -100,7 +96,6 @@ class AuthServiceTest {
 
     @Test
     void shouldThrowExceptionWhenPasswordIsInvalidDuringLogin() {
-        // given
         String email = "user@example.com";
         String password = "wrongPassword";
         String encodedPassword = "encodedPassword";
@@ -114,7 +109,6 @@ class AuthServiceTest {
         when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(password, encodedPassword)).thenReturn(false);
 
-        // when & then
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
         assertEquals("Invalid password.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
@@ -126,18 +120,15 @@ class AuthServiceTest {
 
     @Test
     void shouldRegisterUserSuccessfully() {
-        // given
-        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", clientRole);
+        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", clientRole.getName());
 
         when(appUserRepository.findByEmail(request.email())).thenReturn(Optional.empty());
-        when(roleRepository.findByName(clientRole.getName())).thenReturn(Optional.of(clientRole)); // Mocking role retrieval
+        when(roleRepository.findByName(clientRole.getName())).thenReturn(Optional.of(clientRole));
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // when
         AppUser registeredUser = authService.registerUser(request);
 
-        // then
         assertNotNull(registeredUser);
         assertEquals(request.email(), registeredUser.getEmail());
         assertEquals(clientRole.getName(), registeredUser.getRoles().iterator().next().getName());
@@ -151,13 +142,11 @@ class AuthServiceTest {
 
     @Test
     void shouldThrowExceptionWhenEmailAlreadyRegisteredDuringRegistration() {
-        // given
         String email = "existing@example.com";
-        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", clientRole);
+        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", clientRole.getName());
 
         when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(new AppUser()));
 
-        // when & then
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerUser(request));
         assertEquals("Email is already registered: " + email, exception.getMessage());
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
@@ -168,18 +157,16 @@ class AuthServiceTest {
 
     @Test
     void shouldThrowExceptionWhenRoleNotFoundDuringRegistration() {
-        // given
         String email = "new@example.com";
         String roleName = "UNKNOWN_ROLE";
         Role unknownRole = new Role();
         unknownRole.setName(roleName);
 
-        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", unknownRole);
+        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", unknownRole.getName());
 
         when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(roleRepository.findByName(roleName)).thenReturn(Optional.empty());
 
-        // when & then
         ApiException exception = assertThrows(ApiException.class, () -> authService.registerUser(request));
         assertEquals("Role not found: " + roleName, exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
