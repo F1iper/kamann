@@ -10,10 +10,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.dtos.EventReportDto;
-import pl.kamann.dtos.EventStat;
+import pl.kamann.dtos.*;
+import pl.kamann.mappers.AttendanceReportMapper;
 import pl.kamann.mappers.EventReportMapper;
+import pl.kamann.mappers.RevenueReportMapper;
+import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.repositories.EventRepository;
+import pl.kamann.repositories.admin.RevenueRepository;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,12 +33,31 @@ class AdminReportsServiceTest {
     private EventRepository eventRepository;
 
     @Mock
+    private AttendanceRepository attendanceRepository;
+
+    @Mock
+    private RevenueRepository revenueRepository;
+
+    @Mock
     private EventReportMapper eventReportMapper;
+
+    @Mock
+    private RevenueReportMapper revenueReportMapper;
+
+    @Mock
+    private AttendanceReportMapper attendanceReportMapper;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        adminReportsService = new AdminReportsService(eventRepository, eventReportMapper);
+        adminReportsService = new AdminReportsService(
+                eventRepository,
+                attendanceRepository,
+                revenueRepository,
+                eventReportMapper,
+                attendanceReportMapper,
+                revenueReportMapper
+        );
     }
 
     @Test
@@ -91,4 +113,110 @@ class AdminReportsServiceTest {
         assertEquals("No event statistics found", exception.getMessage());
         assertEquals(Codes.NO_EVENT_STATS, exception.getCode());
     }
+
+    @Test
+    void testGetAttendanceReportsNormalCase() {
+        Pageable pageable = PageRequest.of(0, 2);
+        List<AttendanceStat> mockStats = List.of(
+                new AttendanceStat("Yoga", 10, 7, 2, 1),
+                new AttendanceStat("Dance", 20, 15, 4, 1)
+        );
+        Page<AttendanceStat> mockPage = new PageImpl<>(mockStats, pageable, mockStats.size());
+
+        when(attendanceRepository.findAttendanceStats(pageable)).thenReturn(mockPage);
+        when(attendanceReportMapper.toDto(mockStats.get(0)))
+                .thenReturn(new AttendanceReportDto("Yoga", 10, 7, 2, 1));
+        when(attendanceReportMapper.toDto(mockStats.get(1)))
+                .thenReturn(new AttendanceReportDto("Dance", 20, 15, 4, 1));
+
+        Page<AttendanceReportDto> result = adminReportsService.getAttendanceReports(pageable);
+
+        assertEquals(2, result.getTotalElements());
+        assertEquals("Yoga", result.getContent().get(0).getEventName());
+        assertEquals(10, result.getContent().get(0).getTotalParticipants());
+        assertEquals("Dance", result.getContent().get(1).getEventName());
+        assertEquals(20, result.getContent().get(1).getTotalParticipants());
+    }
+
+    @Test
+    void testGetAttendanceReportsEmptyDataset() {
+        Pageable pageable = PageRequest.of(0, 2);
+        Page<AttendanceStat> mockPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+        when(attendanceRepository.findAttendanceStats(pageable)).thenReturn(mockPage);
+
+        ApiException exception = assertThrows(ApiException.class, () -> adminReportsService.getAttendanceReports(pageable));
+        assertEquals("No attendance statistics found", exception.getMessage());
+        assertEquals(Codes.NO_ATTENDANCE_STATS, exception.getCode());
+    }
+
+    @Test
+    void testGetAttendanceReportsLargePageSizeSmallDataset() {
+        Pageable pageable = PageRequest.of(0, 50);
+        List<AttendanceStat> mockStats = List.of(new AttendanceStat("Yoga", 10, 7, 2, 1));
+        Page<AttendanceStat> mockPage = new PageImpl<>(mockStats, pageable, mockStats.size());
+
+        when(attendanceRepository.findAttendanceStats(pageable)).thenReturn(mockPage);
+        when(attendanceReportMapper.toDto(mockStats.get(0)))
+                .thenReturn(new AttendanceReportDto("Yoga", 10, 7, 2, 1));
+
+        Page<AttendanceReportDto> result = adminReportsService.getAttendanceReports(pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Yoga", result.getContent().get(0).getEventName());
+    }
+
+    @Test
+    void testGetRevenueReportsNormalCase() {
+        Pageable pageable = PageRequest.of(0, 2);
+        List<RevenueStat> mockStats = List.of(
+                new RevenueStat("Basic", 2000.0, 10),
+                new RevenueStat("Premium", 5000.0, 20)
+        );
+        Page<RevenueStat> mockPage = new PageImpl<>(mockStats, pageable, mockStats.size());
+
+        when(revenueRepository.findRevenueStats(pageable)).thenReturn(mockPage);
+        when(revenueReportMapper.toDto(mockStats.get(0)))
+                .thenReturn(new RevenueReportDto("Basic", 2000.0, 10));
+        when(revenueReportMapper.toDto(mockStats.get(1)))
+                .thenReturn(new RevenueReportDto("Premium", 5000.0, 20));
+
+        Page<RevenueReportDto> result = adminReportsService.getRevenueReports(pageable);
+
+        assertEquals(2, result.getTotalElements());
+        assertEquals("Basic", result.getContent().get(0).getMembershipType());
+        assertEquals(2000.0, result.getContent().get(0).getTotalRevenue());
+        assertEquals("Premium", result.getContent().get(1).getMembershipType());
+        assertEquals(5000.0, result.getContent().get(1).getTotalRevenue());
+    }
+
+    @Test
+    void testGetRevenueReportsEmptyDataset() {
+        Pageable pageable = PageRequest.of(0, 2);
+        Page<RevenueStat> mockPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+
+        when(revenueRepository.findRevenueStats(pageable)).thenReturn(mockPage);
+
+        ApiException exception = assertThrows(ApiException.class, () -> adminReportsService.getRevenueReports(pageable));
+        assertEquals("No revenue statistics found", exception.getMessage());
+        assertEquals(Codes.NO_REVENUE_STATS, exception.getCode());
+    }
+
+    @Test
+    void testGetRevenueReportsLargePageSizeSmallDataset() {
+        Pageable pageable = PageRequest.of(0, 50);
+        List<RevenueStat> mockStats = List.of(new RevenueStat("Basic", 2000.0, 10));
+        Page<RevenueStat> mockPage = new PageImpl<>(mockStats, pageable, mockStats.size());
+
+        when(revenueRepository.findRevenueStats(pageable)).thenReturn(mockPage);
+        when(revenueReportMapper.toDto(mockStats.get(0)))
+                .thenReturn(new RevenueReportDto("Basic", 2000.0, 10));
+
+        Page<RevenueReportDto> result = adminReportsService.getRevenueReports(pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Basic", result.getContent().get(0).getMembershipType());
+        assertEquals(2000.0, result.getContent().get(0).getTotalRevenue());
+    }
+
 }
