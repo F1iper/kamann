@@ -35,6 +35,7 @@ public class Codes {
     public static final String INVALID_EVENT_TIME = "INVALID_EVENT_TIME";
     public static final String CANNOT_CANCEL_STARTED_EVENT = "CANNOT_CANCEL_STARTED_EVENT";
     public static final String EVENT_HAS_PARTICIPANTS = "EVENT_HAS_PARTICIPANTS";
+    public static final String NO_EVENT_STATS = "NO_EVENT_STATS";
 
     //attendance
     public static final String INVALID_ATTENDANCE_STATE = "INVALID_ATTENDANCE_STATE";
@@ -55,4 +56,8 @@ public class Codes {
     public static final String INSTRUCTOR_BUSY = "INSTRUCTOR_BUSY";
     public static final String INSTRUCTOR_NOT_FOUND = "INSTRUCTOR_NOT_FOUND";
     public static final String REGISTRATION_NOT_FOUND = "REGISTRATION_NOT_FOUND";
+
+    //pagination
+    public static final String INVALID_PAGE_INDEX = "INVALID_PAGE_INDEX";
+    public static final String INVALID_PAGE_SIZE = "INVALID_PAGE_SIZE";
 }
