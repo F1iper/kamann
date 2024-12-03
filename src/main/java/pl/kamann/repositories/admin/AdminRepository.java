@@ -1,4 +1,4 @@
-package pl.kamann.repositories;
+package pl.kamann.repositories.admin;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
