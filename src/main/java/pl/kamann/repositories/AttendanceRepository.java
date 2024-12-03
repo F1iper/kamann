@@ -1,41 +1,42 @@
 package pl.kamann.repositories;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
-import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Optional<Attendance> findByUserAndEvent(AppUser user, Event event);
 
-    List<Attendance> findByEvent(Event event);
+    @Query("""
+                SELECT new map(
+                    COUNT(a) as totalAttendance,
+                    SUM(CASE WHEN a.status = 'PRESENT' THEN 1 ELSE 0 END) as presentCount,
+                    SUM(CASE WHEN a.status = 'ABSENT' THEN 1 ELSE 0 END) as absentCount
+                )
+                FROM Attendance a
+                WHERE (:eventId IS NULL OR a.event.id = :eventId)
+                AND (:userId IS NULL OR a.user.id = :userId)
+            """)
+    Map<String, Object> calculateStatistics(@Param("eventId") Long eventId, @Param("userId") Long userId);
 
-    List<Attendance> findByUser(AppUser user);
 
-    @Query("SELECT COUNT(a) FROM Attendance a WHERE a.event = :event AND a.status = :status")
-    int countByEventAndStatus(@Param("event") Event event, @Param("status") AttendanceStatus status);
+    @Query("SELECT a FROM Attendance a WHERE a.event = :event AND a.user.id = :userId")
+    Optional<Attendance> findByEventAndUserId(@Param("event") Event event, @Param("userId") Long userId);
 
-    @Query("SELECT a.event FROM Attendance a WHERE a.user = :user AND a.event.startTime > :now")
-    List<Event> findUpcomingEventsForUser(@Param("user") AppUser user, @Param("now") LocalDateTime now);
+    Page<Attendance> findByEventId(Long eventId, Pageable pageable);
 
-    @Query("SELECT a.event FROM Attendance a WHERE a.user = :user AND a.event.startTime BETWEEN :start AND :end")
-    List<Event> findEventsByUserAndTimeFrame(@Param("user") AppUser user,
-                                             @Param("start") LocalDateTime start,
-                                             @Param("end") LocalDateTime end);
+    Page<Attendance> findByUserId(Long userId, Pageable pageable);
 
-    List<Attendance> findByUserEmail(String email);
-
-    @Query("SELECT e FROM Event e WHERE e.instructor.id = :instructorId AND e.startTime > :currentTime")
-    List<Event> findUpcomingEventsForInstructor(@Param("instructorId") Long instructorId, @Param("currentTime") LocalDateTime currentTime);
-
-    List<Attendance> findAllByEvent(Event event);
+    Page<Attendance> findByEventIdAndUserId(Long eventId, Long userId, Pageable pageable);
 
     @Query("SELECT a FROM Attendance a WHERE a.event = :event AND (a.status IS NULL OR a.status = 'REGISTERED')")
     List<Attendance> findUnmarkedOrRegisteredAttendancesByEvent(@Param("event") Event event);
