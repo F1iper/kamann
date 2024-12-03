@@ -3,13 +3,11 @@ package pl.kamann.repositories.admin;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 import pl.kamann.entities.event.ClientEventHistory;
 import pl.kamann.entities.membershipcard.ClientMembershipCardHistory;
 
 import java.util.List;
 
-@Repository
 public interface AdminRepository extends JpaRepository<ClientMembershipCardHistory, Long> {
 
     // Find Membership Card History by User ID

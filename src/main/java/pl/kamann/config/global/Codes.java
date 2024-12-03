@@ -62,4 +62,6 @@ public class Codes {
     public static final String NO_EVENT_STATS = "NO_EVENT_STATS";
     public static final String NO_REVENUE_STATS = "NO_REVENUE_STATS";
     public static final String NO_ATTENDANCE_STATS = "NO_ATTENDANCE_STATS";
+    public static final String PAGE_INDEX_CANNOT_BE_0 = "Page index must not be less than zero";
+    public static final String PAGE_SIZE_LESS_THAN_0 = "Page size must not be less than one";
 }
