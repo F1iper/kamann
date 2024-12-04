@@ -1,42 +1,42 @@
 package pl.kamann.mappers;
 
 import org.springframework.stereotype.Component;
-import pl.kamann.dtos.MembershipCardRequestDto;
-import pl.kamann.dtos.MembershipCardResponseDto;
-import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.dtos.AdminMembershipCardRequest;
+import pl.kamann.dtos.MembershipCardResponse;
 import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.membershipcard.MembershipCard;
+import pl.kamann.entities.membershipcard.MembershipCardType;
 
 import java.time.LocalDateTime;
 
 @Component
 public class MembershipCardMapper {
 
-    public MembershipCardResponseDto toDto(MembershipCard card) {
-        return MembershipCardResponseDto.builder()
+    public MembershipCardResponse toResponse(MembershipCard card) {
+        return MembershipCardResponse
+                .builder()
                 .id(card.getId())
                 .userId(card.getUser().getId())
-                .membershipCardType(card.getMembershipCardType())
+                .membershipCardType(card.getMembershipCardType().getDisplayName())
                 .entrancesLeft(card.getEntrancesLeft())
                 .startDate(card.getStartDate())
                 .endDate(card.getEndDate())
                 .paid(card.isPaid())
                 .active(card.isActive())
-                .pendingApproval(card.isPendingApproval())
-                .purchaseDate(card.getPurchaseDate())
-                .price(card.getPrice())
                 .build();
     }
 
-    public MembershipCard toEntity(MembershipCardRequestDto dto, AppUser user) {
-        MembershipCard card = new MembershipCard();
-        card.setUser(user);
-        card.setMembershipCardType(dto.getMembershipCardType());
-        card.setEntrancesLeft(dto.getMembershipCardType().getMaxEntrances());
-        card.setStartDate(LocalDateTime.now());
-        card.setEndDate(LocalDateTime.now().plusDays(dto.getMembershipCardType().getValidDays()));
-        card.setPaid(false);
-        card.setActive(false);
-        card.setPrice(dto.getPrice());
-        return card;
+    public MembershipCard toEntity(AdminMembershipCardRequest dto, AppUser user) {
+        return MembershipCard
+                .builder()
+                .user(user)
+                .membershipCardType(MembershipCardType.valueOf(dto.membershipCardType()))
+                .entrancesLeft(dto.entrancesLeft() != 0 ? dto.entrancesLeft() : MembershipCardType.valueOf(dto.membershipCardType()).getMaxEntrances())
+                .startDate(dto.startDate() != null ? dto.startDate() : LocalDateTime.now())
+                .endDate(dto.endDate() != null ? dto.endDate() : LocalDateTime.now().plusDays(MembershipCardType.valueOf(dto.membershipCardType()).getValidDays()))
+                .price(dto.price())
+                .paid(false)
+                .active(false)
+                .build();
     }
 }
