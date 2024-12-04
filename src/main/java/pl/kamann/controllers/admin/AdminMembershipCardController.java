@@ -2,64 +2,34 @@ package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.dtos.AdminMembershipCardRequestDto;
-import pl.kamann.dtos.MembershipCardResponseDto;
+import pl.kamann.entities.membershipcard.MembershipCardType;
 import pl.kamann.services.admin.AdminMembershipCardService;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 @RestController
-@RequestMapping("/api/admin/membership-card")
+@RequestMapping("/api/admin/membership-cards")
 @RequiredArgsConstructor
 public class AdminMembershipCardController {
 
     private final AdminMembershipCardService adminMembershipCardService;
 
-    @PostMapping("/create/{clientId}")
-    @Operation(summary = "Create a new membership card for a client.")
-    public ResponseEntity<MembershipCardResponseDto> createMembershipCard(
-            @PathVariable Long clientId,
-            @RequestBody AdminMembershipCardRequestDto request) {
-        var response = adminMembershipCardService.createCardForPromotion(request);
-        return ResponseEntity.status(201).body(response);
-    }
-
-    @PutMapping("/update/{cardId}")
-    @Operation(summary = "Update an existing membership card.")
-    public ResponseEntity<MembershipCardResponseDto> updateMembershipCard(
-            @PathVariable Long cardId,
-            @RequestBody AdminMembershipCardRequestDto request) {
-        var response = adminMembershipCardService.updateMembershipCard(cardId, request);
-        return ResponseEntity.ok(response);
-    }
-
-    @DeleteMapping("/delete/{cardId}")
-    @Operation(summary = "Delete a membership card.")
-    public ResponseEntity<Void> deleteMembershipCard(@PathVariable Long cardId) {
-        adminMembershipCardService.deleteMembershipCard(cardId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/client/{clientId}")
-    @Operation(summary = "Get all membership cards for a specific client.")
-    public ResponseEntity<List<MembershipCardResponseDto>> getClientMembershipCards(@PathVariable Long clientId) {
-        List<MembershipCardResponseDto> response = adminMembershipCardService.getClientMembershipCards(clientId);
-        return ResponseEntity.ok(response);
+    @PostMapping("/create")
+    @Operation(summary = "Create a new predefined membership card.")
+    public ResponseEntity<Void> createMembershipCard(
+            @RequestParam MembershipCardType type,
+            @RequestParam BigDecimal price) {
+        adminMembershipCardService.createMembershipCard(type, price);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/approve/{cardId}")
-    @Operation(summary = "Approve payment and activate a membership card.")
-    public ResponseEntity<Void> approvePayment(@PathVariable Long cardId) {
-        adminMembershipCardService.approvePayment(cardId);
+    @Operation(summary = "Approve a client's membership card request.")
+    public ResponseEntity<Void> approveClientCardRequest(@PathVariable Long cardId) {
+        adminMembershipCardService.approveClientCardRequest(cardId);
         return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/expiring")
-    @Operation(summary = "Retrieve membership cards that are expiring soon.")
-    public ResponseEntity<List<MembershipCardResponseDto>> getExpiringCards() {
-        List<MembershipCardResponseDto> response = adminMembershipCardService.getExpiringCards();
-        return ResponseEntity.ok(response);
     }
 }
