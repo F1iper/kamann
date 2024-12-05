@@ -6,7 +6,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.kamann.entities.membershipcard.MembershipCard;
-import pl.kamann.repositories.MembershipCardHistoryRepository;
 import pl.kamann.repositories.MembershipCardRepository;
 
 import java.time.LocalDateTime;
@@ -23,9 +22,6 @@ class MembershipCardExpirationServiceTest {
 
     @Mock
     private MembershipCardService membershipCardService;
-
-    @Mock
-    private MembershipCardHistoryRepository membershipCardHistoryRepository;
 
     @InjectMocks
     private MembershipCardExpirationService membershipCardExpirationService;
