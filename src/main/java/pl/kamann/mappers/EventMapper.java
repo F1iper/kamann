@@ -4,28 +4,15 @@ import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
-import pl.kamann.entities.event.EventType;
-import pl.kamann.entities.appuser.AppUser;
 
 @Component
 public class EventMapper {
 
-    public Event toEntity(EventDto dto, AppUser createdBy, AppUser instructor, EventType eventType) {
-        return Event.builder()
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .startTime(dto.getStartTime())
-                .endTime(dto.getEndTime())
-                .recurring(dto.isRecurring())
-                .maxParticipants(dto.getMaxParticipants())
-                .createdBy(createdBy)
-                .instructor(instructor)
-                .eventType(eventType)
-                .status(dto.getStatus() != null ? dto.getStatus() : EventStatus.SCHEDULED)
-                .build();
-    }
-
     public EventDto toDto(Event event) {
+        if (event == null) {
+            throw new IllegalArgumentException("Event must not be null");
+        }
+
         return EventDto.builder()
                 .id(event.getId())
                 .title(event.getTitle())
@@ -34,26 +21,54 @@ public class EventMapper {
                 .endTime(event.getEndTime())
                 .recurring(event.isRecurring())
                 .maxParticipants(event.getMaxParticipants())
-                .createdById(event.getCreatedBy().getId())
-                .instructorId(event.getInstructor().getId())
-                .eventTypeId(event.getEventType().getId())
-                .eventTypeName(event.getEventType().getName())
+                .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
+                .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
+                .eventTypeId(event.getEventType() != null ? event.getEventType().getId() : null)
+                .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
                 .status(event.getStatus())
                 .build();
     }
 
-    public void updateEventFromDto(Event existingEvent, EventDto updatedEventDto, AppUser instructor, EventType eventType) {
-        existingEvent.setTitle(updatedEventDto.getTitle());
-        existingEvent.setDescription(updatedEventDto.getDescription());
-        existingEvent.setStartTime(updatedEventDto.getStartTime());
-        existingEvent.setEndTime(updatedEventDto.getEndTime());
-        existingEvent.setRecurring(updatedEventDto.isRecurring());
-        existingEvent.setMaxParticipants(updatedEventDto.getMaxParticipants());
-        existingEvent.setInstructor(instructor);
-        existingEvent.setEventType(eventType);
+    public Event toEntity(EventDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("EventDto cannot be null");
+        }
 
-        if (updatedEventDto.getStatus() != null) {
-            existingEvent.setStatus(updatedEventDto.getStatus());
+        return Event.builder()
+                .id(dto.id())
+                .title(dto.title())
+                .description(dto.description())
+                .startTime(dto.startTime())
+                .endTime(dto.endTime())
+                .recurring(dto.recurring())
+                .maxParticipants(dto.maxParticipants())
+                .status(dto.status() != null ? dto.status() : EventStatus.SCHEDULED)
+                .build();
+    }
+
+    public void updateEventFromDto(Event existingEvent, EventDto updatedEventDto) {
+        if (existingEvent == null || updatedEventDto == null) {
+            throw new IllegalArgumentException("ExistingEvent and UpdatedEventDto cannot be null");
+        }
+
+        if (updatedEventDto.title() != null) {
+            existingEvent.setTitle(updatedEventDto.title());
+        }
+        if (updatedEventDto.description() != null) {
+            existingEvent.setDescription(updatedEventDto.description());
+        }
+        if (updatedEventDto.startTime() != null) {
+            existingEvent.setStartTime(updatedEventDto.startTime());
+        }
+        if (updatedEventDto.endTime() != null) {
+            existingEvent.setEndTime(updatedEventDto.endTime());
+        }
+
+        existingEvent.setRecurring(updatedEventDto.recurring());
+        existingEvent.setMaxParticipants(updatedEventDto.maxParticipants());
+
+        if (updatedEventDto.status() != null) {
+            existingEvent.setStatus(updatedEventDto.status());
         }
     }
 }

@@ -2,6 +2,9 @@ package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,41 +25,63 @@ public class AdminEventController {
     private final AdminEventService adminEventService;
     private final EntityLookupService lookupService;
 
+    @GetMapping
+    @Operation(
+            summary = "List events",
+            description = "Admins can list all events, or filter by instructor if an instructor ID is provided."
+    )
+    public ResponseEntity<Page<EventDto>> listEvents(
+            @RequestParam(required = false) Long instructorId,
+            Pageable pageable
+    ) {
+        if (instructorId == null) {
+            return ResponseEntity.ok(adminEventService.listAllEvents(pageable));
+        }
+        return ResponseEntity.ok(adminEventService.listEventsByInstructor(instructorId, pageable));
+    }
+
     @PostMapping
-    @Operation(summary = "Create a new event", description = "Creates a new event with the provided details.")
+    @Operation(
+            summary = "Create an event",
+            description = "Creates a new event and assigns an instructor."
+    )
     public ResponseEntity<EventDto> createEvent(@RequestBody EventDto eventDto) {
-        var createdBy = lookupService.getLoggedInUser();
-        var instructor = lookupService.findUserById(eventDto.getInstructorId());
-        var eventType = adminEventService.findEventTypeById(eventDto.getEventTypeId());
-        return ResponseEntity.ok(adminEventService.createEvent(eventDto, createdBy, instructor, eventType));
+        EventDto createdEvent = adminEventService.createEvent(eventDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
     }
 
-    @PutMapping("/{eventId}")
-    @Operation(summary = "Update an existing event", description = "Updates an existing event with the given details.")
-    public ResponseEntity<EventDto> updateEvent(@PathVariable Long eventId, @RequestBody EventDto eventDto) {
-        var instructor = lookupService.findUserById(eventDto.getInstructorId());
-        var eventType = adminEventService.findEventTypeById(eventDto.getEventTypeId());
-        return ResponseEntity.ok(adminEventService.updateEvent(eventId, eventDto, instructor, eventType));
+    @PutMapping("/{id}")
+    @Operation(
+            summary = "Update an event",
+            description = "Updates the details of an event and can reassign its instructor."
+    )
+    public ResponseEntity<EventDto> updateEvent(@PathVariable Long id, @RequestBody EventDto eventDto) {
+        EventDto updatedEvent = adminEventService.updateEvent(id, eventDto);
+        return ResponseEntity.ok(updatedEvent);
     }
 
-    @DeleteMapping("/{eventId}")
-    @Operation(summary = "Delete an event", description = "Deletes an event by its ID. Cannot delete events with participants.")
-    public ResponseEntity<Void> deleteEvent(@PathVariable Long eventId) {
-        adminEventService.deleteEvent(eventId);
+
+    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Delete an event",
+            description = "Deletes an event by its ID. If participants are registered, deletion requires force=true."
+    )
+    public ResponseEntity<Void> deleteEvent(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "false") boolean force
+    ) {
+        adminEventService.deleteEvent(id, force);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Cancel an event", description = "Cancels an event if it has not started yet.")
-    @PostMapping("/{eventId}/cancel")
-    public ResponseEntity<String> cancelEvent(@PathVariable Long eventId) {
-        adminEventService.cancelEvent(eventId);
+    @PostMapping("/{id}/cancel")
+    @Operation(
+            summary = "Cancel an event",
+            description = "Cancels an event and notifies all participants."
+    )
+    public ResponseEntity<String> cancelEvent(@PathVariable Long id) {
+        adminEventService.cancelEvent(id);
         return ResponseEntity.ok("Event successfully canceled.");
-    }
-
-    @GetMapping
-    @Operation(summary = "List all events", description = "Retrieves a list of all events.")
-    public ResponseEntity<List<EventDto>> listAllEvents() {
-        return ResponseEntity.ok(adminEventService.listAllEvents());
     }
 
     @GetMapping("/{eventId}")
