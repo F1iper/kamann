@@ -57,7 +57,10 @@ public class AppUserService {
 
         Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.getRoles());
         if (roles.isEmpty()) {
-            throw new ApiException("No valid roles provided for the user.", HttpStatus.BAD_REQUEST, Codes.INVALID_ROLE);
+            throw new ApiException(
+              "No valid roles provided for the user.", 
+              HttpStatus.BAD_REQUEST, 
+              Codes.INVALID_ROLE);
         }
 
         existingUser.setEmail(userDto.getEmail());
