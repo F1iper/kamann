@@ -21,6 +21,7 @@ public class Codes {
     public static final String INVALID_REQUEST = "INVALID_REQUEST";
     public static final String INVALID_ROLE = "INVALID_ROLE";
     public static final String INVALID_INPUT = "INVALID_INPUT";
+    public static final String NO_RESULTS = "NO_RESULTS";
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 
