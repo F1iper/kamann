@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import pl.kamann.config.exception.handler.ApiException;
@@ -21,6 +22,7 @@ import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
+import pl.kamann.utility.PaginationService;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,9 @@ class AdminEventServiceTest {
 
     @Mock
     private EventMapper eventMapper;
+
+    @Mock
+    private PaginationService paginationService;
 
     @Mock
     private NotificationService notificationService;
@@ -189,19 +194,85 @@ class AdminEventServiceTest {
     }
 
     @Test
-    void listAllEventsShouldReturnPageOfEventDtos() {
-        Pageable pageable = Pageable.unpaged();
+    void listAllEventsShouldReturnPaginatedEventDtos() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Pageable validatedPageable = PageRequest.of(0, 10);
         Event event = new Event();
-        EventDto eventDto = EventDto.builder().id(1L).title("Event").build();
+        EventDto eventDto = EventDto.builder().id(1L).title("Event Title").build();
 
-        when(eventRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(event)));
+        when(paginationService.validatePageable(pageable)).thenReturn(validatedPageable);
+        when(eventRepository.findAll(validatedPageable)).thenReturn(new PageImpl<>(List.of(event)));
         when(eventMapper.toDto(event)).thenReturn(eventDto);
 
         Page<EventDto> result = adminEventService.listAllEvents(pageable);
 
         assertEquals(1, result.getTotalElements());
         assertEquals(eventDto, result.getContent().get(0));
-        verify(eventRepository).findAll(pageable);
+        verify(paginationService).validatePageable(pageable);
+        verify(eventRepository).findAll(validatedPageable);
+        verify(eventMapper).toDto(event);
+    }
+
+    @Test
+    void listEventsByInstructorShouldReturnPaginatedEventDtos() {
+        Long instructorId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+        Pageable validatedPageable = PageRequest.of(0, 10);
+        AppUser instructor = new AppUser();
+        Event event = new Event();
+        EventDto eventDto = EventDto.builder().id(1L).title("Instructor Event").build();
+
+        when(entityLookupService.findUserById(instructorId)).thenReturn(instructor);
+        when(paginationService.validatePageable(pageable)).thenReturn(validatedPageable);
+        when(eventRepository.findByInstructor(instructor, validatedPageable))
+                .thenReturn(new PageImpl<>(List.of(event)));
+        when(eventMapper.toDto(event)).thenReturn(eventDto);
+
+        Page<EventDto> result = adminEventService.listEventsByInstructor(instructorId, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(eventDto, result.getContent().get(0));
+        verify(entityLookupService).findUserById(instructorId);
+        verify(paginationService).validatePageable(pageable);
+        verify(eventRepository).findByInstructor(instructor, validatedPageable);
+        verify(eventMapper).toDto(event);
+    }
+
+    @Test
+    void listEventsByInstructorShouldThrowExceptionWhenInstructorNotFound() {
+        Long instructorId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(entityLookupService.findUserById(instructorId)).thenThrow(
+                new ApiException("Instructor not found", HttpStatus.NOT_FOUND, Codes.INSTRUCTOR_NOT_FOUND));
+
+        ApiException exception = assertThrows(ApiException.class,
+                () -> adminEventService.listEventsByInstructor(instructorId, pageable));
+
+        assertEquals("Instructor not found", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verify(entityLookupService).findUserById(instructorId);
+        verifyNoInteractions(paginationService, eventRepository, eventMapper);
+    }
+
+    @Test
+    void listEventsByInstructorShouldReturnEmptyPageWhenNoEventsFound() {
+        Long instructorId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+        Pageable validatedPageable = PageRequest.of(0, 10);
+        AppUser instructor = new AppUser();
+
+        when(entityLookupService.findUserById(instructorId)).thenReturn(instructor);
+        when(paginationService.validatePageable(pageable)).thenReturn(validatedPageable);
+        when(eventRepository.findByInstructor(instructor, validatedPageable)).thenReturn(Page.empty());
+
+        Page<EventDto> result = adminEventService.listEventsByInstructor(instructorId, pageable);
+
+        assertEquals(0, result.getTotalElements());
+        verify(entityLookupService).findUserById(instructorId);
+        verify(paginationService).validatePageable(pageable);
+        verify(eventRepository).findByInstructor(instructor, validatedPageable);
+        verifyNoInteractions(eventMapper);
     }
 
 }

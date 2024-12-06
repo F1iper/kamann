@@ -18,17 +18,21 @@ import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.EventTypeRepository;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
+import pl.kamann.utility.PaginationService;
 
 @Service
 @RequiredArgsConstructor
 public class AdminEventService {
 
     private final EventRepository eventRepository;
-    private final EventMapper eventMapper;
     private final EventTypeRepository eventTypeRepository;
     private final AppUserRepository appUserRepository;
+
+    private final EventMapper eventMapper;
+
     private final NotificationService notificationService;
     private final EntityLookupService entityLookupService;
+    private final PaginationService paginationService;
 
 
     public EventDto createEvent(EventDto eventDto) {
@@ -92,17 +96,26 @@ public class AdminEventService {
     }
 
     public Page<EventDto> listAllEvents(Pageable pageable) {
-        return eventRepository.findAll(pageable).map(eventMapper::toDto);
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
+        Page<Event> events = eventRepository.findAll(validatedPageable);
+
+        if (events.isEmpty() && validatedPageable.getPageNumber() > 0) {
+            throw new ApiException(
+                    "No results for the requested page",
+                    HttpStatus.NOT_FOUND,
+                    Codes.NO_RESULTS);
+        }
+
+        return events.map(eventMapper::toDto);
     }
 
     public Page<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
-        var instructor = appUserRepository.findById(instructorId)
-                .orElseThrow(() -> new ApiException(
-                        "Instructor not found",
-                        HttpStatus.NOT_FOUND,
-                        Codes.INSTRUCTOR_NOT_FOUND));
+        var instructor = entityLookupService.findUserById(instructorId);
 
-        return eventRepository.findByInstructor(instructor, pageable).map(eventMapper::toDto);
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
+
+        return eventRepository.findByInstructor(instructor, validatedPageable)
+                .map(eventMapper::toDto);
     }
 
 
