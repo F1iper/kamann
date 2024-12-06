@@ -1,7 +1,8 @@
 package pl.kamann.services.admin;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
@@ -12,52 +13,111 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.mappers.EventMapper;
+import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.EventTypeRepository;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import pl.kamann.services.NotificationService;
+import pl.kamann.utility.EntityLookupService;
+import pl.kamann.utility.PaginationService;
 
 @Service
 @RequiredArgsConstructor
 public class AdminEventService {
 
     private final EventRepository eventRepository;
-    private final EventMapper eventMapper;
     private final EventTypeRepository eventTypeRepository;
+    private final AppUserRepository appUserRepository;
 
-    @Transactional
-    public EventDto createEvent(EventDto eventDto, AppUser createdBy, AppUser instructor, EventType eventType) {
-        var event = eventMapper.toEntity(eventDto, createdBy, instructor, eventType);
-        var savedEvent = eventRepository.save(event);
-        return eventMapper.toDto(savedEvent);
+    private final EventMapper eventMapper;
+
+    private final NotificationService notificationService;
+    private final EntityLookupService entityLookupService;
+    private final PaginationService paginationService;
+
+
+    public EventDto createEvent(EventDto eventDto) {
+        if (eventDto.createdById() == null) {
+            throw new ApiException(
+                    "Created by ID cannot be null",
+                    HttpStatus.BAD_REQUEST,
+                    Codes.INVALID_INPUT
+            );
+        }
+
+        if (eventDto.instructorId() == null) {
+            throw new ApiException(
+                    "Instructor ID cannot be null",
+                    HttpStatus.BAD_REQUEST,
+                    Codes.INVALID_INPUT
+            );
+        }
+
+        var createdBy = entityLookupService.findUserById(eventDto.createdById());
+        var instructor = entityLookupService.findUserById(eventDto.instructorId());
+        var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
+
+        var event = eventMapper.toEntity(eventDto);
+        event.setCreatedBy(createdBy);
+        event.setInstructor(instructor);
+        event.setEventType(eventType);
+
+        return eventMapper.toDto(eventRepository.save(event));
     }
 
-    @Transactional
-    public EventDto updateEvent(Long eventId, EventDto updatedEventDto, AppUser instructor, EventType eventType) {
-        var existingEvent = findEventById(eventId);
-        eventMapper.updateEventFromDto(existingEvent, updatedEventDto, instructor, eventType);
-        var savedEvent = eventRepository.save(existingEvent);
-        return eventMapper.toDto(savedEvent);
+    public EventDto updateEvent(Long eventId, EventDto eventDto) {
+        var existingEvent = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ApiException(
+                        "Event not found",
+                        HttpStatus.NOT_FOUND,
+                        Codes.EVENT_NOT_FOUND));
+
+        var instructor = entityLookupService.findUserById(eventDto.instructorId());
+        var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
+
+        eventMapper.updateEventFromDto(existingEvent, eventDto);
+        existingEvent.setInstructor(instructor);
+        existingEvent.setEventType(eventType);
+
+        return eventMapper.toDto(eventRepository.save(existingEvent));
     }
 
-    @Transactional
-    public void deleteEvent(Long eventId) {
-        var event = findEventById(eventId);
-        if (!event.getAttendances().isEmpty()) {
-            throw new ApiException("Cannot delete an event with participants.",
+    public void deleteEvent(Long id, boolean force) {
+        var event = eventRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Event not found", HttpStatus.NOT_FOUND, Codes.EVENT_NOT_FOUND));
+
+        if (!force && !event.getAttendances().isEmpty()) {
+            throw new ApiException(
+                    "Cannot delete event with participants unless forced",
                     HttpStatus.BAD_REQUEST,
                     Codes.EVENT_HAS_PARTICIPANTS);
         }
+
         eventRepository.delete(event);
     }
 
-    public List<EventDto> listAllEvents() {
-        return eventRepository.findAll().stream()
-                .map(eventMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<EventDto> listAllEvents(Pageable pageable) {
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
+        Page<Event> events = eventRepository.findAll(validatedPageable);
+
+        if (events.isEmpty() && validatedPageable.getPageNumber() > 0) {
+            throw new ApiException(
+                    "No results for the requested page",
+                    HttpStatus.NOT_FOUND,
+                    Codes.NO_RESULTS);
+        }
+
+        return events.map(eventMapper::toDto);
     }
+
+    public Page<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
+        var instructor = entityLookupService.findUserById(instructorId);
+
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
+
+        return eventRepository.findByInstructor(instructor, validatedPageable)
+                .map(eventMapper::toDto);
+    }
+
 
     private Event findEventById(Long eventId) {
         return eventRepository.findById(eventId)
@@ -84,24 +144,16 @@ public class AdminEventService {
         return eventMapper.toDto(event);
     }
 
-    @Transactional
-    public void cancelEvent(Long eventId) {
-        Event event = eventRepository.findById(eventId)
+    public void cancelEvent(Long id) {
+        var event = eventRepository.findById(id)
                 .orElseThrow(() -> new ApiException(
-                        "Event not found with ID: " + eventId,
+                        "Event not found",
                         HttpStatus.NOT_FOUND,
-                        Codes.EVENT_NOT_FOUND
-                ));
+                        Codes.EVENT_NOT_FOUND));
 
-        if (event.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new ApiException(
-                    "Cannot cancel an event that has already started.",
-                    HttpStatus.BAD_REQUEST,
-                    Codes.CANNOT_CANCEL_STARTED_EVENT
-            );
-        }
-
-        event.setStatus(EventStatus.CANCELLED);
+        event.setStatus(EventStatus.CANCELED);
         eventRepository.save(event);
+
+        notificationService.notifyParticipants(event);
     }
 }
