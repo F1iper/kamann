@@ -73,6 +73,14 @@ public class MembershipCardService {
         log.debug("Before setActive(false): card active status = {}", card.isActive());
         card.setActive(false);
         log.debug("After setActive(false): card active status = {}", card.isActive());
+
+        MembershipCardHistory history = new MembershipCardHistory();
+        history.setCard(card);
+        history.setAction(MembershipCardAction.EXPIRED);
+        history.setActionDate(LocalDateTime.now());
+        history.setUser(card.getUser());
+        membershipCardHistoryRepository.save(history);
+
         membershipCardRepository.save(card);
     }
 }
