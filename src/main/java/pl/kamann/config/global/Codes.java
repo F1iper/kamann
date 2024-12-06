@@ -12,14 +12,16 @@ public class Codes {
 
     public static final String USER_NOT_FOUND = "USER_NOT_FOUND";
     public static final String ROLE_NOT_FOUND = "ROLE_NOT_FOUND";
-    public static final String INVALID_ROLE = "INVALID_ROLE";
+
 
     //status
     public static final String INVALID_ATTENDANCE_STATUS = "INVALID_STATUS";
     public static final String INVALID_USER_STATUS = "INVALID_USER_STATUS";
     public static final String INVALID_STATUS_CHANGE = "INVALID_STATUS_CHANGE";
     public static final String INVALID_REQUEST = "INVALID_REQUEST";
+    public static final String INVALID_ROLE = "INVALID_ROLE";
     public static final String INVALID_INPUT = "INVALID_INPUT";
+    public static final String NO_RESULTS = "NO_RESULTS";
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 
@@ -56,4 +58,5 @@ public class Codes {
     public static final String INSTRUCTOR_BUSY = "INSTRUCTOR_BUSY";
     public static final String INSTRUCTOR_NOT_FOUND = "INSTRUCTOR_NOT_FOUND";
     public static final String REGISTRATION_NOT_FOUND = "REGISTRATION_NOT_FOUND";
+
 }

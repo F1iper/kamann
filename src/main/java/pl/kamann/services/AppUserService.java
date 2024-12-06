@@ -1,6 +1,8 @@
 package pl.kamann.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.entities.appuser.Role;
@@ -26,8 +28,9 @@ public class AppUserService {
     private final AppUserMapper appUserMapper;
     private final EntityLookupService entityLookupService;
 
-    public List<AppUserDto> getAllUsers() {
-        return appUserMapper.toDtoList(appUserRepository.findAll());
+    public Page<AppUserDto> getAllUsers(Pageable pageable) {
+        return appUserRepository.findAll(pageable)
+                .map(appUserMapper::toDto);
     }
 
     public AppUserDto getUserById(Long id) {
@@ -54,7 +57,10 @@ public class AppUserService {
 
         Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.getRoles());
         if (roles.isEmpty()) {
-            throw new ApiException("No valid roles provided for the user.", HttpStatus.BAD_REQUEST, Codes.INVALID_ROLE);
+            throw new ApiException(
+              "No valid roles provided for the user.", 
+              HttpStatus.BAD_REQUEST, 
+              Codes.INVALID_ROLE);
         }
 
         existingUser.setEmail(userDto.getEmail());
