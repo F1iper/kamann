@@ -2,7 +2,9 @@ package pl.kamann.config.global;
 
 public class Codes {
 
-    //auth
+    // auth
+
+    //todo: verify duplication
     public static final String SUCCESS = "SUCCESS";
     public static final String ACCESS_DENIED = "ACCESS_DENIED";
     public static final String UNAUTHORIZED = "UNAUTHORIZED";
@@ -10,17 +12,20 @@ public class Codes {
 
     public static final String USER_NOT_FOUND = "USER_NOT_FOUND";
     public static final String ROLE_NOT_FOUND = "ROLE_NOT_FOUND";
-    public static final String INVALID_ROLE = "INVALID_ROLE";
+
 
     //status
     public static final String INVALID_ATTENDANCE_STATUS = "INVALID_STATUS";
     public static final String INVALID_USER_STATUS = "INVALID_USER_STATUS";
     public static final String INVALID_STATUS_CHANGE = "INVALID_STATUS_CHANGE";
     public static final String INVALID_REQUEST = "INVALID_REQUEST";
+    public static final String INVALID_ROLE = "INVALID_ROLE";
+    public static final String INVALID_INPUT = "INVALID_INPUT";
+    public static final String NO_RESULTS = "NO_RESULTS";
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 
-    //roles
+    // roles
     public static final String ADMIN = "ADMIN";
     public static final String INSTRUCTOR = "INSTRUCTOR";
     public static final String CLIENT = "CLIENT";
@@ -48,20 +53,11 @@ public class Codes {
     public static final String CARD_PENDING_APPROVAL = "CARD_PENDING_APPROVAL";
     public static final String INVALID_CARD_STATE = "INVALID_CARD_STATE";
     public static final String CARD_ALREADY_EXISTS = "CARD_ALREADY_EXISTS";
+    public static final String MULTIPLE_ACTIVE_CARDS = "MULTIPLE_ACTIVE_CARDS";
 
     //instructor
     public static final String INSTRUCTOR_BUSY = "INSTRUCTOR_BUSY";
     public static final String INSTRUCTOR_NOT_FOUND = "INSTRUCTOR_NOT_FOUND";
     public static final String REGISTRATION_NOT_FOUND = "REGISTRATION_NOT_FOUND";
 
-    //pagination
-    public static final String INVALID_PAGE_INDEX = "INVALID_PAGE_INDEX";
-    public static final String INVALID_PAGE_SIZE = "INVALID_PAGE_SIZE";
-
-    //reports
-    public static final String NO_EVENT_STATS = "NO_EVENT_STATS";
-    public static final String NO_REVENUE_STATS = "NO_REVENUE_STATS";
-    public static final String NO_ATTENDANCE_STATS = "NO_ATTENDANCE_STATS";
-    public static final String PAGE_INDEX_CANNOT_BE_0 = "Page index must not be less than zero";
-    public static final String PAGE_SIZE_LESS_THAN_0 = "Page size must not be less than one";
 }

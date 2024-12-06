@@ -48,7 +48,7 @@ public class InstructorEventService {
             );
         }
 
-        event.setStatus(EventStatus.CANCELLED);
+        event.setStatus(EventStatus.CANCELED);
         eventRepository.save(event);
     }
 

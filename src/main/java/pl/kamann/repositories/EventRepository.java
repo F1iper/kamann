@@ -1,5 +1,8 @@
 package pl.kamann.repositories;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Range;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +38,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                 )
             """)
     List<Event> findAvailableEventsExcludingClient(@Param("now") LocalDateTime now, @Param("clientId") Long clientId);
+
+    @Query("SELECT e FROM Event e WHERE e.instructor = :instructor")
+    Page<Event> findByInstructor(@Param("instructor") AppUser instructor, Pageable pageable);
+
 }
