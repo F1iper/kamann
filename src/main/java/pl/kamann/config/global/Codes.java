@@ -2,9 +2,7 @@ package pl.kamann.config.global;
 
 public class Codes {
 
-    // auth
-
-    //todo: verify duplication
+    //auth
     public static final String SUCCESS = "SUCCESS";
     public static final String ACCESS_DENIED = "ACCESS_DENIED";
     public static final String UNAUTHORIZED = "UNAUTHORIZED";
@@ -12,7 +10,6 @@ public class Codes {
 
     public static final String USER_NOT_FOUND = "USER_NOT_FOUND";
     public static final String ROLE_NOT_FOUND = "ROLE_NOT_FOUND";
-
 
     //status
     public static final String INVALID_ATTENDANCE_STATUS = "INVALID_STATUS";
@@ -25,7 +22,7 @@ public class Codes {
 
     public static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
 
-    // roles
+    //roles
     public static final String ADMIN = "ADMIN";
     public static final String INSTRUCTOR = "INSTRUCTOR";
     public static final String CLIENT = "CLIENT";
@@ -60,4 +57,6 @@ public class Codes {
     public static final String INSTRUCTOR_NOT_FOUND = "INSTRUCTOR_NOT_FOUND";
     public static final String REGISTRATION_NOT_FOUND = "REGISTRATION_NOT_FOUND";
 
+    public static final String PAGE_INDEX_CANNOT_BE_0 = "Page index must not be less than zero";
+    public static final String PAGE_SIZE_LESS_THAN_0 = "Page size must not be less than one";
 }
