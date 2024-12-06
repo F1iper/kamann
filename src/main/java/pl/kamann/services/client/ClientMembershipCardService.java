@@ -6,77 +6,90 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
-import pl.kamann.dtos.ClientMembershipCardRequestDto;
-import pl.kamann.dtos.MembershipCardResponseDto;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
-import pl.kamann.mappers.MembershipCardMapper;
 import pl.kamann.repositories.MembershipCardRepository;
+import pl.kamann.services.MembershipCardService;
 import pl.kamann.utility.EntityLookupService;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ClientMembershipCardService {
 
-    private final EntityLookupService lookupService;
     private final MembershipCardRepository membershipCardRepository;
-    private final MembershipCardMapper membershipCardMapper;
-    private final ClientMembershipCardHistoryService membershipCardHistoryService;
+    private final MembershipCardService membershipCardService;
+    private final EntityLookupService lookupService;
 
-    public MembershipCardResponseDto getActiveCardForLoggedInUser() {
-        var user = lookupService.getLoggedInUser();
+    @Transactional
+    public MembershipCard requestMembershipCard(Long cardId) {
+        var loggedInUser = lookupService.getLoggedInUser();
+        var client = lookupService.findUserById(loggedInUser.getId());
 
-        var activeCard = membershipCardRepository.findActiveCardByUserId(user.getId())
-                .orElseThrow(() -> new ApiException(
-                        "No active membership card found for the logged-in user.",
-                        HttpStatus.NOT_FOUND,
-                        Codes.CARD_NOT_FOUND
-                ));
-
-        return membershipCardMapper.toDto(activeCard);
-    }
-
-    public MembershipCardResponseDto purchaseMembershipCard(ClientMembershipCardRequestDto request) {
-        var user = lookupService.getLoggedInUser();
-
-        if (membershipCardRepository.existsActiveCardByUserId(user.getId())) {
+        if (membershipCardRepository.findActiveCardByUserId(loggedInUser.getId()).isPresent()) {
             throw new ApiException(
-                    "Cannot purchase a new membership card while an active one exists.",
-                    HttpStatus.CONFLICT,
+                    "Client already has an active membership card.",
+                    HttpStatus.BAD_REQUEST,
                     Codes.CARD_ALREADY_EXISTS
             );
         }
 
-        var card = new MembershipCard();
-        card.setUser(user);
-        card.setMembershipCardType(request.getMembershipCardType());
-        card.setEntrancesLeft(request.getMembershipCardType().getMaxEntrances());
-        card.setStartDate(LocalDateTime.now());
-        card.setEndDate(LocalDateTime.now().plusDays(request.getMembershipCardType().getValidDays()));
-        card.setPaid(false);
-        card.setActive(false);
-
-        var savedCard = membershipCardRepository.save(card);
-        membershipCardHistoryService.logMembershipCardAction(user, savedCard, MembershipCardAction.PURCHASED, 1);
-
-        return membershipCardMapper.toDto(savedCard);
-    }
-
-    @Transactional
-    public void deductEntry(Long userId) {
-        var user = lookupService.findUserById(userId);
-        var activeCard = membershipCardRepository.findActiveCardByUserId(user.getId())
+        var cardTemplate = membershipCardRepository.findById(cardId)
                 .orElseThrow(() -> new ApiException(
-                        "No active membership card found for the user.",
+                        "Membership card not found.",
                         HttpStatus.NOT_FOUND,
                         Codes.CARD_NOT_FOUND
                 ));
 
+        MembershipCard clientCard = MembershipCard.builder()
+                .user(client)
+                .membershipCardType(cardTemplate.getMembershipCardType())
+                .entrancesLeft(cardTemplate.getMembershipCardType().getMaxEntrances())
+                .price(cardTemplate.getPrice())
+                .startDate(null)
+                .endDate(null)
+                .paid(false)
+                .active(false)
+                .pendingApproval(true)
+                .build();
+
+        return membershipCardRepository.save(clientCard);
+    }
+
+    public List<MembershipCard> getAvailableMembershipCards() {
+        return membershipCardRepository.findByUserIsNullAndActiveFalse();
+    }
+
+    public MembershipCard getActiveCard(Long clientId) {
+        List<MembershipCard> activeCards = membershipCardRepository.findByUserIdAndActiveTrue(clientId);
+
+        if (activeCards.isEmpty()) {
+            throw new ApiException(
+                    "No active membership card found.",
+                    HttpStatus.NOT_FOUND,
+                    Codes.CARD_NOT_ACTIVE
+            );
+        }
+
+        if (activeCards.size() > 1) {
+            throw new ApiException(
+                    "Multiple active membership cards found.",
+                    HttpStatus.CONFLICT,
+                    Codes.MULTIPLE_ACTIVE_CARDS
+            );
+        }
+
+        return activeCards.get(0);
+    }
+
+    @Transactional
+    public MembershipCard deductEntry(Long clientId) {
+        MembershipCard activeCard = getActiveCard(clientId);
+
         if (activeCard.getEntrancesLeft() <= 0) {
             throw new ApiException(
-                    "No remaining entries on the membership card.",
+                    "The membership card has no remaining entrances.",
                     HttpStatus.BAD_REQUEST,
                     Codes.NO_ENTRANCES_LEFT
             );
@@ -85,6 +98,9 @@ public class ClientMembershipCardService {
         activeCard.setEntrancesLeft(activeCard.getEntrancesLeft() - 1);
         membershipCardRepository.save(activeCard);
 
-        membershipCardHistoryService.logMembershipCardAction(user, activeCard, MembershipCardAction.USED, 1); // Log action
+        membershipCardService.logAction(activeCard, activeCard.getUser(), MembershipCardAction.USED, 1);
+
+
+        return activeCard;
     }
 }
