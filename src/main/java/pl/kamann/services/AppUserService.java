@@ -1,22 +1,22 @@
 package pl.kamann.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import pl.kamann.entities.appuser.Role;
-import pl.kamann.repositories.RoleRepository;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
+import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.utility.EntityLookupService;
+import pl.kamann.utility.PaginationService;
 
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -24,9 +24,9 @@ import java.util.Set;
 public class AppUserService {
 
     private final AppUserRepository appUserRepository;
-    private final RoleRepository roleRepository;
     private final AppUserMapper appUserMapper;
     private final EntityLookupService entityLookupService;
+    private final PaginationService paginationService;
 
     public Page<AppUserDto> getAllUsers(Pageable pageable) {
         return appUserRepository.findAll(pageable)
@@ -39,9 +39,9 @@ public class AppUserService {
     }
 
     public AppUserDto createUser(AppUserDto userDto) {
-        entityLookupService.validateEmailNotTaken(userDto.getEmail());
+        entityLookupService.validateEmailNotTaken(userDto.email());
 
-        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.getRoles());
+        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.roles());
 
         AppUser user = appUserMapper.toEntity(userDto, roles);
 
@@ -55,38 +55,49 @@ public class AppUserService {
     public AppUserDto updateUser(Long id, AppUserDto userDto) {
         AppUser existingUser = entityLookupService.findUserById(id);
 
-        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.getRoles());
+        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.roles());
         if (roles.isEmpty()) {
             throw new ApiException(
-              "No valid roles provided for the user.", 
-              HttpStatus.BAD_REQUEST, 
-              Codes.INVALID_ROLE);
+                    "No valid roles provided for the user.",
+                    HttpStatus.BAD_REQUEST,
+                    Codes.INVALID_ROLE);
         }
 
-        existingUser.setEmail(userDto.getEmail());
-        existingUser.setFirstName(userDto.getFirstName());
-        existingUser.setLastName(userDto.getLastName());
+        existingUser.setEmail(userDto.email());
+        existingUser.setFirstName(userDto.firstName());
+        existingUser.setLastName(userDto.lastName());
         existingUser.setRoles(roles);
 
         return appUserMapper.toDto(appUserRepository.save(existingUser));
     }
 
-    public void deleteUser(Long id) {
-        appUserRepository.delete(entityLookupService.findUserById(id));
+    public void activateUser(Long userId) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(
+                        "User not found with ID: " + userId,
+                        HttpStatus.NOT_FOUND,
+                        Codes.USER_NOT_FOUND));
+        user.setStatus(AppUserStatus.ACTIVE);
+        appUserRepository.save(user);
     }
 
-    public AppUserDto updateUserRoles(Long userId, Set<Role> roleNames) {
-        AppUser user = entityLookupService.findUserById(userId);
-        Set<Role> roles = entityLookupService.findRolesByNameIn(roleNames);
-
-        user.setRoles(roles);
-        return appUserMapper.toDto(appUserRepository.save(user));
+    public void deactivateUser(Long userId) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(
+                        "User not found with ID: " + userId,
+                        HttpStatus.NOT_FOUND,
+                        Codes.USER_NOT_FOUND));
+        user.setStatus(AppUserStatus.INACTIVE);
+        appUserRepository.save(user);
     }
 
-    public List<AppUserDto> getUsersByRole(String roleName) {
+    public Page<AppUserDto> getUsersByRole(String roleName, Pageable pageable) {
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
         Role role = entityLookupService.findRoleByName(roleName);
-        return appUserMapper.toDtoList(appUserRepository.findByRolesContaining(role));
+        Page<AppUser> users = appUserRepository.findByRolesContaining(role, validatedPageable);
+        return users.map(appUserMapper::toDto);
     }
+
 
     public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
         AppUser user = entityLookupService.findUserById(userId);
