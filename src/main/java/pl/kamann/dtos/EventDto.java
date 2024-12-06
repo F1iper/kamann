@@ -5,23 +5,19 @@ import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class EventDto {
-    private Long id;
-    private String title;
-    private String description;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private boolean recurring;
-    private Long createdById;
-    private Long instructorId;
-    private int maxParticipants;
-    private EventStatus status;
-    private Integer currentParticipants;
-    private Long eventTypeId;
-    private String eventTypeName;
-}
+public record EventDto(
+        Long id,
+        String title,
+        String description,
+        LocalDateTime startTime,
+        LocalDateTime endTime,
+        boolean recurring,
+        Long createdById,
+        Long instructorId,
+        int maxParticipants,
+        EventStatus status,
+        Integer currentParticipants,
+        Long eventTypeId,
+        String eventTypeName
+) {}
