@@ -68,19 +68,26 @@ public class StartupSeeder implements CommandLineRunner {
         List<AppUser> clients = seedClients();
         List<EventType> eventTypes = seedEventTypes();
 
+        // Seed Events and Related Data
         List<Event> events = seedEvents(instructors, eventTypes, admin);
         List<Event> edgeCaseEvents = seedEventsWithEdgeCases(instructors, eventTypes, admin);
         List<Event> allEvents = new ArrayList<>(events);
         allEvents.addAll(edgeCaseEvents);
 
+        // Seed Membership Cards and Related Data
         seedMembershipCards(clients);
-        seedUserEventHistory(allEvents, clients);
-        seedUserCardHistory(clients);
-        seedUserEventRegistrations(allEvents, clients);
-        seedEventsWithEdgeCases(instructors, eventTypes, admin);
-        seedAttendance(allEvents, clients);
         seedClientRequestedCards(clients);
         seedAdminCreatedCards();
+
+        // Seed Histories
+        seedUserEventHistory(allEvents, clients);
+        seedUserCardHistory(clients);
+
+        // Seed Registrations and Attendance
+        seedUserEventRegistrations(allEvents, clients);
+        seedAttendance(allEvents, clients);
+
+        // Seed Reporting Data
         seedEventStats();
         seedAttendanceStats();
         seedRevenueStats();

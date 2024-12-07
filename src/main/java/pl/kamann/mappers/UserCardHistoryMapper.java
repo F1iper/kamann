@@ -23,14 +23,14 @@ public class UserCardHistoryMapper {
 
     public ClientMembershipCardHistory toEntity(UserCardHistoryDto dto, AppUser user) {
         ClientMembershipCardHistory history = new ClientMembershipCardHistory();
-        history.setId(dto.getId());
+        history.setId(dto.id());
         history.setUser(user);
-        history.setMembershipCardType(dto.getMembershipCardType());
-        history.setStartDate(dto.getStartDate());
-        history.setEndDate(dto.getEndDate());
-        history.setEntrances(dto.getEntrances());
-        history.setRemainingEntrances(dto.getRemainingEntrances());
-        history.setPaid(dto.isPaid());
+        history.setMembershipCardType(dto.membershipCardType());
+        history.setStartDate(dto.startDate());
+        history.setEndDate(dto.endDate());
+        history.setEntrances(dto.entrances());
+        history.setRemainingEntrances(dto.remainingEntrances());
+        history.setPaid(dto.paid());
         return history;
     }
 }
