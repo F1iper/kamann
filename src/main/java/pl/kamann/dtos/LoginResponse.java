@@ -1,4 +1,8 @@
 package pl.kamann.dtos;
 
-public record LoginResponse(String token) {
-}
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginResponse(
+        @NotBlank(message = "Token cannot be blank")
+        String token
+) {}
