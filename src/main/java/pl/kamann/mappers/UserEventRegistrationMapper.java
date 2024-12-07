@@ -22,12 +22,12 @@ public class UserEventRegistrationMapper {
 
     public UserEventRegistration toEntity(UserEventRegistrationDto dto, AppUser user, Event event) {
         UserEventRegistration registration = new UserEventRegistration();
-        registration.setId(dto.getId());
+        registration.setId(dto.id());
         registration.setUser(user);
         registration.setEvent(event);
-        registration.setStatus(dto.getStatus());
-        registration.setWaitlistPosition(dto.getWaitlistPosition());
-        registration.setRegistrationDate(dto.getRegistrationDate());
+        registration.setStatus(dto.status());
+        registration.setWaitlistPosition(dto.waitlistPosition());
+        registration.setRegistrationDate(dto.registrationDate());
         return registration;
     }
 }
