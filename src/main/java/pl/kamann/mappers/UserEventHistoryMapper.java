@@ -22,12 +22,12 @@ public class UserEventHistoryMapper {
 
     public ClientEventHistory toEntity(UserEventHistoryDto dto, AppUser user, Event event) {
         ClientEventHistory history = new ClientEventHistory();
-        history.setId(dto.getId());
+        history.setId(dto.id());
         history.setUser(user);
         history.setEvent(event);
-        history.setStatus(dto.getStatus());
-        history.setAttendedDate(dto.getAttendedDate());
-        history.setEntrancesUsed(dto.getEntrancesUsed());
+        history.setStatus(dto.status());
+        history.setAttendedDate(dto.attendedDate());
+        history.setEntrancesUsed(dto.entrancesUsed());
         return history;
     }
 }
