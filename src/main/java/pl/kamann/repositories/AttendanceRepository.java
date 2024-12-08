@@ -29,6 +29,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             """)
     Map<String, Object> calculateStatistics(@Param("eventId") Long eventId, @Param("userId") Long userId);
 
+    @Query("SELECT a FROM Attendance a WHERE a.event.id = :eventId AND a.event.instructor.id = :instructorId")
+    List<Attendance> findAllByEventAndInstructor(@Param("eventId") Long eventId, @Param("instructorId") Long instructorId);
 
     @Query("SELECT a FROM Attendance a WHERE a.event = :event AND a.user.id = :userId")
     Optional<Attendance> findByEventAndUserId(@Param("event") Event event, @Param("userId") Long userId);
