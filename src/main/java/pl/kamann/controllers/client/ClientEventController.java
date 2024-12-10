@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.dtos.EventDto;
+import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.services.client.ClientEventHistoryService;
 import pl.kamann.services.client.ClientEventService;
 import pl.kamann.utility.EntityLookupService;
 
@@ -18,7 +20,8 @@ import java.util.List;
 public class ClientEventController {
 
     private final ClientEventService clientEventService;
-    private EntityLookupService lookupService;
+    private final ClientEventHistoryService clientEventHistoryService;
+    private final EntityLookupService lookupService;
 
     @GetMapping("/events/available")
     @Operation(summary = "List available events", description = "Retrieves a list of events available for the client to join.")
@@ -39,5 +42,16 @@ public class ClientEventController {
     public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
         var event = clientEventService.getEventDetails(eventId);
         return ResponseEntity.ok(event);
+    }
+
+    @PostMapping("/events/{eventId}/history")
+    @Operation(summary = "Update event history", description = "Updates the event history for a client with the specified status.")
+    public ResponseEntity<String> updateEventHistory(
+            @PathVariable Long eventId,
+            @RequestParam AttendanceStatus status) {
+        var user = lookupService.getLoggedInUser();
+
+        clientEventHistoryService.updateEventHistory(user, eventId, status);
+        return ResponseEntity.ok("Event history updated successfully");
     }
 }

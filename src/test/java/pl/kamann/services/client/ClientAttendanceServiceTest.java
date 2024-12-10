@@ -141,6 +141,7 @@ class ClientAttendanceServiceTest {
         existingAttendance.setUser(mockUser);
         existingAttendance.setEvent(mockEvent);
         existingAttendance.setStatus(AttendanceStatus.PRESENT);
+
         when(attendanceRepository.findByUserAndEvent(mockUser, mockEvent))
                 .thenReturn(Optional.of(existingAttendance));
 

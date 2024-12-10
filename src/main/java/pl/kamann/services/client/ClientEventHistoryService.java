@@ -2,10 +2,12 @@ package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.ClientEventHistory;
 import pl.kamann.entities.event.Event;
+import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.UserEventHistoryRepository;
 
 import java.time.LocalDateTime;
@@ -15,8 +17,14 @@ import java.time.LocalDateTime;
 public class ClientEventHistoryService {
 
     private final UserEventHistoryRepository userEventHistoryRepository;
+    private final ClientEventService clientEventService;
+    private final EventMapper eventMapper;
 
-    public void updateEventHistory(AppUser user, Event event, AttendanceStatus status) {
+    public void updateEventHistory(AppUser user, Long eventId, AttendanceStatus status) {
+        EventDto eventDto = clientEventService.getEventDetails(eventId);
+
+        var event = eventMapper.toEntity(eventDto);
+
         var history = new ClientEventHistory();
         history.setUser(user);
         history.setEvent(event);

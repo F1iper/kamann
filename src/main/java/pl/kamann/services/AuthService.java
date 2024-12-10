@@ -64,6 +64,7 @@ public class AuthService {
         AppUser user = createAppUser(request, userRole);
         AppUser savedUser = appUserRepository.save(user);
 
+        //todo : fill the log info with more details (id, ...)
         log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
         return savedUser;
     }
