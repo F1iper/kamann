@@ -7,6 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
@@ -15,6 +16,7 @@ import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
 import pl.kamann.repositories.AttendanceRepository;
+import pl.kamann.services.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
@@ -28,6 +30,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ClientAttendanceServiceTest {
 
+    @InjectMocks
+    private ClientAttendanceService clientAttendanceService;
     @Mock
     private AttendanceRepository attendanceRepository;
     @Mock
@@ -37,8 +41,9 @@ class ClientAttendanceServiceTest {
     @Mock
     private ClientMembershipCardService clientMembershipCardService;
 
-    @InjectMocks
-    private ClientAttendanceService clientAttendanceService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
 
     private AppUser mockUser;
     private Event mockEvent;
@@ -64,7 +69,16 @@ class ClientAttendanceServiceTest {
         verify(clientMembershipCardService).deductEntry(mockUser.getId());
         ArgumentCaptor<Attendance> attendanceCaptor = ArgumentCaptor.forClass(Attendance.class);
         verify(attendanceRepository).save(attendanceCaptor.capture());
-        verify(clientEventHistoryService).logEventHistory(mockUser, mockEvent, AttendanceStatus.REGISTERED);
+
+        ArgumentCaptor<EventHistoryLogEvent> eventCaptor = ArgumentCaptor.forClass(EventHistoryLogEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        EventHistoryLogEvent publishedEvent = eventCaptor.getValue();
+        assertAll(
+                () -> assertThat(publishedEvent.getUser()).isEqualTo(mockUser),
+                () -> assertThat(publishedEvent.getEvent()).isEqualTo(mockEvent),
+                () -> assertThat(publishedEvent.getStatus()).isEqualTo(AttendanceStatus.REGISTERED)
+        );
 
         Attendance saved = attendanceCaptor.getValue();
         assertAll(
@@ -98,10 +112,12 @@ class ClientAttendanceServiceTest {
         when(lookupService.getLoggedInUser()).thenReturn(mockUser);
         when(lookupService.findEventById(mockEvent.getId())).thenReturn(mockEvent);
         when(lookupService.findUserById(mockUser.getId())).thenReturn(mockUser);
+
         var existingAttendance = new Attendance();
         existingAttendance.setUser(mockUser);
         existingAttendance.setEvent(mockEvent);
         existingAttendance.setStatus(AttendanceStatus.REGISTERED);
+
         when(attendanceRepository.findByUserAndEvent(mockUser, mockEvent))
                 .thenReturn(Optional.of(existingAttendance));
 
@@ -116,7 +132,15 @@ class ClientAttendanceServiceTest {
                 () -> assertThat(result).isEqualTo(saved)
         );
 
-        verify(clientEventHistoryService).logEventHistory(mockUser, mockEvent, AttendanceStatus.EARLY_CANCEL);
+        ArgumentCaptor<EventHistoryLogEvent> eventCaptor = ArgumentCaptor.forClass(EventHistoryLogEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        EventHistoryLogEvent publishedEvent = eventCaptor.getValue();
+        assertAll(
+                () -> assertThat(publishedEvent.getUser()).isEqualTo(mockUser),
+                () -> assertThat(publishedEvent.getEvent()).isEqualTo(mockEvent),
+                () -> assertThat(publishedEvent.getStatus()).isEqualTo(AttendanceStatus.EARLY_CANCEL)
+        );
     }
 
     @Test
