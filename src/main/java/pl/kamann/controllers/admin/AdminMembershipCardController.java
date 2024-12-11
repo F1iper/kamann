@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.entities.membershipcard.MembershipCardType;
+import pl.kamann.services.MembershipCardExpirationService;
 import pl.kamann.services.admin.AdminMembershipCardService;
 
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 public class AdminMembershipCardController {
 
     private final AdminMembershipCardService adminMembershipCardService;
+    private final MembershipCardExpirationService membershipCardExpirationService;
 
     @PostMapping("/create")
     @Operation(summary = "Create a new predefined membership card.")
@@ -30,6 +32,13 @@ public class AdminMembershipCardController {
     @Operation(summary = "Approve a client's membership card request.")
     public ResponseEntity<Void> approveClientCardRequest(@PathVariable Long cardId) {
         adminMembershipCardService.approveClientCardRequest(cardId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/renew/{userId}")
+    @Operation(summary = "Renew a user's membership card.")
+    public ResponseEntity<Void> renewMembershipCard(@PathVariable Long userId) {
+        membershipCardExpirationService.renewMembership(userId);
         return ResponseEntity.ok().build();
     }
 }

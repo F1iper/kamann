@@ -76,7 +76,7 @@ public class MembershipCardService {
 
         MembershipCardHistory history = new MembershipCardHistory();
         history.setCard(card);
-        history.setAction(MembershipCardAction.EXPIRED);
+        history.setAction(MembershipCardAction.EXPIRE);
         history.setActionDate(LocalDateTime.now());
         history.setUser(card.getUser());
         membershipCardHistoryRepository.save(history);

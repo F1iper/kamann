@@ -78,7 +78,7 @@ class MembershipCardServiceTest {
         var user = new AppUser();
         card.setUser(user);
 
-        membershipCardService.logAction(card, user, MembershipCardAction.EXPIRED, 0);
+        membershipCardService.logAction(card, user, MembershipCardAction.EXPIRE, 0);
 
         verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
