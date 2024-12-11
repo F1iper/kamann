@@ -51,6 +51,7 @@ public class Codes {
     public static final String INVALID_CARD_STATE = "INVALID_CARD_STATE";
     public static final String CARD_ALREADY_EXISTS = "CARD_ALREADY_EXISTS";
     public static final String MULTIPLE_ACTIVE_CARDS = "MULTIPLE_ACTIVE_CARDS";
+    public static final String UNKNOWN_CARD_TYPE = "UNKNOWN_CARD_TYPE";
 
     //instructor
     public static final String INSTRUCTOR_BUSY = "INSTRUCTOR_BUSY";
