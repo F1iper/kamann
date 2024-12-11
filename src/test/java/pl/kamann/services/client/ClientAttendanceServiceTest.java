@@ -16,7 +16,7 @@ import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.services.EventHistoryLogEvent;
+import pl.kamann.systemevents.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;

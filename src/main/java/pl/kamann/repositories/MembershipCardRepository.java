@@ -1,6 +1,8 @@
 package pl.kamann.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 
@@ -12,7 +14,11 @@ public interface MembershipCardRepository extends JpaRepository<MembershipCard, 
 
     Optional<MembershipCard> findById(Long id);
 
-    List<MembershipCard> findByEndDateBeforeAndActiveTrue(LocalDateTime dateTime);
+    @Query("SELECT m FROM MembershipCard m WHERE m.active = true AND m.endDate <= :currentDate")
+    List<MembershipCard> findExpiringCards(@Param("currentDate") LocalDateTime currentDate);
+
+    @Query("SELECT m FROM MembershipCard m WHERE m.endDate < :currentTime AND m.active = true")
+    List<MembershipCard> findByEndDateBeforeAndActiveTrue(@Param("currentTime") LocalDateTime currentTime);
 
     List<MembershipCard> findByUserIsNullAndActiveFalse();
 

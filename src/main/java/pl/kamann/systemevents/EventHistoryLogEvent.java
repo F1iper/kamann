@@ -1,4 +1,4 @@
-package pl.kamann.services;
+package pl.kamann.systemevents;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
