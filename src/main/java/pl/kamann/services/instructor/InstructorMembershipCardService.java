@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.MembershipCardResponse;
+import pl.kamann.dtos.MembershipCardValidationResponse;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
@@ -30,18 +31,27 @@ public class InstructorMembershipCardService {
         List<MembershipCard> cards = membershipCardRepository.findAllByUser(client);
 
         if (cards.isEmpty()) {
-            throw new ApiException("No membership cards found for the client.", HttpStatus.NOT_FOUND, Codes.CARD_NOT_FOUND);
+            throw new ApiException(
+                    "No membership cards found for the client.",
+                    HttpStatus.NOT_FOUND,
+                    Codes.CARD_NOT_FOUND);
         }
 
         return cards.stream().map(membershipCardMapper::toResponse).toList();
     }
 
-    public String validateMembershipForEvent(Long clientId, Long eventId) {
+    public MembershipCardValidationResponse validateMembershipForEvent(Long clientId, Long eventId) {
         MembershipCard activeCard = membershipCardService.validateActiveCard(clientId);
 
         membershipCardService.useEntrance(activeCard);
         membershipCardService.logAction(activeCard, activeCard.getUser(), MembershipCardAction.USED, 1);
 
-        return "Membership card validated successfully for event: " + eventId;
+        return new MembershipCardValidationResponse(
+                true,
+                "Membership card validated successfully for event: " + eventId,
+                clientId,
+                eventId,
+                activeCard.getEntrancesLeft()
+        );
     }
 }
