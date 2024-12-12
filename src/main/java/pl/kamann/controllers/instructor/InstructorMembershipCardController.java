@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.dtos.MembershipCardResponse;
+import pl.kamann.dtos.MembershipCardValidationResponse;
 import pl.kamann.services.instructor.InstructorMembershipCardService;
 
 import java.util.List;
@@ -25,10 +26,10 @@ public class InstructorMembershipCardController {
 
     @PostMapping("/validate/{clientId}/{eventId}")
     @Operation(summary = "Validate a client's membership card for a specific event.")
-    public ResponseEntity<String> validateMembershipForEvent(
+    public ResponseEntity<MembershipCardValidationResponse> validateMembershipForEvent(
             @PathVariable Long clientId,
             @PathVariable Long eventId) {
-        String validationResult = instructorMembershipCardService.validateMembershipForEvent(clientId, eventId);
+        MembershipCardValidationResponse validationResult = instructorMembershipCardService.validateMembershipForEvent(clientId, eventId);
         return ResponseEntity.ok(validationResult);
     }
 }

@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.MembershipCardResponse;
+import pl.kamann.dtos.MembershipCardValidationResponse;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
@@ -17,8 +18,7 @@ import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class InstructorMembershipCardServiceTest {
@@ -87,13 +87,22 @@ class InstructorMembershipCardServiceTest {
     void validateMembershipForEvent_shouldValidateAndLogUsedAction() {
         Long clientId = 1L;
         Long eventId = 1L;
-        MembershipCard activeCard = new MembershipCard();
+        MembershipCard activeCard = MembershipCard.builder()
+                .entrancesLeft(5)
+                .build();
 
         when(membershipCardService.validateActiveCard(clientId)).thenReturn(activeCard);
 
-        String result = instructorMembershipCardService.validateMembershipForEvent(clientId, eventId);
+        MembershipCardValidationResponse result = instructorMembershipCardService.validateMembershipForEvent(clientId, eventId);
 
-        assertEquals("Membership card validated successfully for event: " + eventId, result);
+        assertAll(
+                () -> assertTrue(result.valid()),
+                () -> assertEquals("Membership card validated successfully for event: " + eventId, result.message()),
+                () -> assertEquals(clientId, result.clientId()),
+                () -> assertEquals(eventId, result.eventId()),
+                () -> assertEquals(5, result.remainingEntrances())
+        );
+
         verify(membershipCardService, times(1)).validateActiveCard(clientId);
         verify(membershipCardService, times(1)).useEntrance(activeCard);
         verify(membershipCardService, times(1)).logAction(activeCard, activeCard.getUser(), MembershipCardAction.USED, 1);
