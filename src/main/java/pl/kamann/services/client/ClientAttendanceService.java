@@ -2,6 +2,7 @@ package pl.kamann.services.client;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.exception.handler.ApiException;
@@ -9,6 +10,7 @@ import pl.kamann.config.global.Codes;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
+import pl.kamann.systemevents.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
@@ -20,8 +22,8 @@ public class ClientAttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EntityLookupService lookupService;
-    private final ClientEventHistoryService clientEventHistoryService;
     private final ClientMembershipCardService clientMembershipCardService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Attendance joinEvent(Long eventId) {
@@ -43,7 +45,7 @@ public class ClientAttendanceService {
         attendance.setStatus(AttendanceStatus.REGISTERED);
         attendanceRepository.save(attendance);
 
-        clientEventHistoryService.logEventHistory(client, event, AttendanceStatus.REGISTERED);
+        eventPublisher.publishEvent(new EventHistoryLogEvent(client, event, AttendanceStatus.REGISTERED));
 
         return attendance;
     }
@@ -75,13 +77,12 @@ public class ClientAttendanceService {
         attendance.setStatus(cancellationType);
         attendanceRepository.save(attendance);
 
-        clientEventHistoryService.logEventHistory(attendance.getUser(), event, cancellationType);
+        eventPublisher.publishEvent(new EventHistoryLogEvent(attendance.getUser(), event, cancellationType));
 
         return attendance;
     }
 
     public Map<String, Object> getAttendanceSummary() {
-        // todo: implement lol
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 }
