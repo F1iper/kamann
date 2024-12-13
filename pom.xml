@@ -76,6 +76,18 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Flyway -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+			<version>10.14.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+			<version>10.14.0</version>
+		</dependency>
+
 		<!-- DevTools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
