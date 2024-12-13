@@ -45,8 +45,8 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 public class StartupSeeder implements CommandLineRunner {
-
     private final AppUserRepository appUserRepository;
+
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final EventTypeRepository eventTypeRepository;
@@ -62,35 +62,35 @@ public class StartupSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        seedRoles();
-        AppUser admin = seedAdminUser();
-        List<AppUser> instructors = seedInstructors();
-        List<AppUser> clients = seedClients();
-        List<EventType> eventTypes = seedEventTypes();
-
-        // Seed Events and Related Data
-        List<Event> events = seedEvents(instructors, eventTypes, admin);
-        List<Event> edgeCaseEvents = seedEventsWithEdgeCases(instructors, eventTypes, admin);
-        List<Event> allEvents = new ArrayList<>(events);
-        allEvents.addAll(edgeCaseEvents);
-
-        // Seed Membership Cards and Related Data
-        seedMembershipCards(clients);
-        seedClientRequestedCards(clients);
-        seedAdminCreatedCards();
-
-        // Seed Histories
-        seedUserEventHistory(allEvents, clients);
-        seedUserCardHistory(clients);
-
-        // Seed Registrations and Attendance
-        seedUserEventRegistrations(allEvents, clients);
-        seedAttendance(allEvents, clients);
-
-        // Seed Reporting Data
-        seedEventStats();
-        seedAttendanceStats();
-        seedRevenueStats();
+//        seedRoles();
+//        AppUser admin = seedAdminUser();
+//        List<AppUser> instructors = seedInstructors();
+//        List<AppUser> clients = seedClients();
+//        List<EventType> eventTypes = seedEventTypes();
+//
+//        // Seed Events and Related Data
+//        List<Event> events = seedEvents(instructors, eventTypes, admin);
+//        List<Event> edgeCaseEvents = seedEventsWithEdgeCases(instructors, eventTypes, admin);
+//        List<Event> allEvents = new ArrayList<>(events);
+//        allEvents.addAll(edgeCaseEvents);
+//
+//        // Seed Membership Cards and Related Data
+//        seedMembershipCards(clients);
+//        seedClientRequestedCards(clients);
+//        seedAdminCreatedCards();
+//
+//        // Seed Histories
+//        seedUserEventHistory(allEvents, clients);
+//        seedUserCardHistory(clients);
+//
+//        // Seed Registrations and Attendance
+//        seedUserEventRegistrations(allEvents, clients);
+//        seedAttendance(allEvents, clients);
+//
+//        // Seed Reporting Data
+//        seedEventStats();
+//        seedAttendanceStats();
+//        seedRevenueStats();
     }
 
     private void seedRoles() {
@@ -272,6 +272,8 @@ public class StartupSeeder implements CommandLineRunner {
             membershipCardRepository.save(card);
         }
     }
+
+
 
     private void seedAttendance(List<Event> events, List<AppUser> clients) {
         attendanceRepository.saveAll(List.of(
