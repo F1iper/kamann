@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,16 +34,16 @@ public class AdminUserController {
         return ResponseEntity.ok(appUserService.getAllUsers(pageable));
     }
 
-
     @GetMapping("/by-role")
     @Operation(
             summary = "Get users by role with pagination",
             description = "Retrieve a paginated list of users filtered by role. Supported roles are CLIENT and INSTRUCTOR.")
     public ResponseEntity<Page<AppUserDto>> getUsersByRole(
             @RequestParam String role,
-            Pageable pageable
+            @PageableDefault(size = 20) Pageable pageable // Ensure Pageable defaults
     ) {
-        return ResponseEntity.ok(appUserService.getUsersByRole(role, pageable));
+        Page<AppUserDto> users = appUserService.getUsersByRole(role, pageable);
+        return ResponseEntity.ok(users);
     }
 
     @PostMapping("/register")

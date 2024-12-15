@@ -184,12 +184,15 @@ class AppUserServiceTest {
     void getUsersByRoleReturnsEmptyPageWhenNoUsersExist() {
         var pageable = Pageable.unpaged();
         var role = new Role("INSTRUCTOR");
+
         when(roleRepository.findByName("INSTRUCTOR")).thenReturn(Optional.of(role));
         when(appUserRepository.findByRolesContaining(role, pageable)).thenReturn(Page.empty(pageable));
 
         var result = appUserService.getUsersByRole("INSTRUCTOR", pageable);
 
         assertTrue(result.isEmpty());
+        verify(roleRepository, times(1)).findByName("INSTRUCTOR");
         verify(appUserRepository, times(1)).findByRolesContaining(role, pageable);
+        verifyNoMoreInteractions(appUserRepository, roleRepository);
     }
 }
