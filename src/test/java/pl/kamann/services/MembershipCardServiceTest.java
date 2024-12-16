@@ -110,8 +110,6 @@ class MembershipCardServiceTest {
         );
     }
 
-
-
     @Test
     void logActionShouldThrowExceptionForInvalidUsedEntries() {
         var card = new MembershipCard();
@@ -161,7 +159,6 @@ class MembershipCardServiceTest {
         );
     }
 
-
     @Test
     void useEntranceShouldThrowExceptionWhenNoEntrancesLeft() {
         var card = new MembershipCard();
@@ -205,5 +202,4 @@ class MembershipCardServiceTest {
                 )
         );
     }
-
 }
