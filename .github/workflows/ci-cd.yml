@@ -27,6 +27,10 @@ jobs:
       - name: Build Application
         run: mvn clean package
 
+      - name: Print Docker Logs
+        if: always()
+        run: docker-compose logs
+
       - name: Start Docker Containers with GitHub Secrets
         env:
           SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
@@ -44,7 +48,7 @@ jobs:
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
         run: |
           docker-compose up -d --build
-          sleep 15
+          sleep 45
 
       - name: Test Application Health
         run: |
