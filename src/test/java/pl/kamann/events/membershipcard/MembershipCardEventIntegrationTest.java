@@ -9,10 +9,8 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -27,8 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ContextConfiguration(initializers = MembershipCardEventIntegrationTest.Initializer.class)
-class MembershipCardEventIntegrationTest {
+public class MembershipCardEventIntegrationTest {
 
     private static final String EXCHANGE_NAME = "test-exchange";
     private static final String QUEUE_NAME = "test-queue";
@@ -38,18 +35,14 @@ class MembershipCardEventIntegrationTest {
     static RabbitMQContainer rabbitMQContainer = new RabbitMQContainer("rabbitmq:3.11-management")
             .withExposedPorts(5672, 15672);
 
-    static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-        @Override
-        public void initialize(ConfigurableApplicationContext context) {
-            rabbitMQContainer.start();
+    @DynamicPropertySource
+    static void configureRabbitMQProperties(DynamicPropertyRegistry registry) {
+        rabbitMQContainer.start();
 
-            TestPropertyValues.of(
-                    "spring.rabbitmq.host=" + rabbitMQContainer.getHost(),
-                    "spring.rabbitmq.port=" + rabbitMQContainer.getMappedPort(5672),
-                    "spring.rabbitmq.username=guest",
-                    "spring.rabbitmq.password=guest"
-            ).applyTo(context.getEnvironment());
-        }
+        registry.add("spring.rabbitmq.host", rabbitMQContainer::getHost);
+        registry.add("spring.rabbitmq.port", () -> rabbitMQContainer.getMappedPort(5672));
+        registry.add("spring.rabbitmq.username", () -> "guest");
+        registry.add("spring.rabbitmq.password", () -> "guest");
     }
 
     @Autowired
