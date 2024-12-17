@@ -48,7 +48,7 @@ jobs:
 
       - name: Test Application Health
         run: |
-          curl -v http://localhost:${{ secrets.SERVER_PORT }}/actuator/health
+          curl -v http://localhost:8080/actuator/health
 
       - name: Stop Docker Compose
         if: always()
