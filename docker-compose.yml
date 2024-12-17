@@ -23,6 +23,8 @@ services:
 
   app:
     build: .
+    ports:
+      - "8080:8080"
     container_name: spring-boot-app
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
@@ -38,8 +40,6 @@ services:
       SERVER_PORT: ${SERVER_PORT}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_TIME: ${JWT_EXPIRATION_TIME}
-    ports:
-      - "8080:8080"
     depends_on:
       - postgres
       - rabbitmq
