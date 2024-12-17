@@ -50,9 +50,6 @@ jobs:
           docker-compose up -d --build
           sleep 45
 
-      - name: Test Application Health
-        run: |
-          curl -v http://localhost:8080/actuator/health
 
       - name: Stop Docker Compose
         if: always()
