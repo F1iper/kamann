@@ -54,53 +54,76 @@ It exposes a REST API for frontend and mobile clients.
 - **Language**: Java 21
 - **Framework**: Spring Boot 3
 - **Database**: PostgreSQL
-- **Authentication**: JWT (JSON Web Tokens)
+- **Authentication**: JWT (JSON Web Token)
 - **Documentation**: Swagger (OpenAPI 3.0)
 - **Migration Tool**: Flyway
+- **Message Queue**: Embedded RabbitMQ using Testcontainers (for testing and development)
 
 ## :bangbang: Requirements
 
 - **Java 21** installed.
-- **PostgreSQL** database instance.
 - **Maven** build tool.
+- A **.env** file with the necessary configuration.
 
 ## :inbox_tray: Installation
 
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/F1iper/kamann.git
-
-2. **Navigate to the Backend Directory**:
-   ```bash
-   cd kamann/backend
-
-3. **Configure the Database**:
-   - Update the **application.properties** file with your PostgreSQL credentials:
-   ```bash
-   spring.datasource.url=jdbc:postgresql://localhost:5432/<your_database_name>
-   spring.datasource.username=<your_database_username>
-   spring.datasource.password=<your_database_password>
-   spring.jpa.hibernate.ddl-auto=validate
-
-4. **Run database migrations**: (not implemented yet)
+   
+2. Copy the **.env-example** to **.env**:
     ```bash
-   ./mvnw flyway:migrate
+   cd kamann/backend
+   cp .env-example .env
 
-5. **Run the application:**
+3. Fill in your environment variables in the **.env** file.
+ - Update your db credentials, JWT secret, and other placeholders.
+
+    Example **.env**:
+   ```bash
+   # POSTGRESQL CONFIGURATION
+    SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/<your_database_name>
+    POSTGRES_USER=<your_database_username>
+    POSTGRES_PASSWORD=<your_database_password>
+
+    # SERVER CONFIGURATION
+    SERVER_PORT=8080
+
+    # JWT CONFIGURATION
+    JWT_SECRET=daf66e01593f61a15b857cf433aae03a005812b31234e149036bcc8dee755dbb
+    JWT_EXPIRATION_TIME=86400000
+
+    # RABBITMQ CONFIGURATION (embedded via Testcontainers - no manual setup needed)
+    SPRING_RABBITMQ_HOST=localhost
+    SPRING_RABBITMQ_PORT=5672
+    RABBITMQ_USERNAME=guest
+    RABBITMQ_PASSWORD=guest
+
+    # RABBITMQ QUEUES
+    MEMBERSHIPCARD_HISTORY_EXCHANGE=history-exchange
+    MEMBERSHIPCARD_HISTORY_QUEUE=history-queue
+    MEMBERSHIPCARD_HISTORY_ROUTINGKEY=history-routing-key
+
+4. **Run the application:**
    ```bash
    ./mvnw spring-boot:run
 
-6. **Access API documentation**:
+5. **Access API documentation**:
 Open **http://localhost:8080/swagger-ui/index.html** in your browser.
 
-## :file_folder: Project Structure
+## :rocket: CI/CD
 
-### :package: Key Packages
-- `pl.kamann.controllers`: Handles REST API endpoints.
-- `pl.kamann.services`: Contains business logic and service layer.
-- `pl.kamann.repositories`: Interfaces for interacting with the PostgreSQL database.
-- `pl.kamann.entities`: Data models for users, membership cards, and classes.
-- `pl.kamann.config`: Configuration for security, database, and global exception handling.
+### The CI/CD pipeline is configured with GitHub Actions:
+
+#### - Builds the application.
+#### - Runs integration tests using Testcontainers.
+#### - Secrets are securely managed via GitHub Secrets.
+
+## Key Points:
+#### - Developers do not need RabbitMQ installed locally.
+#### - Testcontainers handles RabbitMQ automatically.
+#### - The user must provide a **.env** file for local development.
+#### - For production, configure RabbitMQ manually in application.properties.
 
 ## :snowflake: Front-end (React)
 ### Is here:
