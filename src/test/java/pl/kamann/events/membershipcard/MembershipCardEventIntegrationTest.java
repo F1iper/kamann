@@ -14,6 +14,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.containers.RabbitMQContainer;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
 
@@ -33,17 +34,15 @@ class MembershipCardEventIntegrationTest {
     private static final String QUEUE_NAME = "test-queue";
     private static final String ROUTING_KEY = "test-routing";
 
-    private static final RabbitMQContainer rabbitMQContainer;
-
-    static {
-        rabbitMQContainer = new RabbitMQContainer("rabbitmq:3.11-management")
-                .withExposedPorts(5672, 15672);
-        rabbitMQContainer.start();
-    }
+    @Container
+    static RabbitMQContainer rabbitMQContainer = new RabbitMQContainer("rabbitmq:3.11-management")
+            .withExposedPorts(5672, 15672);
 
     static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override
         public void initialize(ConfigurableApplicationContext context) {
+            rabbitMQContainer.start();
+
             TestPropertyValues.of(
                     "spring.rabbitmq.host=" + rabbitMQContainer.getHost(),
                     "spring.rabbitmq.port=" + rabbitMQContainer.getMappedPort(5672),
@@ -60,7 +59,7 @@ class MembershipCardEventIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AmqpAdmin amqpAdmin; // Admin to create exchange, queue, and binding
+    private AmqpAdmin amqpAdmin;
 
     @BeforeAll
     void setupRabbitMQ() {
