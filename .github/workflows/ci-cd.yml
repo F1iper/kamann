@@ -19,6 +19,11 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Install Docker Compose
+        run: |
+         sudo apt-get update
+         sudo apt-get install -y docker-compose
+
       - name: Build Application
         run: mvn clean package
 
