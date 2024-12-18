@@ -77,7 +77,7 @@ It exposes a REST API for frontend and mobile clients.
    cp .env-example .env
 
 3. Fill in your environment variables in the **.env** file.
- - Update your db credentials, JWT secret, and other placeholders.
+ - Update your db credentials and that's it.
 
     Example **.env**:
    ```bash
