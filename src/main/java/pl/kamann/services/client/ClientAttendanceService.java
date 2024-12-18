@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
@@ -34,7 +34,8 @@ public class ClientAttendanceService {
             throw new ApiException(
                     "Client is already registered for the event.",
                     HttpStatus.CONFLICT,
-                    Codes.ALREADY_REGISTERED);
+                    AttendanceCodes.ALREADY_REGISTERED.name()
+            );
         }
 
         clientMembershipCardService.deductEntry(client.getId());
@@ -58,13 +59,15 @@ public class ClientAttendanceService {
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found.",
                         HttpStatus.NOT_FOUND,
-                        Codes.ATTENDANCE_NOT_FOUND));
+                        AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
+                ));
 
         if (attendance.getStatus() == AttendanceStatus.PRESENT) {
             throw new ApiException(
                     "Cannot cancel attendance already marked as PRESENT.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_ATTENDANCE_STATE);
+                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
+            );
         }
 
         var event = attendance.getEvent();

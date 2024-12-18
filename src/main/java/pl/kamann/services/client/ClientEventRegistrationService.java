@@ -4,8 +4,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.UserEventRegistration;
 import pl.kamann.entities.event.UserEventRegistrationStatus;
@@ -31,7 +31,8 @@ public class ClientEventRegistrationService {
             throw new ApiException(
                     "User is already registered.",
                     HttpStatus.CONFLICT,
-                    Codes.ALREADY_REGISTERED);
+                    AttendanceCodes.ALREADY_REGISTERED.name()
+            );
         }
 
         int registeredCount = registrationRepository.countByEventAndStatus(event, UserEventRegistrationStatus.REGISTERED);
@@ -63,7 +64,8 @@ public class ClientEventRegistrationService {
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found.",
                         HttpStatus.NOT_FOUND,
-                        Codes.ATTENDANCE_NOT_FOUND));
+                        AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
+                ));
 
         attendance.setStatus(AttendanceStatus.CANCELED_BY_CLIENT);
         attendanceRepository.save(attendance);
