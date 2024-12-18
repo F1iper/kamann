@@ -158,36 +158,36 @@ class AdminReportsServiceTest {
     @Test
     void testGetEventReportsInvalidPageNumber() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(-1, 2));
-        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.name(), exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.getMessage(), exception.getMessage());
     }
 
     @Test
     void testGetAttendanceReportsInvalidPageNumber() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(-1, 2));
-        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.name(), exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.getMessage(), exception.getMessage());
     }
 
     @Test
     void testGetRevenueReportsInvalidPageNumber() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(-1, 2));
-        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.name(), exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.getMessage(), exception.getMessage());
     }
 
     @Test
     void testGetEventReportsInvalidPageSize() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(0, -1));
-        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.name(), exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.getMessage(), exception.getMessage());
     }
 
     @Test
     void testGetAttendanceReportsInvalidPageSize() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(0, -1));
-        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.name(), exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.getMessage(), exception.getMessage());
     }
 
     @Test
     void testGetRevenueReportsInvalidPageSize() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(0, -1));
-        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.name(), exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.getMessage(), exception.getMessage());
     }
 }

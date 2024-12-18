@@ -11,6 +11,7 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.UserEventRegistrationStatus;
+import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.repositories.UserEventRegistrationRepository;
 import pl.kamann.services.client.ClientEventHistoryService;
 import pl.kamann.services.client.ClientEventRegistrationService;
@@ -26,6 +27,9 @@ class ClientEventRegistrationServiceTest {
 
     @Mock
     private UserEventRegistrationRepository registrationRepository;
+
+    @Mock
+    private AttendanceRepository attendanceRepository;
 
     @Mock
     private EntityLookupService lookupService;
