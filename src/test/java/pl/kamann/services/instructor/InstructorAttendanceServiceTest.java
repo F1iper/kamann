@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
@@ -20,7 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class InstructorAttendanceServiceTest {
@@ -115,7 +116,7 @@ class InstructorAttendanceServiceTest {
         ApiException exception = assertThrows(ApiException.class, () ->
                 instructorAttendanceService.cancelClientAttendance(eventId, clientId));
         assertEquals("Cannot cancel attendance already marked as PRESENT.", exception.getMessage());
-        assertEquals(Codes.INVALID_ATTENDANCE_STATE, exception.getCode());
+        assertEquals(AttendanceCodes.INVALID_ATTENDANCE_STATE.name(), exception.getCode());
     }
 
     @Test
@@ -162,7 +163,7 @@ class InstructorAttendanceServiceTest {
         ApiException exception = assertThrows(ApiException.class, () ->
                 instructorAttendanceService.markAttendance(eventId, clientId, AttendanceStatus.PRESENT));
         assertEquals("Cannot mark attendance for a canceled status. Current status: CANCELED_BY_INSTRUCTOR", exception.getMessage());
-        assertEquals(Codes.INVALID_ATTENDANCE_STATE, exception.getCode());
+        assertEquals(AttendanceCodes.INVALID_ATTENDANCE_STATE.name(), exception.getCode());
     }
 
     @Test
@@ -177,7 +178,7 @@ class InstructorAttendanceServiceTest {
         ApiException exception = assertThrows(ApiException.class, () ->
                 instructorAttendanceService.cancelClientAttendance(eventId, clientId));
         assertEquals("Attendance not found for user: 1 and event: 1", exception.getMessage());
-        assertEquals(Codes.ATTENDANCE_NOT_FOUND, exception.getCode());
+        assertEquals(AttendanceCodes.ATTENDANCE_NOT_FOUND.name(), exception.getCode());
     }
 
     @Test

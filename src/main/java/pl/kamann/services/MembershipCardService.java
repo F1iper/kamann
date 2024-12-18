@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.MembershipCardCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
@@ -36,7 +36,7 @@ public class MembershipCardService {
                 .orElseThrow(() -> new ApiException(
                         "No active membership card found.",
                         HttpStatus.NOT_FOUND,
-                        Codes.CARD_NOT_ACTIVE
+                        MembershipCardCodes.CARD_NOT_ACTIVE.name()
                 ));
     }
 
@@ -66,7 +66,7 @@ public class MembershipCardService {
             throw new ApiException(
                     "No remaining entrances on this membership card.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.NO_ENTRANCES_LEFT
+                    MembershipCardCodes.NO_ENTRANCES_LEFT.name()
             );
         }
 

@@ -3,8 +3,8 @@ package pl.kamann.services.instructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.MembershipCardCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.MembershipCardResponse;
 import pl.kamann.dtos.MembershipCardValidationResponse;
 import pl.kamann.entities.appuser.AppUser;
@@ -34,7 +34,8 @@ public class InstructorMembershipCardService {
             throw new ApiException(
                     "No membership cards found for the client.",
                     HttpStatus.NOT_FOUND,
-                    Codes.CARD_NOT_FOUND);
+                    MembershipCardCodes.CARD_NOT_FOUND.name()
+            );
         }
 
         return cards.stream().map(membershipCardMapper::toResponse).toList();

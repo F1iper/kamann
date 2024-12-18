@@ -4,8 +4,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.MembershipCardCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
 import pl.kamann.repositories.MembershipCardRepository;
@@ -31,7 +31,7 @@ public class ClientMembershipCardService {
             throw new ApiException(
                     "Client already has an active membership card.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.CARD_ALREADY_EXISTS
+                    MembershipCardCodes.CARD_ALREADY_EXISTS.name()
             );
         }
 
@@ -39,7 +39,7 @@ public class ClientMembershipCardService {
                 .orElseThrow(() -> new ApiException(
                         "Membership card not found.",
                         HttpStatus.NOT_FOUND,
-                        Codes.CARD_NOT_FOUND
+                        MembershipCardCodes.CARD_NOT_FOUND.name()
                 ));
 
         MembershipCard clientCard = MembershipCard.builder()
@@ -68,7 +68,7 @@ public class ClientMembershipCardService {
             throw new ApiException(
                     "No active membership card found.",
                     HttpStatus.NOT_FOUND,
-                    Codes.CARD_NOT_ACTIVE
+                    MembershipCardCodes.CARD_NOT_ACTIVE.name()
             );
         }
 
@@ -76,7 +76,7 @@ public class ClientMembershipCardService {
             throw new ApiException(
                     "Multiple active membership cards found.",
                     HttpStatus.CONFLICT,
-                    Codes.MULTIPLE_ACTIVE_CARDS
+                    MembershipCardCodes.MULTIPLE_ACTIVE_CARDS.name()
             );
         }
 
@@ -91,7 +91,7 @@ public class ClientMembershipCardService {
             throw new ApiException(
                     "The membership card has no remaining entrances.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.NO_ENTRANCES_LEFT
+                    MembershipCardCodes.NO_ENTRANCES_LEFT.name()
             );
         }
 

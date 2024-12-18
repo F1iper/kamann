@@ -5,8 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
@@ -16,7 +17,6 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.utility.EntityLookupService;
 
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -34,7 +34,8 @@ public class AppUserService {
             throw new ApiException(
                     "No users found",
                     HttpStatus.NOT_FOUND,
-                    Codes.USER_NOT_FOUND);
+                    AuthCodes.USER_NOT_FOUND.name()
+            );
         }
         return users.map(appUserMapper::toDto);
     }
@@ -44,7 +45,8 @@ public class AppUserService {
             throw new ApiException(
                     "User ID cannot be null",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT);
+                    StatusCodes.INVALID_INPUT.name()
+            );
         }
 
         AppUser user = entityLookupService.findUserById(id);
@@ -56,14 +58,16 @@ public class AppUserService {
             throw new ApiException(
                     "Email cannot be null or blank",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT);
+                    StatusCodes.INVALID_INPUT.name()
+            );
         }
 
         if (userDto.roles() == null || userDto.roles().isEmpty()) {
             throw new ApiException(
                     "Roles cannot be null or empty",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT);
+                    StatusCodes.INVALID_INPUT.name()
+            );
         }
 
         entityLookupService.validateEmailNotTaken(userDto.email());
@@ -84,14 +88,16 @@ public class AppUserService {
             throw new ApiException(
                     "User ID cannot be null",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT);
+                    StatusCodes.INVALID_INPUT.name()
+            );
         }
 
         if (status == null) {
             throw new ApiException(
                     "Status cannot be null",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT);
+                    StatusCodes.INVALID_INPUT.name()
+            );
         }
 
         AppUser user = entityLookupService.findUserById(userId);
@@ -112,7 +118,7 @@ public class AppUserService {
             throw new ApiException(
                     "Role name cannot be null or blank",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT
+                    StatusCodes.INVALID_INPUT.name()
             );
         }
 
@@ -120,43 +126,13 @@ public class AppUserService {
                 .orElseThrow(() -> new ApiException(
                         "Role not found: " + roleName,
                         HttpStatus.NOT_FOUND,
-                        Codes.ROLE_NOT_FOUND
+                        AuthCodes.ROLE_NOT_FOUND.name()
                 ));
 
         Page<AppUser> users = appUserRepository.findByRolesContaining(role, pageable);
 
         if (users.isEmpty()) {
             return Page.empty(pageable);
-        }
-
-        return appUserMapper.toDtoPage(users);
-    }
-
-    //todo remove ?
-    public Page<AppUserDto> getUsersByRoleWithPagination(String roleName, Pageable pageable) {
-        if (roleName == null || roleName.isBlank()) {
-            throw new ApiException(
-                    "Role name cannot be null or blank",
-                    HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT
-            );
-        }
-
-        Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ApiException(
-                        "Role not found: " + roleName,
-                        HttpStatus.NOT_FOUND,
-                        Codes.ROLE_NOT_FOUND
-                ));
-
-        Page<AppUser> users = appUserRepository.findByRolesContaining(role, pageable);
-
-        if (users.isEmpty()) {
-            throw new ApiException(
-                    "No users found with role: " + roleName,
-                    HttpStatus.NOT_FOUND,
-                    Codes.USER_NOT_FOUND
-            );
         }
 
         return appUserMapper.toDtoPage(users);

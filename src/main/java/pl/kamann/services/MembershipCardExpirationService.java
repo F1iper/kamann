@@ -3,8 +3,8 @@ package pl.kamann.services;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.MembershipCardCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
 import pl.kamann.repositories.MembershipCardRepository;
@@ -32,6 +32,7 @@ public class MembershipCardExpirationService {
         }
     }
 
+    // todo: not used.. to be used
     public void handleExpiration(Long userId) {
         eventPublisher.publishEvent(new MembershipCardEvent(this, userId, MembershipCardAction.EXPIRE));
     }
@@ -42,13 +43,15 @@ public class MembershipCardExpirationService {
                 .orElseThrow(() -> new ApiException(
                         "No active membership card found for user: " + userId,
                         HttpStatus.NOT_FOUND,
-                        Codes.CARD_NOT_FOUND));
+                        MembershipCardCodes.CARD_NOT_FOUND.name())
+                );
 
         if (!isRenewable(card)) {
             throw new ApiException(
                     "Membership card is not eligible for renewal.",
                     HttpStatus.CONFLICT,
-                    Codes.INVALID_CARD_STATE);
+                    MembershipCardCodes.INVALID_CARD_STATE.name()
+            );
         }
 
         extendCardValidity(card);
@@ -86,7 +89,8 @@ public class MembershipCardExpirationService {
                 throw new ApiException(
                         "Unknown membership card type: " + card.getMembershipCardType(),
                         HttpStatus.CONFLICT,
-                        Codes.UNKNOWN_CARD_TYPE);
+                        MembershipCardCodes.UNKNOWN_CARD_TYPE.name()
+                );
         }
     }
 }

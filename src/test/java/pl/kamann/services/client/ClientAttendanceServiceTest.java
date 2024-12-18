@@ -9,8 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
@@ -25,7 +25,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ClientAttendanceServiceTest {
@@ -104,7 +105,7 @@ class ClientAttendanceServiceTest {
         assertThatThrownBy(() -> clientAttendanceService.joinEvent(mockEvent.getId()))
                 .isInstanceOf(ApiException.class)
                 .extracting("status", "code")
-                .containsExactly(HttpStatus.CONFLICT, Codes.ALREADY_REGISTERED);
+                .containsExactly(HttpStatus.CONFLICT, AttendanceCodes.ALREADY_REGISTERED.name());
     }
 
     @Test
@@ -153,7 +154,7 @@ class ClientAttendanceServiceTest {
         assertThatThrownBy(() -> clientAttendanceService.cancelAttendance(mockEvent.getId()))
                 .isInstanceOf(ApiException.class)
                 .extracting("status", "code")
-                .containsExactly(HttpStatus.NOT_FOUND, Codes.ATTENDANCE_NOT_FOUND);
+                .containsExactly(HttpStatus.NOT_FOUND, AttendanceCodes.ATTENDANCE_NOT_FOUND.name());
     }
 
     @Test
@@ -172,7 +173,7 @@ class ClientAttendanceServiceTest {
         assertThatThrownBy(() -> clientAttendanceService.cancelAttendance(mockEvent.getId()))
                 .isInstanceOf(ApiException.class)
                 .extracting("status", "code")
-                .containsExactly(HttpStatus.BAD_REQUEST, Codes.INVALID_ATTENDANCE_STATE);
+                .containsExactly(HttpStatus.BAD_REQUEST, AttendanceCodes.INVALID_ATTENDANCE_STATE.name());
     }
 
     @Test

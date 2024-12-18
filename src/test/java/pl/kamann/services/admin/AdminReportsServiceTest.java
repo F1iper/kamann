@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import pl.kamann.config.global.Codes;
+import pl.kamann.config.codes.PaginationCodes;
 import pl.kamann.dtos.reports.AttendanceReportDto;
 import pl.kamann.dtos.reports.EventReportDto;
 import pl.kamann.dtos.reports.RevenueReportDto;
@@ -158,36 +158,36 @@ class AdminReportsServiceTest {
     @Test
     void testGetEventReportsInvalidPageNumber() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(-1, 2));
-        assertEquals(Codes.PAGE_INDEX_CANNOT_BE_0, exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.name(), exception.getMessage());
     }
 
     @Test
     void testGetAttendanceReportsInvalidPageNumber() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(-1, 2));
-        assertEquals(Codes.PAGE_INDEX_CANNOT_BE_0, exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.name(), exception.getMessage());
     }
 
     @Test
     void testGetRevenueReportsInvalidPageNumber() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(-1, 2));
-        assertEquals(Codes.PAGE_INDEX_CANNOT_BE_0, exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_INDEX_CANNOT_BE_0.name(), exception.getMessage());
     }
 
     @Test
     void testGetEventReportsInvalidPageSize() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(0, -1));
-        assertEquals(Codes.PAGE_SIZE_LESS_THAN_0, exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.name(), exception.getMessage());
     }
 
     @Test
     void testGetAttendanceReportsInvalidPageSize() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(0, -1));
-        assertEquals(Codes.PAGE_SIZE_LESS_THAN_0, exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.name(), exception.getMessage());
     }
 
     @Test
     void testGetRevenueReportsInvalidPageSize() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> PageRequest.of(0, -1));
-        assertEquals(Codes.PAGE_SIZE_LESS_THAN_0, exception.getMessage());
+        assertEquals(PaginationCodes.PAGE_SIZE_LESS_THAN_0.name(), exception.getMessage());
     }
 }

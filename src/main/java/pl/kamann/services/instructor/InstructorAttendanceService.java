@@ -4,8 +4,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.repositories.AttendanceRepository;
@@ -73,7 +73,8 @@ public class InstructorAttendanceService {
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for user: " + clientId + " and event: " + eventId,
                         HttpStatus.NOT_FOUND,
-                        Codes.ATTENDANCE_NOT_FOUND));
+                        AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
+                ));
     }
 
     private void validateCancelableStatus(Attendance attendance) {
@@ -82,13 +83,15 @@ public class InstructorAttendanceService {
             throw new ApiException(
                     "Cannot cancel attendance already marked as PRESENT.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_ATTENDANCE_STATE);
+                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
+            );
         }
         if (currentStatus != AttendanceStatus.REGISTERED && currentStatus != AttendanceStatus.WAITLISTED) {
             throw new ApiException(
                     "Cannot cancel attendance in current state: " + currentStatus,
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_ATTENDANCE_STATE);
+                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
+            );
         }
     }
 
@@ -104,13 +107,15 @@ public class InstructorAttendanceService {
             throw new ApiException(
                     "Cannot mark attendance for a canceled status. Current status: " + currentStatus,
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_ATTENDANCE_STATE);
+                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
+            );
         }
         if (status == AttendanceStatus.CANCELED_BY_INSTRUCTOR || status == AttendanceStatus.CANCELED_BY_CLIENT) {
             throw new ApiException(
                     "Invalid status update to: " + status + ". Use cancellation methods instead.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_ATTENDANCE_STATE);
+                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
+            );
         }
     }
 }
