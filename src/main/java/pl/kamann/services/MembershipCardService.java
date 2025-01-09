@@ -3,7 +3,6 @@ package pl.kamann.services;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.MembershipCardCodes;
@@ -12,7 +11,6 @@ import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
 import pl.kamann.entities.membershipcard.MembershipCardHistory;
-import pl.kamann.events.membershipcard.MembershipCardChangeEvent;
 import pl.kamann.repositories.MembershipCardHistoryRepository;
 import pl.kamann.repositories.MembershipCardRepository;
 
@@ -25,11 +23,6 @@ public class MembershipCardService {
 
     private final MembershipCardRepository membershipCardRepository;
     private final MembershipCardHistoryRepository membershipCardHistoryRepository;
-    private final RabbitTemplate rabbitTemplate;
-
-    private static final String EXCHANGE_NAME = "membership-card-exchange";
-    private static final String ROUTING_KEY = "membership.card.changed";
-
 
     public MembershipCard validateActiveCard(Long clientId) {
         return membershipCardRepository.findActiveCardByUserId(clientId)
@@ -56,8 +49,6 @@ public class MembershipCardService {
         history.setEntriesUsed(action == MembershipCardAction.USED ? entriesUsed : 0);
         history.setActionDate(LocalDateTime.now());
         membershipCardHistoryRepository.save(history);
-
-        publishMembershipCardEvent(card, user, action);
     }
 
     @Transactional
@@ -91,21 +82,7 @@ public class MembershipCardService {
         membershipCardHistoryRepository.save(history);
 
         membershipCardRepository.save(card);
-
-        publishMembershipCardEvent(card, card.getUser(), MembershipCardAction.EXPIRE);
     }
 
-    private void publishMembershipCardEvent(MembershipCard card, AppUser user, MembershipCardAction action) {
-        MembershipCardChangeEvent event = new MembershipCardChangeEvent(
-                card.getId(),
-                user.getId(),
-                action,
-                card.getEntrancesLeft(),
-                LocalDateTime.now()
-        );
-
-        rabbitTemplate.convertAndSend(EXCHANGE_NAME, ROUTING_KEY, event);
-        log.info("MembershipCardChangeEvent sent to RabbitMQ: {}", event);
-    }
 
 }
