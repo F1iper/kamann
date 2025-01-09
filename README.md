@@ -57,7 +57,6 @@ It exposes a REST API for frontend and mobile clients.
 - **Authentication**: JWT (JSON Web Token)
 - **Documentation**: Swagger (OpenAPI 3.0)
 - **Migration Tool**: Flyway
-- **Message Queue**: Embedded RabbitMQ using Testcontainers (for testing and development)
 
 ## :bangbang: Requirements
 
@@ -86,23 +85,9 @@ It exposes a REST API for frontend and mobile clients.
     POSTGRES_USER=<your_database_username>
     POSTGRES_PASSWORD=<your_database_password>
 
-    # SERVER CONFIGURATION
-    SERVER_PORT=8080
-
     # JWT CONFIGURATION
     JWT_SECRET=daf66e01593f61a15b857cf433aae03a005812b31234e149036bcc8dee755dbb
     JWT_EXPIRATION_TIME=86400000
-
-    # RABBITMQ CONFIGURATION (embedded via Testcontainers - no manual setup needed)
-    SPRING_RABBITMQ_HOST=localhost
-    SPRING_RABBITMQ_PORT=5672
-    RABBITMQ_USERNAME=guest
-    RABBITMQ_PASSWORD=guest
-
-    # RABBITMQ QUEUES
-    MEMBERSHIPCARD_HISTORY_EXCHANGE=history-exchange
-    MEMBERSHIPCARD_HISTORY_QUEUE=history-queue
-    MEMBERSHIPCARD_HISTORY_ROUTINGKEY=history-routing-key
 
 4. **Run the application:**
    ```bash
@@ -120,8 +105,6 @@ Open **http://localhost:8080/swagger-ui/index.html** in your browser.
 #### - Secrets are securely managed via GitHub Secrets.
 
 ## Key Points:
-#### - Developers do not need RabbitMQ installed locally.
-#### - Testcontainers handles RabbitMQ automatically.
 #### - The user must provide a **.env** file for local development.
 #### - For production, configure RabbitMQ manually in application.properties.
 
