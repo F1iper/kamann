@@ -17,6 +17,7 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.utility.EntityLookupService;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -28,8 +29,8 @@ public class AppUserService {
     private final EntityLookupService entityLookupService;
     private final RoleRepository roleRepository;
 
-    public Page<AppUserDto> getAllUsers(Pageable pageable) {
-        Page<AppUser> users = appUserRepository.findAll(pageable);
+    public List<AppUserDto> getAllUsers() {
+        List<AppUser> users = appUserRepository.findAll();
         if (users.isEmpty()) {
             throw new ApiException(
                     "No users found",
@@ -37,7 +38,7 @@ public class AppUserService {
                     AuthCodes.USER_NOT_FOUND.name()
             );
         }
-        return users.map(appUserMapper::toDto);
+        return users.stream().map(appUserMapper::toDto).toList();
     }
 
     public AppUserDto getUserById(Long id) {

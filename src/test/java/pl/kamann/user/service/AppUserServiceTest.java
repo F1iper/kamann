@@ -6,7 +6,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.AppUserDto;
@@ -46,8 +45,7 @@ class AppUserServiceTest {
     private AppUserService appUserService;
 
     @Test
-    void getAllUsersReturnsPageOfUserDtos() {
-        var pageable = Pageable.unpaged();
+    void getAllUsersReturnsListOfUserDtos() {
         var users = List.of(
                 AppUser.builder()
                         .id(1L)
@@ -66,9 +64,8 @@ class AppUserServiceTest {
                         .status(AppUserStatus.INACTIVE)
                         .build()
         );
-        var userPage = new PageImpl<>(users, pageable, users.size());
 
-        when(appUserRepository.findAll(pageable)).thenReturn(userPage);
+        when(appUserRepository.findAll()).thenReturn(users);
 
         var userDtos = List.of(
                 AppUserDto.builder()
@@ -88,17 +85,15 @@ class AppUserServiceTest {
                         .status(AppUserStatus.INACTIVE)
                         .build()
         );
-
         when(appUserMapper.toDto(users.get(0))).thenReturn(userDtos.get(0));
         when(appUserMapper.toDto(users.get(1))).thenReturn(userDtos.get(1));
 
-        var result = appUserService.getAllUsers(pageable);
+        var result = appUserService.getAllUsers();
 
-        assertEquals(userDtos, result.getContent());
-        assertEquals(userPage.getTotalElements(), result.getTotalElements());
-        assertEquals(userPage.getTotalPages(), result.getTotalPages());
+        assertEquals(userDtos, result);
+        assertEquals(users.size(), result.size());
 
-        verify(appUserRepository, times(1)).findAll(pageable);
+        verify(appUserRepository, times(1)).findAll();
         verify(appUserMapper, times(users.size())).toDto(any(AppUser.class));
     }
 
