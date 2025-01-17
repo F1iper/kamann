@@ -1,4 +1,4 @@
-package pl.kamann.dtos;
+package pl.kamann.dtos.login;
 
 public record LoginResponse(
         String token

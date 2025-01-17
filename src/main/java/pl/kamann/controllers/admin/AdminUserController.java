@@ -9,14 +9,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.dtos.RegisterRequest;
+import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.services.AppUserService;
 import pl.kamann.services.AuthService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -29,11 +29,15 @@ public class AdminUserController {
 
     @GetMapping
     @Operation(
-            summary = "Get all users without pagination",
-            description = "Retrieve a non-paginated list of all users in the system, including their details such as email, roles, and status."
+            summary = "Get all users with pagination",
+            description = "Retrieve a paginated list of all users in the system sorted by role."
     )
-    public ResponseEntity<List<AppUserDto>> getAllUsers() {
-        return ResponseEntity.ok(appUserService.getAllUsers());
+    public ResponseEntity<PaginatedResponseDto<AppUserDto>> getAllUsers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        PaginatedResponseDto<AppUserDto> paginatedUsers = appUserService.getAllUsers(page, size);
+        return ResponseEntity.ok(paginatedUsers);
     }
 
     @GetMapping("/by-role")

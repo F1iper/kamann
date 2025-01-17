@@ -2,12 +2,16 @@ package pl.kamann.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
@@ -29,17 +33,24 @@ public class AppUserService {
     private final EntityLookupService entityLookupService;
     private final RoleRepository roleRepository;
 
-    public List<AppUserDto> getAllUsers() {
-        List<AppUser> users = appUserRepository.findAll();
-        if (users.isEmpty()) {
-            throw new ApiException(
-                    "No users found",
-                    HttpStatus.NOT_FOUND,
-                    AuthCodes.USER_NOT_FOUND.name()
-            );
-        }
-        return users.stream().map(appUserMapper::toDto).toList();
+    public PaginatedResponseDto<AppUserDto> getAllUsers(int page, int size) {
+        int adjustedPage = page - 1;
+        Pageable pageable = PageRequest.of(adjustedPage, size, Sort.by("roles").ascending());
+
+        Page<AppUser> pagedUsers = appUserRepository.findAll(pageable);
+
+        List<AppUserDto> userDtos = pagedUsers.getContent().stream()
+                .map(appUserMapper::toDto)
+                .toList();
+
+        PaginationMetaData metaData = new PaginationMetaData(
+                pagedUsers.getTotalPages(),
+                pagedUsers.getTotalElements()
+        );
+
+        return new PaginatedResponseDto<>(userDtos, metaData);
     }
+
 
     public AppUserDto getUserById(Long id) {
         if (id == null) {

@@ -15,4 +15,5 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     List<AppUser> findByRolesContaining(Role role);
 
     Page<AppUser> findByRolesContaining(Role role, Pageable pageable);
+
 }
