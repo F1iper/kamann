@@ -14,12 +14,10 @@ import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
-import pl.kamann.entities.appuser.Role;
 import pl.kamann.services.AppUserService;
 import pl.kamann.services.AuthService;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/admin/users")

@@ -87,11 +87,9 @@ class AppUserServiceTest {
                         .build()
         );
 
-        // Mock repository to return users
         when(appUserRepository.findAll(PageRequest.of(0, users.size())))
                 .thenReturn(new PageImpl<>(users));
 
-        // Mock the mapper
         when(appUserMapper.toDto(any(AppUser.class))).thenAnswer(invocation -> {
             AppUser user = invocation.getArgument(0);
             return userDtos.stream()
