@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
@@ -23,6 +24,7 @@ import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,11 +35,29 @@ public class AppUserService {
     private final EntityLookupService entityLookupService;
     private final RoleRepository roleRepository;
 
-    public PaginatedResponseDto<AppUserDto> getAllUsers(int page, int size) {
-        int adjustedPage = page - 1;
-        Pageable pageable = PageRequest.of(adjustedPage, size, Sort.by("roles").ascending());
+    public PaginatedResponseDto<AppUserDto> getUsers(int page, int size, List<String> roleNames) {
+        int defaultPage = 1;
+        int defaultSize = 10;
 
-        Page<AppUser> pagedUsers = appUserRepository.findAll(pageable);
+        page = (page > 0) ? page : defaultPage;
+        size = (size > 0) ? size : defaultSize;
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<AppUser> pagedUsers;
+
+        if (roleNames == null || roleNames.isEmpty()) {
+            pagedUsers = appUserRepository.findAll(pageable);
+        } else {
+            List<Role> roles = roleNames.stream()
+                    .map(name -> roleRepository.findByName(name)
+                            .orElseThrow(() -> new ApiException(
+                                    "Role not found: " + name,
+                                    HttpStatus.NOT_FOUND,
+                                    StatusCodes.NO_RESULTS.name())))
+                    .collect(Collectors.toList());
+
+            pagedUsers = appUserRepository.findUsersByRoles(pageable, roles);
+        }
 
         List<AppUserDto> userDtos = pagedUsers.getContent().stream()
                 .map(appUserMapper::toDto)
@@ -50,7 +70,6 @@ public class AppUserService {
 
         return new PaginatedResponseDto<>(userDtos, metaData);
     }
-
 
     public AppUserDto getUserById(Long id) {
         if (id == null) {

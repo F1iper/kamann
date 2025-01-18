@@ -18,6 +18,9 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.services.AppUserService;
 import pl.kamann.services.AuthService;
 
+import java.util.List;
+import java.util.Set;
+
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
@@ -27,17 +30,18 @@ public class AdminUserController {
     private final AppUserService appUserService;
     private final AuthService authService;
 
-    @GetMapping
+    @PostMapping
     @Operation(
             summary = "Get all users with pagination",
             description = "Retrieve a paginated list of all users in the system sorted by role."
     )
-    public ResponseEntity<PaginatedResponseDto<AppUserDto>> getAllUsers(
+    public ResponseEntity<PaginatedResponseDto<AppUserDto>> getAllUsersByRole(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestBody(required = false) List<String> roles
     ) {
-        PaginatedResponseDto<AppUserDto> paginatedUsers = appUserService.getAllUsers(page, size);
-        return ResponseEntity.ok(paginatedUsers);
+
+        return ResponseEntity.ok(appUserService.getUsers(page, size, roles));
     }
 
     @GetMapping("/by-role")
