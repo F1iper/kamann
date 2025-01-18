@@ -9,8 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
@@ -25,7 +23,6 @@ import pl.kamann.utility.EntityLookupService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -90,31 +87,30 @@ class AppUserServiceTest {
                         .build()
         );
 
-        // Mock the repository to return the users
-        when(appUserRepository.findAll())
-                .thenReturn(users);
+        // Mock repository to return users
+        when(appUserRepository.findAll(PageRequest.of(0, users.size())))
+                .thenReturn(new PageImpl<>(users));
 
-        // Mock the mapper to map AppUser to AppUserDto
-        for (AppUser user : users) {
-            when(appUserMapper.toDto(user)).thenReturn(userDtos.stream()
+        // Mock the mapper
+        when(appUserMapper.toDto(any(AppUser.class))).thenAnswer(invocation -> {
+            AppUser user = invocation.getArgument(0);
+            return userDtos.stream()
                     .filter(dto -> dto.id().equals(user.getId()))
                     .findFirst()
-                    .orElse(null));
-        }
+                    .orElse(null);
+        });
 
         // When
-//        var result = appUserService.getAllUsers(1, users.size());
+        var result = appUserService.getUsers(1, users.size(), null);
 
         // Then
-//        assertNotNull(result);
-//        assertEquals(users.size(), result.getMetaData().getTotalElements());
-//        assertEquals(userDtos, result.getMetaData().getTotalPages());
+        assertNotNull(result);
+        assertEquals(users.size(), result.getMetaData().getTotalElements());
+        assertEquals(1, result.getMetaData().getTotalPages());
 
-        verify(appUserRepository, times(1)).findAll();
+        verify(appUserRepository, times(1)).findAll(PageRequest.of(0, users.size()));
         verify(appUserMapper, times(users.size())).toDto(any(AppUser.class));
     }
-
-
 
     @Test
     void getUserByIdReturnsUserDto() {
