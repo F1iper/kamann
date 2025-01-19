@@ -43,7 +43,7 @@ public class AppUserService {
         Page<AppUser> pagedUsers;
 
         if (roleName == null || roleName.isEmpty()) {
-            pagedUsers = appUserRepository.findAll(pageable);
+            pagedUsers = appUserRepository.findAllWithRoles(pageable);
         } else {
             Role role = roleRepository.findByName(roleName.toUpperCase())
                     .orElseThrow(() -> new ApiException(
@@ -51,11 +51,18 @@ public class AppUserService {
                             HttpStatus.NOT_FOUND,
                             StatusCodes.NO_RESULTS.name()));
 
-            pagedUsers = appUserRepository.findUsersByRole(pageable, role);
+            pagedUsers = appUserRepository.findUsersByRoleWithRoles(pageable, role);
         }
 
         List<AppUserDto> userDtos = pagedUsers.getContent().stream()
-                .map(appUserMapper::toDto)
+                .map(appUser -> new AppUserDto(
+                        appUser.getId(),
+                        appUser.getEmail(),
+                        appUser.getFirstName(),
+                        appUser.getLastName(),
+                        appUser.getRoles(),
+                        appUser.getStatus()
+                ))
                 .toList();
 
         PaginationMetaData metaData = new PaginationMetaData(
@@ -65,6 +72,7 @@ public class AppUserService {
 
         return new PaginatedResponseDto<>(userDtos, metaData);
     }
+
 
 
     public AppUserDto getUserById(Long id) {
