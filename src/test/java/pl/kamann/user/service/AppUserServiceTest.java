@@ -68,47 +68,25 @@ class AppUserServiceTest {
                         .build()
         );
 
-        var userDtos = List.of(
-                AppUserDto.builder()
-                        .id(1L)
-                        .email("email1@example.com")
-                        .firstName("John")
-                        .lastName("Doe")
-                        .roles(Set.of(new Role("CLIENT")))
-                        .status(AppUserStatus.ACTIVE)
-                        .build(),
-                AppUserDto.builder()
-                        .id(2L)
-                        .email("email2@example.com")
-                        .firstName("Jane")
-                        .lastName("Smith")
-                        .roles(Set.of(new Role("INSTRUCTOR")))
-                        .status(AppUserStatus.INACTIVE)
-                        .build()
-        );
+        int page = 1;
+        int size = users.size();
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
 
-        when(appUserRepository.findAll(PageRequest.of(0, users.size())))
-                .thenReturn(new PageImpl<>(users));
-
-        when(appUserMapper.toDto(any(AppUser.class))).thenAnswer(invocation -> {
-            AppUser user = invocation.getArgument(0);
-            return userDtos.stream()
-                    .filter(dto -> dto.id().equals(user.getId()))
-                    .findFirst()
-                    .orElse(null);
-        });
+        when(appUserRepository.findAllWithRoles(pageRequest))
+                .thenReturn(new PageImpl<>(users, pageRequest, users.size()));
 
         // When
-        var result = appUserService.getUsers(1, users.size(), null);
+        var result = appUserService.getUsers(page, size, null);
 
         // Then
-        assertNotNull(result);
-        assertEquals(users.size(), result.getMetaData().getTotalElements());
-        assertEquals(1, result.getMetaData().getTotalPages());
+        assertNotNull(result, "Result should not be null");
+        assertEquals(users.size(), result.getMetaData().getTotalElements(),
+                "Total elements should match the size of the users list");
+        assertEquals(1, result.getMetaData().getTotalPages(), "Total pages should be 1");
 
-        verify(appUserRepository, times(1)).findAll(PageRequest.of(0, users.size()));
-        verify(appUserMapper, times(users.size())).toDto(any(AppUser.class));
+        verify(appUserRepository, times(1)).findAllWithRoles(pageRequest);
     }
+
 
     @Test
     void getUserByIdReturnsUserDto() {
