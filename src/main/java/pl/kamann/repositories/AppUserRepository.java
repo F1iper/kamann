@@ -18,6 +18,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     Page<AppUser> findByRolesContaining(Role role, Pageable pageable);
 
-    @Query("SELECT DISTINCT u FROM AppUser u JOIN u.roles r WHERE r IN :roles")
-    Page<AppUser> findUsersByRoles(Pageable pageable, @Param("roles") List<Role> roles);
+    @Query("SELECT DISTINCT u FROM AppUser u JOIN u.roles r WHERE r = :role")
+    Page<AppUser> findUsersByRole(Pageable pageable, @Param("role") Role role);
+
 }

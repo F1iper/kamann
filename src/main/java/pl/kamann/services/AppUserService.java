@@ -22,7 +22,6 @@ import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +32,7 @@ public class AppUserService {
     private final EntityLookupService entityLookupService;
     private final RoleRepository roleRepository;
 
-    public PaginatedResponseDto<AppUserDto> getUsers(int page, int size, List<String> roleNames) {
+    public PaginatedResponseDto<AppUserDto> getUsers(int page, int size, String roleName) {
         int defaultPage = 1;
         int defaultSize = 10;
 
@@ -43,18 +42,16 @@ public class AppUserService {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<AppUser> pagedUsers;
 
-        if (roleNames == null || roleNames.isEmpty()) {
+        if (roleName == null || roleName.isEmpty()) {
             pagedUsers = appUserRepository.findAll(pageable);
         } else {
-            List<Role> roles = roleNames.stream()
-                    .map(name -> roleRepository.findByName(name)
-                            .orElseThrow(() -> new ApiException(
-                                    "Role not found: " + name,
-                                    HttpStatus.NOT_FOUND,
-                                    StatusCodes.NO_RESULTS.name())))
-                    .collect(Collectors.toList());
+            Role role = roleRepository.findByName(roleName.toUpperCase())
+                    .orElseThrow(() -> new ApiException(
+                            "Role not found: " + roleName,
+                            HttpStatus.NOT_FOUND,
+                            StatusCodes.NO_RESULTS.name()));
 
-            pagedUsers = appUserRepository.findUsersByRoles(pageable, roles);
+            pagedUsers = appUserRepository.findUsersByRole(pageable, role);
         }
 
         List<AppUserDto> userDtos = pagedUsers.getContent().stream()
@@ -68,6 +65,7 @@ public class AppUserService {
 
         return new PaginatedResponseDto<>(userDtos, metaData);
     }
+
 
     public AppUserDto getUserById(Long id) {
         if (id == null) {
