@@ -6,6 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.AppUserDto;
@@ -45,7 +47,8 @@ class AppUserServiceTest {
     private AppUserService appUserService;
 
     @Test
-    void getAllUsersReturnsListOfUserDtos() {
+    void getAllUsersReturnsPaginatedResponseDto() {
+        // Given
         var users = List.of(
                 AppUser.builder()
                         .id(1L)
@@ -65,37 +68,25 @@ class AppUserServiceTest {
                         .build()
         );
 
-        when(appUserRepository.findAll()).thenReturn(users);
+        int page = 1;
+        int size = users.size();
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
 
-        var userDtos = List.of(
-                AppUserDto.builder()
-                        .id(1L)
-                        .email("email1@example.com")
-                        .firstName("John")
-                        .lastName("Doe")
-                        .roles(Set.of(new Role("CLIENT")))
-                        .status(AppUserStatus.ACTIVE)
-                        .build(),
-                AppUserDto.builder()
-                        .id(2L)
-                        .email("email2@example.com")
-                        .firstName("Jane")
-                        .lastName("Smith")
-                        .roles(Set.of(new Role("INSTRUCTOR")))
-                        .status(AppUserStatus.INACTIVE)
-                        .build()
-        );
-        when(appUserMapper.toDto(users.get(0))).thenReturn(userDtos.get(0));
-        when(appUserMapper.toDto(users.get(1))).thenReturn(userDtos.get(1));
+        when(appUserRepository.findAllWithRoles(pageRequest))
+                .thenReturn(new PageImpl<>(users, pageRequest, users.size()));
 
-        var result = appUserService.getAllUsers();
+        // When
+        var result = appUserService.getUsers(page, size, null);
 
-        assertEquals(userDtos, result);
-        assertEquals(users.size(), result.size());
+        // Then
+        assertNotNull(result, "Result should not be null");
+        assertEquals(users.size(), result.getMetaData().getTotalElements(),
+                "Total elements should match the size of the users list");
+        assertEquals(1, result.getMetaData().getTotalPages(), "Total pages should be 1");
 
-        verify(appUserRepository, times(1)).findAll();
-        verify(appUserMapper, times(users.size())).toDto(any(AppUser.class));
+        verify(appUserRepository, times(1)).findAllWithRoles(pageRequest);
     }
+
 
     @Test
     void getUserByIdReturnsUserDto() {

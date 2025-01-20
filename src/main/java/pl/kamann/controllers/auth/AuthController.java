@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pl.kamann.dtos.LoginRequest;
-import pl.kamann.dtos.LoginResponse;
+import pl.kamann.dtos.login.LoginRequest;
+import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.services.AuthService;
 
 @RestController
