@@ -22,7 +22,8 @@ CREATE TABLE app_user (
     last_name VARCHAR(50) NOT NULL,
     phone VARCHAR(20),
     status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 -- Create the join table for ManyToMany relationship between app_user and role

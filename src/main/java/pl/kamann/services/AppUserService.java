@@ -12,6 +12,7 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
+import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.entities.appuser.Role;
@@ -171,5 +172,9 @@ public class AppUserService {
         }
 
         return appUserMapper.toDtoPage(users);
+    }
+
+    public AppUserResponseDto getLoggedInAppUser() {
+        return appUserMapper.toResponseDto(entityLookupService.getLoggedInUser());
     }
 }

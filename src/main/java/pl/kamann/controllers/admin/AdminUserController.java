@@ -2,15 +2,13 @@ package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
+import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
@@ -39,16 +37,13 @@ public class AdminUserController {
         return ResponseEntity.ok(appUserService.getUsers(page, size, role));
     }
 
-    @GetMapping("/by-role")
+    @GetMapping("/logged")
     @Operation(
-            summary = "Get users by role with pagination",
-            description = "Retrieve a paginated list of users filtered by role. Supported roles are CLIENT and INSTRUCTOR.")
-    public ResponseEntity<Page<AppUserDto>> getUsersByRole(
-            @RequestParam String role,
-            @PageableDefault(size = 20) Pageable pageable // Ensure Pageable defaults
-    ) {
-        Page<AppUserDto> users = appUserService.getUsersByRole(role, pageable);
-        return ResponseEntity.ok(users);
+            summary = "Get details of logged in user.",
+            description = "Retrieve an AppUserDto of currently logged in AppUser."
+    )
+    public ResponseEntity<AppUserResponseDto> getLoggedInUser() {
+        return ResponseEntity.ok(appUserService.getLoggedInAppUser());
     }
 
     @PostMapping("/register")
