@@ -1,12 +1,17 @@
 package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.security.jwt.JwtAuthenticationFilter;
+import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.register.RegisterRequest;
@@ -18,11 +23,12 @@ import pl.kamann.services.AuthService;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@Slf4j
 public class AdminUserController {
 
     private final AppUserService appUserService;
     private final AuthService authService;
+    private final JwtUtils jwtUtils;
 
     @GetMapping
     @Operation(
@@ -42,8 +48,8 @@ public class AdminUserController {
             summary = "Get details of logged in user.",
             description = "Retrieve an AppUserDto of currently logged in AppUser."
     )
-    public ResponseEntity<AppUserResponseDto> getLoggedInUser() {
-        return ResponseEntity.ok(appUserService.getLoggedInAppUser());
+    public ResponseEntity<AppUserResponseDto> getLoggedInUser(HttpServletRequest request) {
+        return ResponseEntity.ok(authService.getLoggedInAppUser(request));
     }
 
     @PostMapping("/register")

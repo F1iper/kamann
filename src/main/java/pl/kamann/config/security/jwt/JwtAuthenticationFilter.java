@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
@@ -34,20 +36,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractTokenFromRequest(request);
+        String token = jwtUtils.extractTokenFromRequest(request);
 
         if (token != null && jwtUtils.validateToken(token)) {
             String email = jwtUtils.extractEmail(token);
 
             try {
-                AppUser user = appUserRepository.findByEmail(email)
+                AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
                         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
                 List<GrantedAuthority> authorities = user.getRoles().stream()
-                        .map(role -> {
-                            String authorityName = "ROLE_" + role.getName();
-                            return new SimpleGrantedAuthority(authorityName);
-                        })
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                         .collect(Collectors.toList());
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -63,11 +62,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String extractTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
-    }
 }
