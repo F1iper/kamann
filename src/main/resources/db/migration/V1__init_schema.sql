@@ -163,9 +163,9 @@ INSERT INTO role (name) VALUES
     ('INSTRUCTOR'),
     ('CLIENT');
 
--- Insert admin user (password = "admin")
+-- Insert admin user with plain text password
 INSERT INTO app_user (email, password, first_name, last_name, status) VALUES
-    ('admin@admin.com', '$2a$12$JAkc4iE85VbPq/UgzmXJd.3D9a1zt4kE78AsaohQqnHzmDEm/guo6', 'Neo', 'Matrix', 'ACTIVE');
+    ('admin@admin.com', 'admin', 'Neo', 'Matrix', 'ACTIVE');
 
 -- Assign roles to admin user
 INSERT INTO user_roles (user_id, role_id)
@@ -173,12 +173,12 @@ VALUES
     ((SELECT id FROM app_user WHERE email = 'admin@admin.com'), (SELECT id FROM role WHERE name = 'ADMIN')),
     ((SELECT id FROM app_user WHERE email = 'admin@admin.com'), (SELECT id FROM role WHERE name = 'INSTRUCTOR'));
 
--- Insert instructor users (password = "instructor")
+-- Insert instructor users with plain text password
 INSERT INTO app_user (email, password, first_name, last_name, status) VALUES
-    ('instructor1@yoga.com', '$2a$12$EjFWDzJIW7JlkAJYsA6yIuy/MwjqrtxFE.RJee.N.OJ/ScJ.tGbLa', 'Jane', 'Doe', 'ACTIVE'),
-    ('instructor2@yoga.com', '$2a$12$EjFWDzJIW7JlkAJYsA6yIuy/MwjqrtxFE.RJee.N.OJ/ScJ.tGbLa', 'John', 'Smith', 'ACTIVE'),
-    ('instructor3@yoga.com', '$2a$12$EjFWDzJIW7JlkAJYsA6yIuy/MwjqrtxFE.RJee.N.OJ/ScJ.tGbLa', 'Mary', 'White', 'ACTIVE'),
-    ('instructor4@yoga.com', '$2a$12$EjFWDzJIW7JlkAJYsA6yIuy/MwjqrtxFE.RJee.N.OJ/ScJ.tGbLa', 'Lucas', 'Brown', 'ACTIVE');
+    ('instructor1@yoga.com', 'instructor', 'Jane', 'Doe', 'ACTIVE'),
+    ('instructor2@yoga.com', 'instructor', 'John', 'Smith', 'ACTIVE'),
+    ('instructor3@yoga.com', 'instructor', 'Mary', 'White', 'ACTIVE'),
+    ('instructor4@yoga.com', 'instructor', 'Lucas', 'Brown', 'ACTIVE');
 
 -- Assign roles to instructors
 INSERT INTO user_roles (user_id, role_id)
@@ -186,13 +186,13 @@ SELECT id, (SELECT id FROM role WHERE name = 'INSTRUCTOR')
 FROM app_user
 WHERE email LIKE 'instructor%@yoga.com';
 
--- Insert client users
+-- Insert client users with plain text password
 INSERT INTO app_user (email, password, first_name, last_name, status)
 VALUES
-    ('client1@client.com', '$2a$12$o.03D3hcsrfXX9hcvGq3XO1ykvepdwu9ZrXfMcCKM5hABCDrAk7vm', 'Client1', 'Test', 'ACTIVE'),
-    ('client2@client.com', '$2a$12$o.03D3hcsrfXX9hcvGq3XO1ykvepdwu9ZrXfMcCKM5hABCDrAk7vm', 'Client2', 'Test', 'ACTIVE'),
-    ('client3@client.com', '$2a$12$o.03D3hcsrfXX9hcvGq3XO1ykvepdwu9ZrXfMcCKM5hABCDrAk7vm', 'Client3', 'Test', 'ACTIVE'),
-    ('client4@client.com', '$2a$12$o.03D3hcsrfXX9hcvGq3XO1ykvepdwu9ZrXfMcCKM5hABCDrAk7vm', 'Client4', 'Test', 'ACTIVE');
+    ('client1@client.com', 'password123', 'Client1', 'Test', 'ACTIVE'),
+    ('client2@client.com', 'password123', 'Client2', 'Test', 'ACTIVE'),
+    ('client3@client.com', 'password123', 'Client3', 'Test', 'ACTIVE'),
+    ('client4@client.com', 'password123', 'Client4', 'Test', 'ACTIVE');
 
 -- Assign roles to clients
 INSERT INTO user_roles (user_id, role_id)
