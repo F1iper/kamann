@@ -38,8 +38,6 @@ class ClientAttendanceServiceTest {
     @Mock
     private EntityLookupService lookupService;
     @Mock
-    private ClientEventHistoryService clientEventHistoryService;
-    @Mock
     private ClientMembershipCardService clientMembershipCardService;
 
     @Mock

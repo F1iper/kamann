@@ -12,7 +12,6 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.repositories.UserEventHistoryRepository;
 import pl.kamann.utility.EntityLookupService;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.mockito.Mockito.*;

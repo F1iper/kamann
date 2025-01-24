@@ -11,7 +11,6 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.UserEventRegistrationStatus;
-import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.repositories.UserEventRegistrationRepository;
 import pl.kamann.services.client.ClientEventHistoryService;
 import pl.kamann.services.client.ClientEventRegistrationService;
@@ -20,16 +19,14 @@ import pl.kamann.utility.EntityLookupService;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class ClientEventRegistrationServiceTest {
 
     @Mock
     private UserEventRegistrationRepository registrationRepository;
-
-    @Mock
-    private AttendanceRepository attendanceRepository;
 
     @Mock
     private EntityLookupService lookupService;

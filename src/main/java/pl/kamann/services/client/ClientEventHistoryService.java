@@ -1,15 +1,12 @@
 package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.ClientEventHistory;
 import pl.kamann.entities.event.Event;
 import pl.kamann.repositories.UserEventHistoryRepository;
-import pl.kamann.systemevents.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
@@ -21,11 +18,6 @@ public class ClientEventHistoryService {
     private final UserEventHistoryRepository userEventHistoryRepository;
     private final EntityLookupService lookupService;
 
-    @Async("asyncExecutor")
-    @EventListener
-    public void handleEventHistoryLogEvent(EventHistoryLogEvent event) {
-        logEventHistory(event.getUser(), event.getEvent(), event.getStatus());
-    }
 
     public void logEventHistory(AppUser user, Event event, AttendanceStatus status) {
         var history = new ClientEventHistory();

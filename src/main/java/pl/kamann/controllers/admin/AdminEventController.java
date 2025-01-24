@@ -8,13 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.EventDto;
-import pl.kamann.services.AppUserService;
 import pl.kamann.services.admin.AdminEventService;
-import pl.kamann.utility.EntityLookupService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/events")
@@ -23,7 +18,6 @@ import java.util.List;
 public class AdminEventController {
 
     private final AdminEventService adminEventService;
-    private final EntityLookupService lookupService;
 
     @GetMapping
     @Operation(

@@ -32,11 +32,6 @@ public class MembershipCardExpirationService {
         }
     }
 
-    // todo: not used.. to be used
-    public void handleExpiration(Long userId) {
-        eventPublisher.publishEvent(new MembershipCardEvent(this, userId, MembershipCardAction.EXPIRE));
-    }
-
 
     public void renewMembership(Long userId) {
         MembershipCard card = membershipCardRepository.findActiveCardByUserId(userId)

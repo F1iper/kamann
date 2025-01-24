@@ -8,9 +8,7 @@ import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.Role;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -44,12 +42,6 @@ public class AppUserMapper {
                 .roles(roles)
                 .status(dto.status()).build();
 
-    }
-
-    public List<AppUserDto> toDtoList(List<AppUser> users) {
-        return users.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
     }
 
     public Page<AppUserDto> toDtoPage(Page<AppUser> users) {
