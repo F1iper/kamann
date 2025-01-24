@@ -3,10 +3,11 @@ package pl.kamann.services.instructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
-import pl.kamann.entities.event.Event;
 import pl.kamann.dtos.EventDto;
+import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
@@ -37,14 +38,15 @@ public class InstructorEventService {
         if (!event.getInstructor().equals(instructor)) {
             throw new ApiException("You are not assigned to this event.",
                     HttpStatus.FORBIDDEN,
-                    Codes.UNAUTHORIZED);
+                    AuthCodes.UNAUTHORIZED.name()
+            );
         }
 
         if (event.getStartTime().isBefore(LocalDateTime.now())) {
             throw new ApiException(
                     "Cannot cancel an event that has already started.",
                     HttpStatus.BAD_REQUEST,
-                    Codes.CANNOT_CANCEL_STARTED_EVENT
+                    EventCodes.CANNOT_CANCEL_STARTED_EVENT.name()
             );
         }
 
@@ -57,6 +59,7 @@ public class InstructorEventService {
                 .orElseThrow(() -> new ApiException(
                         "Event not found with ID: " + eventId,
                         HttpStatus.NOT_FOUND,
-                        Codes.EVENT_NOT_FOUND));
+                        EventCodes.EVENT_NOT_FOUND.name()
+                ));
     }
 }

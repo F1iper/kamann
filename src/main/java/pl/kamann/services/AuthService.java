@@ -7,17 +7,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pl.kamann.dtos.LoginRequest;
-import pl.kamann.dtos.LoginResponse;
-import pl.kamann.dtos.RegisterRequest;
-import pl.kamann.entities.appuser.Role;
-import pl.kamann.repositories.RoleRepository;
+import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.config.security.jwt.JwtUtils;
+import pl.kamann.dtos.login.LoginRequest;
+import pl.kamann.dtos.login.LoginResponse;
+import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.RoleRepository;
 
 import java.util.Set;
 
@@ -37,7 +38,7 @@ public class AuthService {
                 .orElseThrow(() -> new ApiException(
                         "Invalid email address.",
                         HttpStatus.NOT_FOUND,
-                        Codes.USER_NOT_FOUND
+                        AuthCodes.USER_NOT_FOUND.name()
                 ));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -45,7 +46,7 @@ public class AuthService {
             throw new ApiException(
                     "Invalid password.",
                     HttpStatus.UNAUTHORIZED,
-                    Codes.UNAUTHORIZED
+                    AuthCodes.UNAUTHORIZED.name()
             );
         }
 
@@ -58,7 +59,7 @@ public class AuthService {
     public AppUser registerUser(RegisterRequest request) {
         validateEmailNotTaken(request.email());
 
-        String roleName = request.role() != null ? request.role() : Codes.CLIENT;
+        String roleName = request.role() != null ? request.role() : RoleCodes.CLIENT.name();
         Role userRole = findRoleByName(roleName);
 
         AppUser user = createAppUser(request, userRole);
@@ -85,7 +86,7 @@ public class AuthService {
             throw new ApiException(
                     "Email is already registered: " + email,
                     HttpStatus.CONFLICT,
-                    Codes.EMAIL_ALREADY_EXISTS
+                    AuthCodes.EMAIL_ALREADY_EXISTS.name()
             );
         }
     }
@@ -95,7 +96,7 @@ public class AuthService {
                 .orElseThrow(() -> new ApiException(
                         "Role not found: " + roleName,
                         HttpStatus.NOT_FOUND,
-                        Codes.ROLE_NOT_FOUND
+                        AuthCodes.ROLE_NOT_FOUND.name()
                 ));
     }
 }

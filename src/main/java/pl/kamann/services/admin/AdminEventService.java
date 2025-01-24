@@ -5,17 +5,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.EventCodes;
+import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.EventDto;
-import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
-import pl.kamann.entities.event.EventType;
 import pl.kamann.mappers.EventMapper;
-import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.EventRepository;
-import pl.kamann.repositories.EventTypeRepository;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
@@ -25,9 +22,6 @@ import pl.kamann.utility.PaginationService;
 public class AdminEventService {
 
     private final EventRepository eventRepository;
-    private final EventTypeRepository eventTypeRepository;
-    private final AppUserRepository appUserRepository;
-
     private final EventMapper eventMapper;
 
     private final NotificationService notificationService;
@@ -40,7 +34,7 @@ public class AdminEventService {
             throw new ApiException(
                     "Created by ID cannot be null",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT
+                    StatusCodes.INVALID_INPUT.name()
             );
         }
 
@@ -48,7 +42,7 @@ public class AdminEventService {
             throw new ApiException(
                     "Instructor ID cannot be null",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT
+                    StatusCodes.INVALID_INPUT.name()
             );
         }
 
@@ -69,7 +63,8 @@ public class AdminEventService {
                 .orElseThrow(() -> new ApiException(
                         "Event not found",
                         HttpStatus.NOT_FOUND,
-                        Codes.EVENT_NOT_FOUND));
+                        EventCodes.EVENT_NOT_FOUND.name()
+                ));
 
         var instructor = entityLookupService.findUserById(eventDto.instructorId());
         var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
@@ -83,13 +78,18 @@ public class AdminEventService {
 
     public void deleteEvent(Long id, boolean force) {
         var event = eventRepository.findById(id)
-                .orElseThrow(() -> new ApiException("Event not found", HttpStatus.NOT_FOUND, Codes.EVENT_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(
+                        "Event not found",
+                        HttpStatus.NOT_FOUND,
+                        EventCodes.EVENT_NOT_FOUND.name()
+                ));
 
         if (!force && !event.getAttendances().isEmpty()) {
             throw new ApiException(
                     "Cannot delete event with participants unless forced",
                     HttpStatus.BAD_REQUEST,
-                    Codes.EVENT_HAS_PARTICIPANTS);
+                    EventCodes.EVENT_HAS_PARTICIPANTS.name()
+            );
         }
 
         eventRepository.delete(event);
@@ -103,7 +103,8 @@ public class AdminEventService {
             throw new ApiException(
                     "No results for the requested page",
                     HttpStatus.NOT_FOUND,
-                    Codes.NO_RESULTS);
+                    StatusCodes.NO_RESULTS.name()
+            );
         }
 
         return events.map(eventMapper::toDto);
@@ -118,28 +119,12 @@ public class AdminEventService {
                 .map(eventMapper::toDto);
     }
 
-
-    private Event findEventById(Long eventId) {
-        return eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found with ID: " + eventId,
-                        HttpStatus.NOT_FOUND, Codes.EVENT_NOT_FOUND));
-    }
-
-    public EventType findEventTypeById(Long eventTypeId) {
-        return eventTypeRepository.findById(eventTypeId)
-                .orElseThrow(() -> new ApiException(
-                        "EventType not found with ID: " + eventTypeId,
-                        HttpStatus.NOT_FOUND,
-                        Codes.EVENT_TYPE_NOT_FOUND));
-    }
-
     public EventDto getEventById(Long eventId) {
         var event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ApiException(
                         "Event not found with ID: " + eventId,
                         HttpStatus.NOT_FOUND,
-                        Codes.EVENT_NOT_FOUND
+                        EventCodes.EVENT_NOT_FOUND.name()
                 ));
         return eventMapper.toDto(event);
     }
@@ -149,7 +134,8 @@ public class AdminEventService {
                 .orElseThrow(() -> new ApiException(
                         "Event not found",
                         HttpStatus.NOT_FOUND,
-                        Codes.EVENT_NOT_FOUND));
+                        EventCodes.EVENT_NOT_FOUND.name()
+                ));
 
         event.setStatus(EventStatus.CANCELED);
         eventRepository.save(event);

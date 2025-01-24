@@ -10,8 +10,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import pl.kamann.config.codes.InstructorCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
@@ -104,7 +104,7 @@ class AdminEventServiceTest {
         when(entityLookupService.findUserById(eq(2L)))
                 .thenReturn(adminUser);
         when(entityLookupService.findUserById(eq(1L)))
-                .thenThrow(new ApiException("Instructor not found", HttpStatus.NOT_FOUND, Codes.INSTRUCTOR_NOT_FOUND));
+                .thenThrow(new ApiException("Instructor not found", HttpStatus.NOT_FOUND, InstructorCodes.INSTRUCTOR_NOT_FOUND.name()));
 
         var exception = assertThrows(ApiException.class, () -> adminEventService.createEvent(eventDto));
 
@@ -244,7 +244,7 @@ class AdminEventServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         when(entityLookupService.findUserById(instructorId)).thenThrow(
-                new ApiException("Instructor not found", HttpStatus.NOT_FOUND, Codes.INSTRUCTOR_NOT_FOUND));
+                new ApiException("Instructor not found", HttpStatus.NOT_FOUND, InstructorCodes.INSTRUCTOR_NOT_FOUND.name()));
 
         ApiException exception = assertThrows(ApiException.class,
                 () -> adminEventService.listEventsByInstructor(instructorId, pageable));

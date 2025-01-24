@@ -6,8 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.config.codes.AttendanceCodes;
+import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.global.Codes;
 import pl.kamann.dtos.AttendanceDetailsDto;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
@@ -33,7 +34,7 @@ public class AdminAttendanceService {
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for event and client",
                         HttpStatus.NOT_FOUND,
-                        Codes.ATTENDANCE_NOT_FOUND
+                        AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
         attendanceRepository.delete(attendance);
@@ -45,7 +46,7 @@ public class AdminAttendanceService {
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for event and client",
                         HttpStatus.NOT_FOUND,
-                        Codes.ATTENDANCE_NOT_FOUND
+                        AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
         attendance.setStatus(status);
@@ -78,7 +79,8 @@ public class AdminAttendanceService {
             throw new ApiException(
                     "Either eventId or userId must be provided",
                     HttpStatus.BAD_REQUEST,
-                    Codes.INVALID_INPUT);
+                    StatusCodes.INVALID_INPUT.name()
+            );
         }
 
         return attendanceRepository.calculateStatistics(eventId, userId);

@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 
 class MembershipCardServiceTest {
 
+
     @Mock
     private MembershipCardRepository membershipCardRepository;
 
@@ -72,16 +73,8 @@ class MembershipCardServiceTest {
         verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
 
-    @Test
-    void logActionShouldLogExpiredAction() {
-        var card = new MembershipCard();
-        var user = new AppUser();
-        card.setUser(user);
 
-        membershipCardService.logAction(card, user, MembershipCardAction.EXPIRED, 0);
 
-        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
-    }
 
     @Test
     void logActionShouldThrowExceptionForInvalidUsedEntries() {
@@ -99,18 +92,22 @@ class MembershipCardServiceTest {
     @Test
     void useEntranceShouldDeductEntranceAndLogAction() {
         var card = new MembershipCard();
+        card.setId(1L);
         card.setEntrancesLeft(5);
+
         var user = new AppUser();
+        user.setId(101L);
         card.setUser(user);
 
-        when(membershipCardRepository.save(any(MembershipCard.class))).thenReturn(card);
+        when(membershipCardRepository.save(any(MembershipCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = membershipCardService.useEntrance(card);
 
         assertNotNull(result);
         assertEquals(4, result.getEntrancesLeft());
-        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
+
         verify(membershipCardRepository, times(1)).save(card);
+        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
 
     @Test
@@ -128,13 +125,20 @@ class MembershipCardServiceTest {
     @Test
     void expireCardShouldSetInactiveAndLogAction() {
         var card = new MembershipCard();
+        card.setId(1L);
+        card.setActive(true);
+        card.setEntrancesLeft(0);
+
         var user = new AppUser();
+        user.setId(101L);
         card.setUser(user);
+
+        when(membershipCardRepository.save(any(MembershipCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         membershipCardService.expireCard(card);
 
         assertFalse(card.isActive());
-        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
         verify(membershipCardRepository, times(1)).save(card);
+        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
 }

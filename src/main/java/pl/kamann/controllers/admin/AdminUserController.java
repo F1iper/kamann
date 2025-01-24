@@ -4,12 +4,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.dtos.RegisterRequest;
+import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.services.AppUserService;
@@ -27,12 +29,15 @@ public class AdminUserController {
     @GetMapping
     @Operation(
             summary = "Get all users with pagination",
-            description = "Retrieve a paginated list of all users in the system, including their details such as email, roles, and status."
+            description = "Retrieve a paginated list of all users in the system filtered by role."
     )
-    public ResponseEntity<Page<AppUserDto>> getAllUsers(Pageable pageable) {
-        return ResponseEntity.ok(appUserService.getAllUsers(pageable));
+    public ResponseEntity<PaginatedResponseDto<AppUserDto>> getAllUsersByRole(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String role
+    ) {
+        return ResponseEntity.ok(appUserService.getUsers(page, size, role));
     }
-
 
     @GetMapping("/by-role")
     @Operation(
@@ -40,9 +45,10 @@ public class AdminUserController {
             description = "Retrieve a paginated list of users filtered by role. Supported roles are CLIENT and INSTRUCTOR.")
     public ResponseEntity<Page<AppUserDto>> getUsersByRole(
             @RequestParam String role,
-            Pageable pageable
+            @PageableDefault(size = 20) Pageable pageable // Ensure Pageable defaults
     ) {
-        return ResponseEntity.ok(appUserService.getUsersByRole(role, pageable));
+        Page<AppUserDto> users = appUserService.getUsersByRole(role, pageable);
+        return ResponseEntity.ok(users);
     }
 
     @PostMapping("/register")

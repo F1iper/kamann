@@ -2,6 +2,7 @@ package pl.kamann.mappers;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
@@ -49,5 +50,9 @@ public class AppUserMapper {
         return users.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public Page<AppUserDto> toDtoPage(Page<AppUser> users) {
+        return users.map(this::toDto);
     }
 }
