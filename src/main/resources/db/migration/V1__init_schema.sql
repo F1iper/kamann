@@ -7,14 +7,14 @@
 -- 1. Create Tables
 -- ============================
 
--- Create the "roles" table
-CREATE TABLE roles (
+-- Create the "role" table
+CREATE TABLE role (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
--- Create the "app_users" table
-CREATE TABLE app_users (
+-- Create the "app_user" table
+CREATE TABLE app_user (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
@@ -22,16 +22,17 @@ CREATE TABLE app_users (
     last_name VARCHAR(50) NOT NULL,
     phone VARCHAR(20),
     status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
--- Create the join table for ManyToMany relationship between app_users and roles
+-- Create the join table for ManyToMany relationship between app_user and role
 CREATE TABLE user_roles (
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
     PRIMARY KEY (user_id, role_id),
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES app_users (id) ON DELETE CASCADE,
-    CONSTRAINT fk_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES app_user (id) ON DELETE CASCADE,
+    CONSTRAINT fk_role FOREIGN KEY (role_id) REFERENCES role (id) ON DELETE CASCADE
 );
 
 -- Create the "event_type" table
@@ -54,8 +55,8 @@ CREATE TABLE event (
     instructor_id BIGINT NOT NULL,
     status VARCHAR(50) NOT NULL,
     event_type_id BIGINT NOT NULL,
-    CONSTRAINT fk_created_by FOREIGN KEY (created_by_id) REFERENCES app_users (id),
-    CONSTRAINT fk_instructor FOREIGN KEY (instructor_id) REFERENCES app_users (id),
+    CONSTRAINT fk_created_by FOREIGN KEY (created_by_id) REFERENCES app_user (id),
+    CONSTRAINT fk_instructor FOREIGN KEY (instructor_id) REFERENCES app_user (id),
     CONSTRAINT fk_event_type FOREIGN KEY (event_type_id) REFERENCES event_type (id)
 );
 
@@ -72,7 +73,7 @@ CREATE TABLE membership_card (
     pending_approval BOOLEAN NOT NULL DEFAULT FALSE,
     price NUMERIC(10, 2) NOT NULL,
     purchase_date TIMESTAMP NOT NULL,
-    CONSTRAINT fk_membership_user FOREIGN KEY (user_id) REFERENCES app_users (id)
+    CONSTRAINT fk_membership_user FOREIGN KEY (user_id) REFERENCES app_user (id)
 );
 
 -- Create the "attendance" table
@@ -82,7 +83,7 @@ CREATE TABLE attendance (
     event_id BIGINT NOT NULL,
     status VARCHAR(50) NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_attendance_user FOREIGN KEY (user_id) REFERENCES app_users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_attendance_user FOREIGN KEY (user_id) REFERENCES app_user (id) ON DELETE CASCADE,
     CONSTRAINT fk_attendance_event FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
 );
 
@@ -96,7 +97,7 @@ CREATE TABLE client_event_history (
     entrances_used INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_event_history_user FOREIGN KEY (user_id) REFERENCES app_users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_event_history_user FOREIGN KEY (user_id) REFERENCES app_user (id) ON DELETE CASCADE,
     CONSTRAINT fk_event_history_event FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
 );
 
@@ -110,7 +111,7 @@ CREATE TABLE client_membership_card_history (
     entrances INT NOT NULL,
     remaining_entrances INT NOT NULL,
     paid BOOLEAN NOT NULL DEFAULT FALSE,
-    CONSTRAINT fk_card_history_user FOREIGN KEY (user_id) REFERENCES app_users (id) ON DELETE CASCADE
+    CONSTRAINT fk_card_history_user FOREIGN KEY (user_id) REFERENCES app_user (id) ON DELETE CASCADE
 );
 
 -- Create the "event_stat" table
@@ -148,7 +149,7 @@ CREATE TABLE user_event_registration (
     status VARCHAR(50) NOT NULL,
     waitlist_position INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_registration_user FOREIGN KEY (user_id) REFERENCES app_users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_registration_user FOREIGN KEY (user_id) REFERENCES app_user (id) ON DELETE CASCADE,
     CONSTRAINT fk_registration_event FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
 );
 
@@ -157,23 +158,23 @@ CREATE TABLE user_event_registration (
 -- ============================
 
 -- Insert roles
-INSERT INTO roles (name) VALUES
+INSERT INTO role (name) VALUES
     ('ADMIN'),
     ('INSTRUCTOR'),
     ('CLIENT');
 
--- Insert admin user (password = "admin")
-INSERT INTO app_users (email, password, first_name, last_name, status) VALUES
-    ('admin@admin.com', 'admin', 'Admin', 'Admin', 'ACTIVE');
+-- Insert admin user with plain text password
+INSERT INTO app_user (email, password, first_name, last_name, status) VALUES
+    ('admin@admin.com', 'admin', 'Neo', 'Matrix', 'ACTIVE');
 
 -- Assign roles to admin user
 INSERT INTO user_roles (user_id, role_id)
 VALUES
-    ((SELECT id FROM app_users WHERE email = 'admin@admin.com'), (SELECT id FROM roles WHERE name = 'ADMIN')),
-    ((SELECT id FROM app_users WHERE email = 'admin@admin.com'), (SELECT id FROM roles WHERE name = 'INSTRUCTOR'));
+    ((SELECT id FROM app_user WHERE email = 'admin@admin.com'), (SELECT id FROM role WHERE name = 'ADMIN')),
+    ((SELECT id FROM app_user WHERE email = 'admin@admin.com'), (SELECT id FROM role WHERE name = 'INSTRUCTOR'));
 
--- Insert instructor users (password = "instructor")
-INSERT INTO app_users (email, password, first_name, last_name, status) VALUES
+-- Insert instructor users with plain text password
+INSERT INTO app_user (email, password, first_name, last_name, status) VALUES
     ('instructor1@yoga.com', 'instructor', 'Jane', 'Doe', 'ACTIVE'),
     ('instructor2@yoga.com', 'instructor', 'John', 'Smith', 'ACTIVE'),
     ('instructor3@yoga.com', 'instructor', 'Mary', 'White', 'ACTIVE'),
@@ -181,12 +182,12 @@ INSERT INTO app_users (email, password, first_name, last_name, status) VALUES
 
 -- Assign roles to instructors
 INSERT INTO user_roles (user_id, role_id)
-SELECT id, (SELECT id FROM roles WHERE name = 'INSTRUCTOR')
-FROM app_users
+SELECT id, (SELECT id FROM role WHERE name = 'INSTRUCTOR')
+FROM app_user
 WHERE email LIKE 'instructor%@yoga.com';
 
--- Insert client users
-INSERT INTO app_users (email, password, first_name, last_name, status)
+-- Insert client users with plain text password
+INSERT INTO app_user (email, password, first_name, last_name, status)
 VALUES
     ('client1@client.com', 'password123', 'Client1', 'Test', 'ACTIVE'),
     ('client2@client.com', 'password123', 'Client2', 'Test', 'ACTIVE'),
@@ -195,8 +196,8 @@ VALUES
 
 -- Assign roles to clients
 INSERT INTO user_roles (user_id, role_id)
-SELECT id, (SELECT id FROM roles WHERE name = 'CLIENT')
-FROM app_users
+SELECT id, (SELECT id FROM role WHERE name = 'CLIENT')
+FROM app_user
 WHERE email LIKE 'client%@client.com';
 
 -- Seed Event Types
@@ -214,32 +215,32 @@ VALUES
     ('Morning Yoga', 'Morning yoga for all levels.',
         NOW() + INTERVAL '1 DAY' + INTERVAL '7 HOUR', NOW() + INTERVAL '1 DAY' + INTERVAL '8 HOUR',
         FALSE, 20,
-        (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_users WHERE email = 'instructor1@yoga.com'),
+        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
         'UPCOMING',
         (SELECT id FROM event_type WHERE name = 'Yoga')),
 
     ('Evening Dance', 'Fun evening dance class.',
         NOW() + INTERVAL '1 DAY' + INTERVAL '18 HOUR', NOW() + INTERVAL '1 DAY' + INTERVAL '19 HOUR',
         FALSE, 20,
-        (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_users WHERE email = 'instructor2@yoga.com'),
+        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
         'UPCOMING',
         (SELECT id FROM event_type WHERE name = 'Dance')),
 
     ('Pilates for Beginners', 'Introduction to Pilates.',
         NOW() + INTERVAL '2 DAY' + INTERVAL '10 HOUR', NOW() + INTERVAL '2 DAY' + INTERVAL '11 HOUR',
         FALSE, 20,
-        (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_users WHERE email = 'instructor3@yoga.com'),
+        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
         'UPCOMING',
         (SELECT id FROM event_type WHERE name = 'Pilates')),
 
     ('CrossFit Extreme', 'Push your limits with this CrossFit session.',
         NOW() + INTERVAL '3 DAY' + INTERVAL '6 HOUR', NOW() + INTERVAL '3 DAY' + INTERVAL '7 HOUR',
         FALSE, 20,
-        (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_users WHERE email = 'instructor4@yoga.com'),
+        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+        (SELECT id FROM app_user WHERE email = 'instructor4@yoga.com'),
         'UPCOMING',
         (SELECT id FROM event_type WHERE name = 'CrossFit'));
 
@@ -258,7 +259,7 @@ purchase_date
 )
 VALUES
 (
-    (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
+    (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
     'MONTHLY_1',
     1,
     NOW(),
@@ -270,7 +271,7 @@ VALUES
     NOW()
 ),
 (
-    (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
+    (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
     'MONTHLY_4',
     4,
     NOW(),
@@ -282,7 +283,7 @@ VALUES
     NOW()
 ),
 (
-    (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
+    (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
     'MONTHLY_8',
     8,
     NOW(),
@@ -294,7 +295,7 @@ VALUES
     NOW()
 ),
 (
-    (SELECT id FROM app_users WHERE email = 'admin@admin.com'),
+    (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
     'MONTHLY_12',
     12,
     NOW(),
@@ -320,7 +321,7 @@ INSERT INTO membership_card (
 )
 VALUES
     (
-        (SELECT id FROM app_users WHERE email = 'client1@client.com'),
+        (SELECT id FROM app_user WHERE email = 'client1@client.com'),
         'MONTHLY_1',
         1,
         NOW(),
@@ -331,7 +332,7 @@ VALUES
         TRUE
     ),
     (
-        (SELECT id FROM app_users WHERE email = 'client2@client.com'),
+        (SELECT id FROM app_user WHERE email = 'client2@client.com'),
         'MONTHLY_4',
         4,
         NOW(),
@@ -342,7 +343,7 @@ VALUES
         TRUE
     ),
     (
-        (SELECT id FROM app_users WHERE email = 'client3@client.com'),
+        (SELECT id FROM app_user WHERE email = 'client3@client.com'),
         'MONTHLY_8',
         8,
         NOW(),
@@ -353,7 +354,7 @@ VALUES
         TRUE
     ),
     (
-        (SELECT id FROM app_users WHERE email = 'client4@client.com'),
+        (SELECT id FROM app_user WHERE email = 'client4@client.com'),
         'MONTHLY_12',
         12,
         NOW(),
@@ -392,16 +393,16 @@ VALUES
 -- Seed user event registrations
 INSERT INTO user_event_registration (user_id, event_id, status, waitlist_position)
 VALUES
-    ((SELECT id FROM app_users WHERE email = 'client1@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client1@client.com'),
      (SELECT id FROM event WHERE title = 'Morning Yoga'),
      'REGISTERED', NULL),
-    ((SELECT id FROM app_users WHERE email = 'client2@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client2@client.com'),
      (SELECT id FROM event WHERE title = 'Evening Dance'),
      'REGISTERED', NULL),
-    ((SELECT id FROM app_users WHERE email = 'client3@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client3@client.com'),
      (SELECT id FROM event WHERE title = 'Pilates for Beginners'),
      'REGISTERED', 1),
-    ((SELECT id FROM app_users WHERE email = 'client4@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client4@client.com'),
      (SELECT id FROM event WHERE title = 'CrossFit Extreme'),
      'WAITLISTED', 2);
 
@@ -409,26 +410,26 @@ VALUES
  -- Seed client event histories
  INSERT INTO client_event_history (user_id, event_id, status, attended_date, entrances_used, created_at, updated_at)
  VALUES
-     ((SELECT id FROM app_users WHERE email = 'client1@client.com'),
+     ((SELECT id FROM app_user WHERE email = 'client1@client.com'),
       (SELECT id FROM event WHERE title = 'Morning Yoga'),
       'PRESENT', NOW() - INTERVAL '1 DAY', 1, NOW(), NOW()),
-     ((SELECT id FROM app_users WHERE email = 'client2@client.com'),
+     ((SELECT id FROM app_user WHERE email = 'client2@client.com'),
       (SELECT id FROM event WHERE title = 'Evening Dance'),
       'LATE_CANCEL', NOW() - INTERVAL '2 DAY', 0, NOW(), NOW()),
-     ((SELECT id FROM app_users WHERE email = 'client3@client.com'),
+     ((SELECT id FROM app_user WHERE email = 'client3@client.com'),
       (SELECT id FROM event WHERE title = 'Pilates for Beginners'),
       'ABSENT', NOW() - INTERVAL '3 DAY', 0, NOW(), NOW()),
-     ((SELECT id FROM app_users WHERE email = 'client4@client.com'),
+     ((SELECT id FROM app_user WHERE email = 'client4@client.com'),
       (SELECT id FROM event WHERE title = 'CrossFit Extreme'),
       'PRESENT', NOW() - INTERVAL '4 DAY', 1, NOW(), NOW());
 
 -- Seed client membership card histories
 INSERT INTO client_membership_card_history (user_id, membership_card_type, start_date, end_date, entrances, remaining_entrances, paid)
 VALUES
-    ((SELECT id FROM app_users WHERE email = 'client1@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client1@client.com'),
      'MONTHLY_4', NOW() - INTERVAL '1 MONTH', NOW(), 4, 2, TRUE),
-    ((SELECT id FROM app_users WHERE email = 'client2@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client2@client.com'),
      'MONTHLY_8', NOW() - INTERVAL '2 MONTHS', NOW(), 8, 1, TRUE),
-    ((SELECT id FROM app_users WHERE email = 'client3@client.com'),
+    ((SELECT id FROM app_user WHERE email = 'client3@client.com'),
      'SINGLE_ENTRY', NOW() - INTERVAL '10 DAYS', NOW(), 1, 0, TRUE);
 

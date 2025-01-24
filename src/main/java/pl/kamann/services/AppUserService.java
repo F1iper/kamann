@@ -2,12 +2,15 @@ package pl.kamann.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
@@ -17,6 +20,7 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.utility.EntityLookupService;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -28,17 +32,48 @@ public class AppUserService {
     private final EntityLookupService entityLookupService;
     private final RoleRepository roleRepository;
 
-    public Page<AppUserDto> getAllUsers(Pageable pageable) {
-        Page<AppUser> users = appUserRepository.findAll(pageable);
-        if (users.isEmpty()) {
-            throw new ApiException(
-                    "No users found",
-                    HttpStatus.NOT_FOUND,
-                    AuthCodes.USER_NOT_FOUND.name()
-            );
+    public PaginatedResponseDto<AppUserDto> getUsers(int page, int size, String roleName) {
+        int defaultPage = 1;
+        int defaultSize = 10;
+
+        page = (page > 0) ? page : defaultPage;
+        size = (size > 0) ? size : defaultSize;
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<AppUser> pagedUsers;
+
+        if (roleName == null || roleName.isEmpty()) {
+            pagedUsers = appUserRepository.findAllWithRoles(pageable);
+        } else {
+            Role role = roleRepository.findByName(roleName.toUpperCase())
+                    .orElseThrow(() -> new ApiException(
+                            "Role not found: " + roleName,
+                            HttpStatus.NOT_FOUND,
+                            StatusCodes.NO_RESULTS.name()));
+
+            pagedUsers = appUserRepository.findUsersByRoleWithRoles(pageable, role);
         }
-        return users.map(appUserMapper::toDto);
+
+        List<AppUserDto> userDtos = pagedUsers.getContent().stream()
+                .map(appUser -> new AppUserDto(
+                        appUser.getId(),
+                        appUser.getEmail(),
+                        appUser.getFirstName(),
+                        appUser.getLastName(),
+                        appUser.getRoles(),
+                        appUser.getStatus()
+                ))
+                .toList();
+
+        PaginationMetaData metaData = new PaginationMetaData(
+                pagedUsers.getTotalPages(),
+                pagedUsers.getTotalElements()
+        );
+
+        return new PaginatedResponseDto<>(userDtos, metaData);
     }
+
+
 
     public AppUserDto getUserById(Long id) {
         if (id == null) {
