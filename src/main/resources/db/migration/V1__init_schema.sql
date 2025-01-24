@@ -22,7 +22,8 @@ CREATE TABLE app_user (
     last_name VARCHAR(50) NOT NULL,
     phone VARCHAR(20),
     status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 -- Create the join table for ManyToMany relationship between app_user and role
@@ -162,9 +163,9 @@ INSERT INTO role (name) VALUES
     ('INSTRUCTOR'),
     ('CLIENT');
 
--- Insert admin user (password = "admin")
+-- Insert admin user with plain text password
 INSERT INTO app_user (email, password, first_name, last_name, status) VALUES
-    ('admin@admin.com', 'admin', 'Admin', 'Admin', 'ACTIVE');
+    ('admin@admin.com', 'admin', 'Neo', 'Matrix', 'ACTIVE');
 
 -- Assign roles to admin user
 INSERT INTO user_roles (user_id, role_id)
@@ -172,7 +173,7 @@ VALUES
     ((SELECT id FROM app_user WHERE email = 'admin@admin.com'), (SELECT id FROM role WHERE name = 'ADMIN')),
     ((SELECT id FROM app_user WHERE email = 'admin@admin.com'), (SELECT id FROM role WHERE name = 'INSTRUCTOR'));
 
--- Insert instructor users (password = "instructor")
+-- Insert instructor users with plain text password
 INSERT INTO app_user (email, password, first_name, last_name, status) VALUES
     ('instructor1@yoga.com', 'instructor', 'Jane', 'Doe', 'ACTIVE'),
     ('instructor2@yoga.com', 'instructor', 'John', 'Smith', 'ACTIVE'),
@@ -185,7 +186,7 @@ SELECT id, (SELECT id FROM role WHERE name = 'INSTRUCTOR')
 FROM app_user
 WHERE email LIKE 'instructor%@yoga.com';
 
--- Insert client users
+-- Insert client users with plain text password
 INSERT INTO app_user (email, password, first_name, last_name, status)
 VALUES
     ('client1@client.com', 'password123', 'Client1', 'Test', 'ACTIVE'),

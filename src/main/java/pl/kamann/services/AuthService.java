@@ -1,5 +1,6 @@
 package pl.kamann.services;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,12 +12,14 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
+import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.entities.appuser.Role;
+import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 
@@ -29,6 +32,8 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+
+    private final AppUserMapper appUserMapper;
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
@@ -98,5 +103,24 @@ public class AuthService {
                         HttpStatus.NOT_FOUND,
                         AuthCodes.ROLE_NOT_FOUND.name()
                 ));
+    }
+
+    public AppUserResponseDto getLoggedInAppUser(HttpServletRequest request) {
+        String token = jwtUtils.extractTokenFromRequest(request);
+
+        if (token == null || !jwtUtils.validateToken(token)) {
+            throw new ApiException("Invalid or missing token",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.INVALID_TOKEN.name());
+        }
+
+        String email = jwtUtils.extractEmail(token);
+
+        AppUser appUser = appUserRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException("User not found",
+                        HttpStatus.NOT_FOUND,
+                        AuthCodes.USER_NOT_FOUND.name()));
+
+        return appUserMapper.toResponseDto(appUser);
     }
 }
