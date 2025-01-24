@@ -75,7 +75,32 @@ JWT_EXPIRATION_TIME=86400000 #default to 24h
   Access interactive Swagger UI at:
   **http://localhost:8080/swagger-ui.html**
 
-  Authorization: Use JWT token from **/api/auth/login** endpoint
+####  Registration Endpoint:
+  **POST /api/auth/register**
+  
+  Request Body (using RegisterRequest):
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "role": "CLIENT"
+}
+```
+  
+####  Authorization: 
+  Use JWT token from
+  **POST /api/auth/login**
+  
+  Request Body:
+  ```json
+  {
+  "email": "user@example.com",
+  "password": "password123"
+  }
+```
+
 
 ### 🚦 CI/CD Pipeline
   Automated builds and tests via GitHub Actions
@@ -87,7 +112,7 @@ JWT_EXPIRATION_TIME=86400000 #default to 24h
 
 ### 🖥️ Frontend
   Client available at:
-**[https://github.com/remkro/kamann-fe](https://github.com/Osinek280/kamann)** (in progress)
+**[https://github.com/Osinek280/kamann](https://github.com/Osinek280/kamann)** (in progress)
 
 ### 📝 Roadmap
 
