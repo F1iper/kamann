@@ -44,7 +44,7 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
   cd kamann/backend
   ```
 
-### 2. Edit the file
+### 2. Create the .env file out of .env-example
 ```bash
   mv .env-example .env
 ```
