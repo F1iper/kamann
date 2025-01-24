@@ -17,9 +17,6 @@ public interface MembershipCardRepository extends JpaRepository<MembershipCard, 
     @Query("SELECT m FROM MembershipCard m WHERE m.active = true AND m.endDate <= :currentDate")
     List<MembershipCard> findExpiringCards(@Param("currentDate") LocalDateTime currentDate);
 
-    @Query("SELECT m FROM MembershipCard m WHERE m.endDate < :currentTime AND m.active = true")
-    List<MembershipCard> findByEndDateBeforeAndActiveTrue(@Param("currentTime") LocalDateTime currentTime);
-
     List<MembershipCard> findByUserIsNullAndActiveFalse();
 
     Optional<MembershipCard> findActiveCardByUserId(Long userId);

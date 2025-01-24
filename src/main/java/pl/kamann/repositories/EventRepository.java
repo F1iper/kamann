@@ -2,7 +2,6 @@ package pl.kamann.repositories;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Range;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,9 +16,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query("SELECT e FROM Event e JOIN e.attendances a WHERE a.user = :user AND a.status = :status")
     List<Event> findEventsByUserAndStatus(@Param("user") AppUser user, @Param("status") AttendanceStatus status);
-
-    @Query("SELECT e FROM Event e JOIN e.attendances a WHERE a.user = :user")
-    List<Event> findAllEventsByUser(@Param("user") AppUser user);
 
     @Query("""
                 SELECT e FROM Event e

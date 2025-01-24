@@ -12,9 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.kamann.dtos.reports.AttendanceReportDto;
 import pl.kamann.dtos.reports.EventReportDto;
 import pl.kamann.dtos.reports.RevenueReportDto;
-import pl.kamann.entities.reports.AttendanceStatEntity;
-import pl.kamann.entities.reports.EventStatEntity;
-import pl.kamann.entities.reports.RevenueStatEntity;
 import pl.kamann.services.admin.AdminReportsService;
 
 @RestController

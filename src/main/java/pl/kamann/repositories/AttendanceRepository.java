@@ -41,7 +41,4 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     Page<Attendance> findByEventIdAndUserId(Long eventId, Long userId, Pageable pageable);
 
-    @Query("SELECT a FROM Attendance a WHERE a.event = :event AND (a.status IS NULL OR a.status = 'REGISTERED')")
-    List<Attendance> findUnmarkedOrRegisteredAttendancesByEvent(@Param("event") Event event);
-
 }

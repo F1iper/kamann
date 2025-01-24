@@ -20,7 +20,8 @@ import pl.kamann.utility.EntityLookupService;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class ClientEventRegistrationServiceTest {
@@ -29,13 +30,13 @@ class ClientEventRegistrationServiceTest {
     private UserEventRegistrationRepository registrationRepository;
 
     @Mock
-    private AttendanceRepository attendanceRepository;
-
-    @Mock
     private EntityLookupService lookupService;
 
     @Mock
     private ClientEventHistoryService eventHistoryService;
+
+    @Mock
+    private AttendanceRepository attendanceRepository;
 
     @InjectMocks
     private ClientEventRegistrationService registrationService;
