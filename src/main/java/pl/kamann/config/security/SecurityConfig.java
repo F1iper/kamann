@@ -46,9 +46,11 @@ public class SecurityConfig {
             "/api/admin/events/**"
     };
 
-    private static final String[] USER_URLS = {
-            "/api/user/**",
-            "/api/user/events/**"
+    private static final String[] CLIENT_URLS = {
+            "/api/client/**",
+            "/api/client/events/**",
+            "/api/client/attendance/**",
+            "/api/client/membership-cards/**"
     };
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -64,7 +66,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
-                        .requestMatchers(USER_URLS).hasAnyRole("ADMIN", "USER")
+                        .requestMatchers(CLIENT_URLS).hasAnyRole("CLIENT")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

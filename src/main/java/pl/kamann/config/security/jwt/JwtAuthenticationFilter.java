@@ -43,7 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             try {
                 AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
-                        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                        .orElseThrow(() -> {
+                            log.warn("User with email {} not found", email);
+                            return new UsernameNotFoundException("User not found");
+                        });
 
                 List<GrantedAuthority> authorities = user.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
@@ -54,12 +57,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            } catch (Exception e) {
+                log.info("Authenticated user: {}", email);
+            } catch (UsernameNotFoundException ex) {
+                log.error("Authentication failed: {}", ex.getMessage());
+                SecurityContextHolder.clearContext();
+            } catch (Exception ex) {
+                log.error("An error occurred during authentication: {}", ex.getMessage());
                 SecurityContextHolder.clearContext();
             }
+        } else {
+            log.warn("Invalid or missing token");
         }
 
         filterChain.doFilter(request, response);
     }
-
 }

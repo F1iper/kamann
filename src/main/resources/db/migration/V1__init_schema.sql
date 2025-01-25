@@ -260,7 +260,7 @@ purchase_date
 VALUES
 (
     (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-    'MONTHLY_1',
+    'SINGLE_ENTRY',
     1,
     NOW(),
     NOW() + INTERVAL '30 days',
@@ -322,7 +322,7 @@ INSERT INTO membership_card (
 VALUES
     (
         (SELECT id FROM app_user WHERE email = 'client1@client.com'),
-        'MONTHLY_1',
+        'SINGLE_ENTRY',
         1,
         NOW(),
         NOW() + INTERVAL '1 MONTH',
