@@ -49,26 +49,9 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
   mv .env-example .env
 ```
 
-### 3. Database Setup (PostgreSQL 16)
-Run these commands in your database (contanerized or not)
-```sql
-  CREATE DATABASE kamann;
-```
-
-### 4. Configure the database
-```properties
-# POSTGRESQL CONFIGURATION
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/kamann
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-
-# JWT CONFIGURATION
-JWT_SECRET=daf66e01593f61a15b857cf433aae03a005812b31234e149036bcc8dee755dbb
-JWT_EXPIRATION_TIME=86400000 #default to 24h
-```
-### 5. Run Application (with PROD profile)
+### 3. Containers Setup (App + PostgreSQL 16)
 ```bash
-  ./mvn spring-boot:run -Dspring-boot.run.profiles=PROD
+docker-compose up -d --build
 ```
 
 ## 📚 API Documentation
