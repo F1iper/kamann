@@ -56,13 +56,11 @@ public class AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        // 3. Generate JWT token
         Set<String> roles = user.getRoles().stream()
                 .map(Role::getName)
                 .collect(Collectors.toSet());
         String token = jwtUtils.generateToken(user.getEmail(), roles);
 
-        // 4. Set JWT in an httpOnly cookie
         ResponseCookie cookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(true)

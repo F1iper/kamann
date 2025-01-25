@@ -27,12 +27,12 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
     public ResponseEntity<?> login(
-            @RequestBody @Valid LoginRequest request, // Validate the request body
-            HttpServletResponse res // Inject HttpServletResponse to set cookies
+            @RequestBody @Valid LoginRequest request,
+            HttpServletResponse res
     ) {
         log.info("Login attempt for email: {}", request.email());
 
-        // Delegate authentication to AuthService and set the JWT cookie
+
         LoginResponse response = authService.login(request, res);
 
         return ResponseEntity.ok(response);
