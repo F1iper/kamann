@@ -50,6 +50,12 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 ```
 
 ### 3. Containers Setup (App + PostgreSQL 16)
+The containers contains:
+- java application
+- postgresql database
+
+which means there is no need to setup anything more
+
 ```bash
 docker-compose up -d --build
 ```
@@ -65,7 +71,7 @@ docker-compose up -d --build
 ```json
 {
   "email": "user@example.com",
-  "password": "password123",
+  "password": "password",
   "firstName": "John",
   "lastName": "Doe",
   "role": "CLIENT"
@@ -80,7 +86,7 @@ docker-compose up -d --build
   ```json
   {
   "email": "user@example.com",
-  "password": "password123"
+  "password": "password"
   }
 ```
 
