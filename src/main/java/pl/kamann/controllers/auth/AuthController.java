@@ -1,6 +1,7 @@
 package pl.kamann.controllers.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +26,15 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
-    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
-        LoginResponse response = authService.login(request);
+    public ResponseEntity<?> login(
+            @RequestBody @Valid LoginRequest request, // Validate the request body
+            HttpServletResponse res // Inject HttpServletResponse to set cookies
+    ) {
+        log.info("Login attempt for email: {}", request.email());
+
+        // Delegate authentication to AuthService and set the JWT cookie
+        LoginResponse response = authService.login(request, res);
+
         return ResponseEntity.ok(response);
     }
 }

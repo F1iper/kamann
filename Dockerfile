@@ -12,6 +12,8 @@ WORKDIR /kamann
 
 COPY --from=builder /app/target/kamann-0.0.1-SNAPSHOT.jar app.jar
 
-EXPOSE 8080
+COPY src/main/resources/keystore.p12 /kamann/keystore.p12
+
+EXPOSE 8080 8443
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

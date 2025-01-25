@@ -8,7 +8,10 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.Role;
 
 import javax.crypto.SecretKey;
@@ -33,11 +36,11 @@ public class JwtUtils {
         this.jwtExpiration = jwtExpiration;
     }
 
-    public String generateToken(String email, Set<Role> roles) {
+    public String generateToken(String email, Set<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
-        List<String> roleNames = roles.stream().map(Role::getName).toList();
+        List<String> roleNames = roles.stream().toList();
 
         String token = Jwts.builder()
                 .setHeaderParam("typ", "JWT")
@@ -45,10 +48,10 @@ public class JwtUtils {
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .signWith(secretKey, SignatureAlgorithm.HS512)
                 .compact();
-        log.info("Generated token for {} with roles {}: {}", email, roleNames, token);
 
+        log.info("Generated token for {} with roles {}", email, roleNames);
         return token;
     }
 
@@ -70,22 +73,20 @@ public class JwtUtils {
                     .getBody();
         } catch (JwtException e) {
             log.error("Failed to extract claims from token: {}", e.getMessage());
-            throw new RuntimeException("Invalid JWT token", e);
+            throw new ApiException("Invalid JWT token",
+                    HttpStatus.BAD_REQUEST,
+                    AuthCodes.INVALID_TOKEN.name());
         }
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token);
-
+            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
             return !isTokenExpired(token);
-        } catch (JwtException e) {
-            log.error("JWT validation failed: {}", e.getMessage());
+        } catch (Exception ex) {
+            log.warn("Invalid JWT token: {}", ex.getMessage());
+            return false;
         }
-        return false;
     }
 
     private boolean isTokenExpired(String token) {

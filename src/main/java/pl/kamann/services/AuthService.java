@@ -1,13 +1,21 @@
 package pl.kamann.services;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
@@ -23,7 +31,9 @@ import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -38,26 +48,34 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
 
-    public LoginResponse login(@Valid LoginRequest request) {
+    public LoginResponse login(LoginRequest request, HttpServletResponse res) {
         AppUser user = appUserRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ApiException(
-                        "Invalid email address.",
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.USER_NOT_FOUND.name()
-                ));
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            log.warn("Invalid login attempt for email: {}", request.email());
-            throw new ApiException(
-                    "Invalid password.",
-                    HttpStatus.UNAUTHORIZED,
-                    AuthCodes.UNAUTHORIZED.name()
-            );
+            throw new BadCredentialsException("Invalid email or password");
         }
 
-        String token = jwtUtils.generateToken(user.getEmail(), user.getRoles());
-        log.info("User logged in successfully: email={}", user.getEmail());
-        return new LoginResponse(token);
+        // 3. Generate JWT token
+        Set<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+        String token = jwtUtils.generateToken(user.getEmail(), roles);
+
+        // 4. Set JWT in an httpOnly cookie
+        ResponseCookie cookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60) // 7 days
+                .sameSite("Strict")
+                .build();
+
+        res.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return new LoginResponse(
+                user.getEmail()
+        );
     }
 
     @Transactional
