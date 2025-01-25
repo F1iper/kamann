@@ -2,5 +2,7 @@ package pl.kamann.entities.event;
 
 public enum EventStatus {
     SCHEDULED,
-    CANCELED
+    CANCELED,
+    UPCOMING,
+    COMPLETED
 }
