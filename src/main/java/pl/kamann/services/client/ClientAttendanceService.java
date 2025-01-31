@@ -73,7 +73,9 @@ public class ClientAttendanceService {
         var event = attendance.getEvent();
         var currentDateTime = LocalDateTime.now();
 
-        var cancellationType = currentDateTime.isBefore(event.getStartTime().minusHours(24))
+        LocalDateTime eventStartTime = LocalDateTime.of(event.getStartDate(), event.getTime());
+
+        var cancellationType = currentDateTime.isBefore(eventStartTime.minusHours(24))
                 ? AttendanceStatus.EARLY_CANCEL
                 : AttendanceStatus.LATE_CANCEL;
 

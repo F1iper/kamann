@@ -1,11 +1,14 @@
 package pl.kamann.entities.event;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Entity
@@ -27,16 +30,22 @@ public class Event {
     private String description;
 
     @Column(nullable = false)
-    private LocalDateTime startTime;
+    private LocalDate startDate;
 
     @Column(nullable = false)
-    private LocalDateTime endTime;
+    private LocalDate endDate;
+
+    @Column(nullable = false)
+    private LocalTime time;
 
     @Column(nullable = false)
     private boolean recurring;
 
     @Column(nullable = false)
     private int maxParticipants;
+
+    @Column(nullable = false)
+    private int currentParticipants;
 
     @ManyToOne
     @JoinColumn(name = "created_by_id", nullable = false)
@@ -61,4 +70,7 @@ public class Event {
     @ManyToOne
     @JoinColumn(name = "event_type_id", nullable = false)
     private EventType eventType;
+
+    @Embedded
+    private Recurrence recurrence;
 }

@@ -13,7 +13,9 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -26,8 +28,13 @@ public class ClientEventService {
     public List<EventDto> getAvailableEvents(AppUser client) {
         validateClient(client);
 
-        return eventRepository.findAvailableEventsExcludingClient(LocalDateTime.now(), client.getId())
-                .stream()
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate nowDate = now.toLocalDate();
+        LocalTime nowTime = now.toLocalTime();
+
+        List<Event> availableEvents = eventRepository.findAvailableEventsExcludingClient(nowDate, nowTime, client.getId());
+
+        return availableEvents.stream()
                 .map(eventMapper::toDto)
                 .toList();
     }

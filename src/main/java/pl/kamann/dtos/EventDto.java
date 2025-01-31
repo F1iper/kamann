@@ -1,13 +1,14 @@
 package pl.kamann.dtos;
 
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import lombok.Builder;
+import pl.kamann.entities.event.EventFrequency;
 import pl.kamann.entities.event.EventStatus;
 
-import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 
 @Builder
 public record EventDto(
@@ -19,13 +20,16 @@ public record EventDto(
 
         String description,
 
-        @NotNull(message = "Start time cannot be null")
-        @Future(message = "Start time must be in the future")
-        LocalDateTime startTime,
+        @NotNull(message = "Start date cannot be null")
+        @Future(message = "Start date must be in the future")
+        LocalDate startDate,
 
-        @NotNull(message = "End time cannot be null")
-        @Future(message = "End time must be in the future")
-        LocalDateTime endTime,
+        @NotNull(message = "End date cannot be null")
+        @Future(message = "End date must be in the future")
+        LocalDate endDate,
+
+        @NotNull(message = "Time cannot be null")
+        LocalTime time,
 
         boolean recurring,
 
@@ -41,9 +45,20 @@ public record EventDto(
         EventStatus status,
 
         @PositiveOrZero(message = "Current participants must be zero or a positive number")
-        Integer currentParticipants,
+        int currentParticipants,
 
         Long eventTypeId,
 
-        String eventTypeName
-) {}
+        String eventTypeName,
+
+        @NotNull(message = "Frequency is required for recurring events")
+        EventFrequency recurrence_frequency,
+
+        @NotEmpty(message = "Days of week are required for recurring events")
+        List<DayOfWeek> recurrence_daysOfWeek,
+
+        @Future(message = "Recurrence end date must be in the future")
+        @NotNull(message = "Recurrence end date is required for recurring events")
+        LocalDate recurrence_EndDate
+) {
+}

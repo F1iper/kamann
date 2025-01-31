@@ -14,6 +14,7 @@ import pl.kamann.services.client.ClientMembershipCardService;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -34,7 +35,9 @@ public class InstructorAttendanceService {
         var event = attendance.getEvent();
         var user = attendance.getUser();
 
-        var cancellationType = determineCancellationType(event.getStartTime());
+        var time = attendance.getEvent().getTime();
+
+        var cancellationType = determineCancellationType(time);
 
         attendance.setStatus(cancellationType);
         attendanceRepository.save(attendance);
@@ -95,8 +98,8 @@ public class InstructorAttendanceService {
         }
     }
 
-    private AttendanceStatus determineCancellationType(LocalDateTime eventStartTime) {
-        return LocalDateTime.now().isBefore(eventStartTime.minusHours(24))
+    private AttendanceStatus determineCancellationType(LocalTime eventStartTime) {
+        return LocalTime.now().isBefore(eventStartTime.minusHours(24))
                 ? AttendanceStatus.EARLY_CANCEL
                 : AttendanceStatus.LATE_CANCEL;
     }

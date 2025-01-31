@@ -47,18 +47,32 @@ CREATE TABLE event (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
+
+    -- Date and time fields
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    time TIME NOT NULL,
+
+    -- Event configuration
     recurring BOOLEAN NOT NULL,
     max_participants INT NOT NULL,
+    current_participants INT NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL,
+
+    -- Foreign keys
     created_by_id BIGINT NOT NULL,
     instructor_id BIGINT NOT NULL,
-    status VARCHAR(50) NOT NULL,
     event_type_id BIGINT NOT NULL,
+
     CONSTRAINT fk_created_by FOREIGN KEY (created_by_id) REFERENCES app_user (id),
     CONSTRAINT fk_instructor FOREIGN KEY (instructor_id) REFERENCES app_user (id),
     CONSTRAINT fk_event_type FOREIGN KEY (event_type_id) REFERENCES event_type (id)
 );
+
+-- Recurrence configuration as embedded
+ALTER TABLE event ADD COLUMN recurrence_frequency VARCHAR(50);
+ALTER TABLE event ADD COLUMN recurrence_days_of_week VARCHAR(255);
+ALTER TABLE event ADD COLUMN recurrence_end_date DATE;
 
 -- Create the "membership_card" table
 CREATE TABLE membership_card (
@@ -83,9 +97,17 @@ CREATE TABLE attendance (
     event_id BIGINT NOT NULL,
     status VARCHAR(50) NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- Foreign key constraints with cascade delete
     CONSTRAINT fk_attendance_user FOREIGN KEY (user_id) REFERENCES app_user (id) ON DELETE CASCADE,
-    CONSTRAINT fk_attendance_event FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE
+    CONSTRAINT fk_attendance_event FOREIGN KEY (event_id) REFERENCES event (id) ON DELETE CASCADE,
+
+    -- Prevent duplicate attendance records for the same user and event
+    CONSTRAINT unique_user_event UNIQUE (user_id, event_id)
 );
+
+-- Index for faster lookups
+CREATE INDEX idx_attendance_user_event ON attendance(user_id, event_id);
 
 -- Create the "client_event_history" table
 CREATE TABLE client_event_history (
@@ -203,46 +225,77 @@ WHERE email LIKE 'client%@client.com';
 -- Seed Event Types
 INSERT INTO event_type (name, description)
 VALUES
-    ('Yoga', 'Relaxing yoga session.'),
-    ('Dance', 'Energetic dance class.'),
-    ('Pilates', 'Strengthening Pilates session.'),
-    ('CrossFit', 'High-intensity interval training.'),
-    ('Meditation', 'Relaxation and mindfulness session.');
+    ('Yoga', 'Yoga classes for all levels.'),
+    ('Dance', 'Fun and energetic dance classes.'),
+    ('Pilates', 'Introduction to Pilates.'),
+    ('CrossFit', 'High-intensity CrossFit sessions.'),
+    ('Strength Training', 'Build strength with guided exercises.'),
+    ('Stretching', 'Relaxing stretching sessions.');
 
--- Seed Events
-INSERT INTO event (title, description, start_time, end_time, recurring, max_participants, created_by_id, instructor_id, status, event_type_id)
-VALUES
-    ('Morning Yoga', 'Morning yoga for all levels.',
-        NOW() + INTERVAL '1 DAY' + INTERVAL '7 HOUR', NOW() + INTERVAL '1 DAY' + INTERVAL '8 HOUR',
-        FALSE, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Yoga')),
+INSERT INTO event (
+     title, description, start_date, end_date, time, recurring, recurrence_frequency, recurrence_days_of_week,
+     max_participants, created_by_id, instructor_id, status, event_type_id
+ )
+ VALUES
+     -- Past Events (One-Time)
+     ('Morning Yoga', 'Morning yoga for all levels.',
+         NOW()::date - INTERVAL '5 DAYS', NOW()::date - INTERVAL '5 DAYS', '07:00:00',
+         FALSE, NULL, NULL, 20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
+         'COMPLETED',
+         (SELECT id FROM event_type WHERE name = 'Yoga')),
 
-    ('Evening Dance', 'Fun evening dance class.',
-        NOW() + INTERVAL '1 DAY' + INTERVAL '18 HOUR', NOW() + INTERVAL '1 DAY' + INTERVAL '19 HOUR',
-        FALSE, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Dance')),
+     ('Evening Dance', 'Fun evening dance class.',
+         NOW()::date - INTERVAL '3 DAYS', NOW()::date - INTERVAL '3 DAYS', '18:00:00',
+         FALSE, NULL, NULL, 20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
+         'COMPLETED',
+         (SELECT id FROM event_type WHERE name = 'Dance')),
 
-    ('Pilates for Beginners', 'Introduction to Pilates.',
-        NOW() + INTERVAL '2 DAY' + INTERVAL '10 HOUR', NOW() + INTERVAL '2 DAY' + INTERVAL '11 HOUR',
-        FALSE, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Pilates')),
+     -- Upcoming Events (One-Time)
+     ('Pilates for Beginners', 'Introduction to Pilates.',
+         NOW()::date + INTERVAL '2 DAYS', NOW()::date + INTERVAL '2 DAYS', '10:00:00',
+         FALSE, NULL, NULL, 20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
+         'UPCOMING',
+         (SELECT id FROM event_type WHERE name = 'Pilates')),
 
-    ('CrossFit Extreme', 'Push your limits with this CrossFit session.',
-        NOW() + INTERVAL '3 DAY' + INTERVAL '6 HOUR', NOW() + INTERVAL '3 DAY' + INTERVAL '7 HOUR',
-        FALSE, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor4@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'CrossFit'));
+     ('CrossFit Extreme', 'Push your limits with this CrossFit session.',
+         NOW()::date + INTERVAL '3 DAYS', NOW()::date + INTERVAL '3 DAYS', '06:00:00',
+         FALSE, NULL, NULL,20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor4@yoga.com'),
+         'UPCOMING',
+         (SELECT id FROM event_type WHERE name = 'CrossFit')),
+
+     -- Recurring Events (Weekly, 3 Months into the Future)
+     ('Weekly Yoga', 'Relaxing yoga session every week.',
+         NOW()::date, NOW()::date + INTERVAL '3 MONTHS', '07:00:00',
+         TRUE, 'WEEKLY', 'MONDAY,WEDNESDAY',20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
+         'UPCOMING',
+         (SELECT id FROM event_type WHERE name = 'Yoga')),
+
+     ('Monthly Strength Training', 'Build strength with monthly sessions.',
+         NOW()::date, NOW()::date + INTERVAL '3 MONTHS', '18:00:00',
+         TRUE, 'MONTHLY', NULL, 20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
+         'UPCOMING',
+         (SELECT id FROM event_type WHERE name = 'Strength Training')),
+
+     ('Daily Morning Stretch', 'Start your day with a quick stretch.',
+         NOW()::date, NOW()::date + INTERVAL '3 MONTHS', '06:30:00',
+         TRUE, 'DAILY', NULL, 20,
+         (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
+         (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
+         'UPCOMING',
+         (SELECT id FROM event_type WHERE name = 'Stretching'));
+
 
 -- Seed membership cards into the database
 INSERT INTO membership_card (

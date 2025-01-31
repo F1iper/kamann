@@ -13,7 +13,9 @@ import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.utility.EntityLookupService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -26,7 +28,7 @@ public class InstructorEventService {
 
     public List<EventDto> getUpcomingEventsForInstructor() {
         var instructor = lookupService.getLoggedInUser();
-        return eventRepository.findUpcomingEventsForInstructor(instructor.getId(), LocalDateTime.now()).stream()
+        return eventRepository.findUpcomingEventsForInstructor(instructor.getId(), LocalDate.now(), LocalTime.now()).stream()
                 .map(eventMapper::toDto)
                 .toList();
     }
@@ -42,7 +44,7 @@ public class InstructorEventService {
             );
         }
 
-        if (event.getStartTime().isBefore(LocalDateTime.now())) {
+        if (event.getTime().isBefore(LocalTime.now())) {
             throw new ApiException(
                     "Cannot cancel an event that has already started.",
                     HttpStatus.BAD_REQUEST,
