@@ -1,6 +1,7 @@
 package pl.kamann.controllers.client;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/client/attendance")
 @RequiredArgsConstructor
+@Tag(name = "/api/client/attendance", description = "Client attendance controller")
 public class ClientAttendanceController {
 
     private final ClientAttendanceService clientAttendanceService;

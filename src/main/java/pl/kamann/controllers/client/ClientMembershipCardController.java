@@ -1,6 +1,7 @@
 package pl.kamann.controllers.client;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/client/membership-cards")
 @RequiredArgsConstructor
+@Tag(name = "/api/client/membership-cards", description = "Client membership cards controller")
 public class ClientMembershipCardController {
 
     private final ClientMembershipCardService clientMembershipCardService;
