@@ -36,6 +36,8 @@ public record EventDto(
 
         Long instructorId,
 
+        String instructorFullName,
+
         @PositiveOrZero(message = "Max participants must be zero or a positive number")
         int maxParticipants,
 

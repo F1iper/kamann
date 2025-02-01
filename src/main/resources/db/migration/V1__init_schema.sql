@@ -69,6 +69,9 @@ CREATE TABLE event (
     instructor_id BIGINT NOT NULL,
     event_type_id BIGINT NOT NULL,
 
+    -- Column added for instructor full name
+    instructor_full_name VARCHAR(255),
+
     CONSTRAINT fk_created_by FOREIGN KEY (created_by_id) REFERENCES app_user (id),
     CONSTRAINT fk_instructor FOREIGN KEY (instructor_id) REFERENCES app_user (id),
     CONSTRAINT fk_event_type FOREIGN KEY (event_type_id) REFERENCES event_type (id)
@@ -232,158 +235,39 @@ VALUES
     ('Strength Training', 'Build strength with guided exercises.'),
     ('Stretching', 'Relaxing stretching sessions.');
 
+-- Seed Events
 INSERT INTO event (
-    title, description, start_date, end_date, time, recurring, frequency, days_of_week,
-    max_participants, created_by_id, instructor_id, status, event_type_id
+id, title, description, start_date, end_date, time, recurring, max_participants, current_participants,
+status, created_by_id, instructor_id, event_type_id, instructor_full_name, frequency, days_of_week, recurrence_end_date
 )
 VALUES
-    -- Past Events (One-Time)
-    ('Morning Yoga', 'Morning yoga for all levels.',
-        NOW()::date - INTERVAL '5 DAYS', NOW()::date - INTERVAL '5 DAYS', '07:00:00',
-        FALSE, NULL, NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
-        'COMPLETED',
-        (SELECT id FROM event_type WHERE name = 'Yoga')),
+(6, 'Monthly Strength Training', 'Build strength with monthly sessions.', '2025-03-01', '2025-06-01', '18:00:00', true, 20, 0, 'UPCOMING', 1, 3, 5, 'John Smith', 'MONTHLY', '{MONDAY}', '2025-06-01'),
 
-    ('Evening Dance', 'Fun evening dance class.',
-        NOW()::date - INTERVAL '3 DAYS', NOW()::date - INTERVAL '3 DAYS', '18:00:00',
-        FALSE, NULL, NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
-        'COMPLETED',
-        (SELECT id FROM event_type WHERE name = 'Dance')),
+(3, 'Pilates for Beginners', 'Introduction to Pilates.', '2025-03-03', '2025-03-03', '10:00:00', false, 20, 0, 'UPCOMING', 1, 4, 3, 'Mary White', 'NONE', NULL, NULL),
 
-    -- Upcoming Events (One-Time)
-    ('Pilates for Beginners', 'Introduction to Pilates.',
-        NOW()::date + INTERVAL '2 DAYS', NOW()::date + INTERVAL '2 DAYS', '10:00:00',
-        FALSE, NULL, NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Pilates')),
+(4, 'CrossFit Extreme', 'Push your limits with this CrossFit session.', '2025-02-04', '2025-02-04', '06:00:00', false, 20, 0, 'UPCOMING', 1, 5, 4, 'Lucas Brown', 'NONE', NULL, NULL),
 
-    ('CrossFit Extreme', 'Push your limits with this CrossFit session.',
-        NOW()::date + INTERVAL '3 DAYS', NOW()::date + INTERVAL '3 DAYS', '06:00:00',
-        FALSE, NULL, NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor4@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'CrossFit')),
+(10, 'Morning Yoga', 'Yoga under the sun, experience nature.', '2025-04-06', '2025-04-06', '08:00:00', false, 30, 0, 'UPCOMING', 1, 2, 1, 'Jane Doe', 'NONE', NULL, NULL),
 
-    -- Recurring Events (Weekly, 3 Months into the Future)
-    ('Weekly Yoga', 'Relaxing yoga session every week.',
-        NOW()::date, NOW()::date + INTERVAL '3 MONTHS', '07:00:00',
-        TRUE, 'WEEKLY', '{"MONDAY" ,"WEDNESDAY"}', 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Yoga')),
+(9, 'Weekend Dance Party', 'Fun dance party on the weekend.', '2025-02-11', '2025-02-11', '20:00:00', false, 50, 0, 'UPCOMING', 1, 3, 2, 'John Smith', 'NONE', NULL, NULL),
 
-    ('Monthly Strength Training', 'Build strength with monthly sessions.',
-        NOW()::date, NOW()::date + INTERVAL '3 MONTHS', '18:00:00',
-        TRUE, 'MONTHLY', NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Strength Training')),
+(8, 'Advanced Pilates', 'For those looking to challenge their Pilates practice.', '2025-03-10', '2025-03-10', '09:00:00', false, 15, 0, 'UPCOMING', 1, 4, 3, 'Mary White', 'NONE', NULL, NULL),
 
-    ('Daily Morning Stretch', 'Start your day with a quick stretch.',
-        NOW()::date, NOW()::date + INTERVAL '3 MONTHS', '06:30:00',
-        TRUE, 'DAILY', NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Stretching')),
+(11, 'Morning CrossFit', 'Intense CrossFit to start the day.', '2025-05-21', '2025-05-21', '06:00:00', false, 25, 0, 'UPCOMING', 1, 5, 4, 'Lucas Brown', 'NONE', NULL, NULL),
 
-    -- Future Events (More in the future)
-    ('Advanced Pilates', 'For those looking to challenge their Pilates practice.',
-        NOW()::date + INTERVAL '15 DAYS', NOW()::date + INTERVAL '15 DAYS', '09:00:00',
-        FALSE, NULL, NULL, 15,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Pilates')),
+(12, 'Yoga for All', 'Yoga for all levels, from beginner to expert.', '2025-03-01', '2025-07-01', '07:30:00', true, 40, 0, 'UPCOMING', 1, 2, 1, 'Jane Doe', 'WEEKLY', '{MONDAY,THURSDAY}', '2025-07-01'),
 
-    ('Weekend Dance Party', 'Fun dance party on the weekend.',
-        NOW()::date + INTERVAL '10 DAYS', NOW()::date + INTERVAL '10 DAYS', '20:00:00',
-        FALSE, NULL, NULL, 50,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Dance')),
+(13, 'Stretch and Strength', 'Combining stretching and strength training.', '2025-03-23', '2025-06-23', '08:30:00', true, 25, 0, 'UPCOMING', 1, 3, 6, 'John Smith', 'WEEKLY', '{MONDAY,FRIDAY}', '2025-06-23'),
 
-    ('Outdoor Yoga', 'Yoga under the sun, experience nature.',
-        NOW()::date + INTERVAL '5 DAYS', NOW()::date + INTERVAL '5 DAYS', '08:00:00',
-        FALSE, NULL, NULL, 30,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Yoga')),
+(14, 'Evening Dance', 'Relaxing Pilates to wind down your day.', '2025-04-02', '2025-08-02', '19:00:00', true, 20, 0, 'UPCOMING', 1, 4, 3, 'Mary White', 'WEEKLY', '{TUESDAY,THURSDAY}', '2025-08-02'),
 
-    ('Morning CrossFit', 'Intense CrossFit to start the day.',
-        NOW()::date + INTERVAL '20 DAYS', NOW()::date + INTERVAL '20 DAYS', '06:00:00',
-        FALSE, NULL, NULL, 25,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor4@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'CrossFit')),
+(15, 'Sunday Dance Workout', 'End your week with a fun dance workout.', '2025-04-12', '2025-09-12', '16:00:00', true, 50, 0, 'UPCOMING', 1, 3, 2, 'John Smith', 'WEEKLY', '{SUNDAY}', '2025-09-12'),
 
-    ('Yoga for All', 'Yoga for all levels, from beginner to expert.',
-        NOW()::date + INTERVAL '30 DAYS', NOW()::date + INTERVAL '30 DAYS', '07:30:00',
-        TRUE, 'WEEKLY', '{"MONDAY" ,"THURSDAY"}', 40,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Yoga')),
+(16, 'CrossFit Challenge', 'Challenge yourself with high-intensity CrossFit.', '2025-04-22', '2025-10-22', '06:00:00', true, 30, 0, 'UPCOMING', 1, 5, 4, 'Lucas Brown', 'WEEKLY', '{MONDAY,WEDNESDAY,FRIDAY}', '2025-10-22'),
 
-    ('Stretch and Strength', 'Combining stretching and strength training.',
-        NOW()::date + INTERVAL '50 DAYS', NOW()::date + INTERVAL '50 DAYS', '08:30:00',
-        TRUE, 'WEEKLY', '{"MONDAY" ,"FRIDAY"}', 25,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Stretching')),
+(17, 'Morning Stretch and Relax', 'A gentle morning stretch to start your day.', '2025-05-02', '2025-09-02', '06:30:00', true, 20, 0, 'UPCOMING', 1, 4, 6, 'Mary White', 'DAILY', NULL, '2025-09-02'),
 
-    ('Evening Pilates', 'Relaxing Pilates to wind down your day.',
-        NOW()::date + INTERVAL '60 DAYS', NOW()::date + INTERVAL '60 DAYS', '19:00:00',
-        TRUE, 'WEEKLY', '{"TUESDAY" ,"THURSDAY"}', 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Pilates')),
-
-    ('Sunday Dance Workout', 'End your week with a fun dance workout.',
-        NOW()::date + INTERVAL '70 DAYS', NOW()::date + INTERVAL '70 DAYS', '16:00:00',
-        TRUE, 'WEEKLY', '{"SUNDAY"}', 50,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor2@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Dance')),
-
-    ('CrossFit Challenge', 'Challenge yourself with high-intensity CrossFit.',
-        NOW()::date + INTERVAL '80 DAYS', NOW()::date + INTERVAL '80 DAYS', '06:00:00',
-        TRUE, 'WEEKLY', '{"MONDAY" , "WEDNESDAY" ,"FRIDAY"}', 30,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor4@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'CrossFit')),
-
-    ('Morning Stretch and Relax', 'A gentle morning stretch to start your day.',
-        NOW()::date + INTERVAL '90 DAYS', NOW()::date + INTERVAL '90 DAYS', '06:30:00',
-        TRUE, 'DAILY', NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor3@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Stretching')),
-
-    ('Yoga Flow', 'A dynamic yoga flow session.',
-        NOW()::date + INTERVAL '100 DAYS', NOW()::date + INTERVAL '100 DAYS', '07:00:00',
-        TRUE, 'DAILY', NULL, 20,
-        (SELECT id FROM app_user WHERE email = 'admin@admin.com'),
-        (SELECT id FROM app_user WHERE email = 'instructor1@yoga.com'),
-        'UPCOMING',
-        (SELECT id FROM event_type WHERE name = 'Yoga'));
+(18, 'Yoga Flow', 'A dynamic yoga flow session.', '2025-05-12', '2025-11-12', '07:00:00', true, 20, 0, 'UPCOMING', 1, 2, 1, 'Jane Doe', 'DAILY', NULL, '2025-11-12');
 
 -- Seed membership cards into the database
 INSERT INTO membership_card (
@@ -535,16 +419,16 @@ VALUES
 INSERT INTO user_event_registration (user_id, event_id, status, waitlist_position)
 VALUES
     ((SELECT id FROM app_user WHERE email = 'client1@client.com'),
-     (SELECT id FROM event WHERE title = 'Morning Yoga'),
+     (SELECT id FROM event WHERE title = 'Morning Yoga' LIMIT 1),
      'REGISTERED', NULL),
     ((SELECT id FROM app_user WHERE email = 'client2@client.com'),
-     (SELECT id FROM event WHERE title = 'Evening Dance'),
+     (SELECT id FROM event WHERE title = 'Evening Dance' LIMIT 1),
      'REGISTERED', NULL),
     ((SELECT id FROM app_user WHERE email = 'client3@client.com'),
-     (SELECT id FROM event WHERE title = 'Pilates for Beginners'),
+     (SELECT id FROM event WHERE title = 'Pilates for Beginners' LIMIT 1),
      'REGISTERED', 1),
     ((SELECT id FROM app_user WHERE email = 'client4@client.com'),
-     (SELECT id FROM event WHERE title = 'CrossFit Extreme'),
+     (SELECT id FROM event WHERE title = 'CrossFit Extreme' LIMIT 1),
      'WAITLISTED', 2);
 
 

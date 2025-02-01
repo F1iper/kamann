@@ -23,6 +23,7 @@ public class EventMapper {
                 .recurring(event.isRecurring())
                 .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
                 .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
+                .instructorFullName(getInstructorFullName(event))
                 .maxParticipants(event.getMaxParticipants())
                 .status(event.getStatus())
                 .currentParticipants(event.getCurrentParticipants())
@@ -88,5 +89,11 @@ public class EventMapper {
         existingEvent.setDaysOfWeek(updatedEventDto.daysOfWeek() != null ?
                 (updatedEventDto.daysOfWeek()) : null);
         existingEvent.setRecurrenceEndDate(updatedEventDto.recurrenceEndDate());
+    }
+
+    private String getInstructorFullName(Event event) {
+        return event.getInstructor() != null
+                ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName()
+                : null;
     }
 }
