@@ -17,7 +17,7 @@ import pl.kamann.services.client.ClientEventHistoryService;
 import pl.kamann.services.client.ClientEventRegistrationService;
 import pl.kamann.utility.EntityLookupService;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,7 +55,7 @@ class ClientEventRegistrationServiceTest {
         event = new Event();
         event.setId(1L);
         event.setTitle("Test Event");
-        event.setStartTime(LocalDateTime.now().plusDays(1));
+        event.setStartDate(LocalDate.now().plusDays(1));
         event.setMaxParticipants(2);
     }
 

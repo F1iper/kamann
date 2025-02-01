@@ -16,7 +16,8 @@ import pl.kamann.services.client.ClientEventHistoryService;
 import pl.kamann.services.client.ClientMembershipCardService;
 import pl.kamann.utility.EntityLookupService;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,7 +54,8 @@ class InstructorAttendanceServiceTest {
 
         AppUser user = new AppUser();
         Event event = new Event();
-        event.setStartTime(LocalDateTime.now().plusDays(2));
+        event.setStartDate(LocalDate.now().plusDays(2));
+        event.setTime(LocalTime.of(15, 0));
 
         Attendance attendance = new Attendance();
         attendance.setEvent(event);
@@ -78,7 +80,8 @@ class InstructorAttendanceServiceTest {
 
         AppUser user = new AppUser();
         Event event = new Event();
-        event.setStartTime(LocalDateTime.now().plusHours(12));
+        event.setStartDate(LocalDate.now().plusDays(1));
+        event.setTime(LocalTime.of(10, 0));
 
         Attendance attendance = new Attendance();
         attendance.setEvent(event);

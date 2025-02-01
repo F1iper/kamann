@@ -19,7 +19,8 @@ import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.systemevents.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +55,8 @@ class ClientAttendanceServiceTest {
 
         mockEvent = new Event();
         mockEvent.setId(100L);
-        mockEvent.setStartTime(LocalDateTime.now().plusDays(2));
+        mockEvent.setStartDate(LocalDate.now().plusDays(2));
+        mockEvent.setTime(LocalTime.of(10, 0));
     }
 
     @Test

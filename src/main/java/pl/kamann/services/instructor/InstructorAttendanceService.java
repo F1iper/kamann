@@ -35,9 +35,8 @@ public class InstructorAttendanceService {
         var event = attendance.getEvent();
         var user = attendance.getUser();
 
-        var time = attendance.getEvent().getTime();
-
-        var cancellationType = determineCancellationType(time);
+        var eventStartDateTime = LocalDateTime.of(event.getStartDate(), event.getTime());
+        var cancellationType = determineCancellationType(eventStartDateTime);
 
         attendance.setStatus(cancellationType);
         attendanceRepository.save(attendance);
@@ -98,8 +97,8 @@ public class InstructorAttendanceService {
         }
     }
 
-    private AttendanceStatus determineCancellationType(LocalTime eventStartTime) {
-        return LocalTime.now().isBefore(eventStartTime.minusHours(24))
+    private AttendanceStatus determineCancellationType(LocalDateTime eventStartTime) {
+        return LocalDateTime.now().isBefore(eventStartTime.minusHours(24))
                 ? AttendanceStatus.EARLY_CANCEL
                 : AttendanceStatus.LATE_CANCEL;
     }
