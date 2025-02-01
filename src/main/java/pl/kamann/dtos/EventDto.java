@@ -5,10 +5,8 @@ import lombok.Builder;
 import pl.kamann.entities.event.EventFrequency;
 import pl.kamann.entities.event.EventStatus;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 
 @Builder
 public record EventDto(
@@ -52,13 +50,13 @@ public record EventDto(
         String eventTypeName,
 
         @NotNull(message = "Frequency is required for recurring events")
-        EventFrequency recurrence_frequency,
+        EventFrequency frequency,
 
         @NotEmpty(message = "Days of week are required for recurring events")
-        List<DayOfWeek> recurrence_daysOfWeek,
+        String daysOfWeek,
 
         @Future(message = "Recurrence end date must be in the future")
         @NotNull(message = "Recurrence end date is required for recurring events")
-        LocalDate recurrence_EndDate
+        LocalDate recurrenceEndDate
 ) {
 }

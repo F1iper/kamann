@@ -29,7 +29,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("currentDate") LocalDate currentDate,
             @Param("currentTime") LocalTime currentTime);
 
-
     @Query("""
                 SELECT e FROM Event e
                 LEFT JOIN FETCH e.createdBy

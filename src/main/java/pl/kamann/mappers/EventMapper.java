@@ -3,11 +3,7 @@ package pl.kamann.mappers;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventFrequency;
 import pl.kamann.entities.event.EventStatus;
-import pl.kamann.entities.event.Recurrence;
-
-import java.util.ArrayList;
 
 @Component
 public class EventMapper {
@@ -16,8 +12,6 @@ public class EventMapper {
         if (event == null) {
             throw new IllegalArgumentException("Event must not be null");
         }
-
-        Recurrence recurrence = event.getRecurrence();
 
         return EventDto.builder()
                 .id(event.getId())
@@ -34,11 +28,9 @@ public class EventMapper {
                 .currentParticipants(event.getCurrentParticipants())
                 .eventTypeId(event.getEventType() != null ? event.getEventType().getId() : null)
                 .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
-
-                .recurrence_frequency(recurrence != null ? recurrence.getFrequency() : null)
-                .recurrence_daysOfWeek(recurrence != null ?
-                        new ArrayList<>(recurrence.getDaysOfWeek()) : null)
-                .recurrence_EndDate(recurrence != null ? recurrence.getRecurrenceEndDate() : null)
+                .frequency(event.getFrequency())
+                .daysOfWeek(event.getDaysOfWeek())
+                .recurrenceEndDate(event.getRecurrenceEndDate())
                 .build();
     }
 
@@ -47,7 +39,7 @@ public class EventMapper {
             throw new IllegalArgumentException("EventDto cannot be null");
         }
 
-        Event event = Event.builder()
+        return Event.builder()
                 .id(dto.id())
                 .title(dto.title())
                 .description(dto.description())
@@ -58,20 +50,10 @@ public class EventMapper {
                 .maxParticipants(dto.maxParticipants())
                 .status(dto.status() != null ? dto.status() : EventStatus.SCHEDULED)
                 .currentParticipants(dto.currentParticipants())
+                .frequency(dto.frequency())
+                .daysOfWeek(dto.daysOfWeek())
+                .recurrenceEndDate(dto.recurrenceEndDate())
                 .build();
-
-        if (dto.recurring()) {
-            Recurrence recurrence = Recurrence.builder()
-                    .frequency(dto.recurrence_frequency() != null ?
-                            EventFrequency.valueOf(dto.recurrence_frequency().name()) : null)
-                    .daysOfWeek(dto.recurrence_daysOfWeek() != null ?
-                            new ArrayList<>(dto.recurrence_daysOfWeek()) : null)
-                    .recurrenceEndDate(dto.recurrence_EndDate())
-                    .build();
-            event.setRecurrence(recurrence);
-        }
-
-        return event;
     }
 
     public void updateEventFromDto(Event existingEvent, EventDto updatedEventDto) {
@@ -102,17 +84,9 @@ public class EventMapper {
             existingEvent.setStatus(updatedEventDto.status());
         }
 
-        if (updatedEventDto.recurring()) {
-            Recurrence recurrence = Recurrence.builder()
-                    .frequency(updatedEventDto.recurrence_frequency() != null ?
-                            EventFrequency.valueOf(updatedEventDto.recurrence_frequency().name()) : null)
-                    .daysOfWeek(updatedEventDto.recurrence_daysOfWeek() != null ?
-                            new ArrayList<>(updatedEventDto.recurrence_daysOfWeek()) : null)
-                    .recurrenceEndDate(updatedEventDto.recurrence_EndDate())
-                    .build();
-            existingEvent.setRecurrence(recurrence);
-        } else {
-            existingEvent.setRecurrence(null);
-        }
+        existingEvent.setFrequency(updatedEventDto.frequency());
+        existingEvent.setDaysOfWeek(updatedEventDto.daysOfWeek() != null ?
+                (updatedEventDto.daysOfWeek()) : null);
+        existingEvent.setRecurrenceEndDate(updatedEventDto.recurrenceEndDate());
     }
 }

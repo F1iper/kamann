@@ -1,13 +1,11 @@
 package pl.kamann.entities.event;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -71,6 +69,12 @@ public class Event {
     @JoinColumn(name = "event_type_id", nullable = false)
     private EventType eventType;
 
-    @Embedded
-    private Recurrence recurrence;
+    @Enumerated(EnumType.STRING)
+    private EventFrequency frequency;
+
+    @Column(name = "days_of_week")
+    private String daysOfWeek;
+
+    private LocalDate recurrenceEndDate;
+
 }
