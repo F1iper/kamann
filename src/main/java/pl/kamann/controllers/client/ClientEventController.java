@@ -1,6 +1,7 @@
 package pl.kamann.controllers.client;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/client/events")
 @RequiredArgsConstructor
+@Tag(name = "/api/client/events", description = "Client events controller")
 public class ClientEventController {
 
     private final ClientEventService clientEventService;
