@@ -4,5 +4,5 @@ public enum EventFrequency {
     DAILY,
     WEEKLY,
     MONTHLY,
-    NONE
+    YEARLY, NONE
 }

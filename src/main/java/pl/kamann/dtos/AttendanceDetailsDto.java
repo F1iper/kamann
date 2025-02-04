@@ -10,7 +10,7 @@ public record AttendanceDetailsDto(
         Long id,
 
         @NotNull(message = "Event ID cannot be null")
-        Long eventId,
+        Long occurrenceEventId,
 
         @NotNull(message = "User ID cannot be null")
         Long userId,

@@ -113,6 +113,12 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.dmfs</groupId>
+			<artifactId>lib-recur</artifactId>
+			<version>0.17.1</version>
+		</dependency>
+
 		<!-- JSON Web Token -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

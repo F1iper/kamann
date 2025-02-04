@@ -7,6 +7,7 @@ import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Builder
 public record EventDto(
@@ -26,20 +27,25 @@ public record EventDto(
         @Future(message = "End date must be in the future")
         LocalDate endDate,
 
-        @NotNull(message = "Time cannot be null")
-        LocalTime time,
+        @NotNull(message = "Start time cannot be null")
+        LocalTime startTime,
 
-        boolean recurring,
+        @NotNull(message = "End time cannot be null")
+        LocalTime endTime,
+
+        Boolean recurring,
 
         @NotNull(message = "Creator ID cannot be null")
         Long createdById,
 
         Long instructorId,
 
+        List<LocalDate> exdates,
+
         String instructorFullName,
 
         @PositiveOrZero(message = "Max participants must be zero or a positive number")
-        int maxParticipants,
+        Integer maxParticipants,
 
         @NotNull(message = "Event status cannot be null")
         EventStatus status,
@@ -59,6 +65,8 @@ public record EventDto(
 
         @Future(message = "Recurrence end date must be in the future")
         @NotNull(message = "Recurrence end date is required for recurring events")
-        LocalDate recurrenceEndDate
+        LocalDate recurrenceEndDate,
+
+        String rrule
 ) {
 }

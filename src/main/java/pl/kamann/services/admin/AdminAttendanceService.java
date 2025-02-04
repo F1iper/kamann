@@ -13,6 +13,7 @@ import pl.kamann.dtos.AttendanceDetailsDto;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.AttendanceMapper;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.utility.EntityLookupService;
@@ -29,8 +30,8 @@ public class AdminAttendanceService {
     private final AttendanceMapper attendanceMapper;
 
     public void cancelClientAttendance(Long eventId, Long clientId) {
-        Event event = entityLookupService.findEventById(eventId);
-        Attendance attendance = attendanceRepository.findByEventAndUserId(event, clientId)
+        OccurrenceEvent event = entityLookupService.findOccurrenceEventByOccurrenceEventId(eventId);
+        Attendance attendance = attendanceRepository.findByOccurrenceEventAndUserId(event, clientId)
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for event and client",
                         HttpStatus.NOT_FOUND,
@@ -41,8 +42,8 @@ public class AdminAttendanceService {
     }
 
     public void markAttendance(Long eventId, Long clientId, AttendanceStatus status) {
-        Event event = entityLookupService.findEventById(eventId);
-        Attendance attendance = attendanceRepository.findByEventAndUserId(event, clientId)
+        OccurrenceEvent event = entityLookupService.findOccurrenceEventByOccurrenceEventId(eventId);
+        Attendance attendance = attendanceRepository.findByOccurrenceEventAndUserId(event, clientId)
                 .orElseThrow(() -> new ApiException(
                         "Attendance not found for event and client",
                         HttpStatus.NOT_FOUND,
@@ -51,22 +52,6 @@ public class AdminAttendanceService {
 
         attendance.setStatus(status);
         attendanceRepository.save(attendance);
-    }
-
-    public Page<AttendanceDetailsDto> getAttendanceDetails(Long eventId, Long userId, Pageable pageable) {
-        Page<Attendance> attendancePage;
-
-        if (eventId != null && userId != null) {
-            attendancePage = attendanceRepository.findByEventIdAndUserId(eventId, userId, pageable);
-        } else if (eventId != null) {
-            attendancePage = attendanceRepository.findByEventId(eventId, pageable);
-        } else if (userId != null) {
-            attendancePage = attendanceRepository.findByUserId(userId, pageable);
-        } else {
-            attendancePage = attendanceRepository.findAll(pageable);
-        }
-
-        return attendancePage.map(attendanceMapper::toDto);
     }
 
     public Page<AttendanceDetailsDto> getAttendanceSummary(Pageable pageable) {

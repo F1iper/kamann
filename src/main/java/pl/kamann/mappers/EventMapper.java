@@ -1,11 +1,18 @@
 package pl.kamann.mappers;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
+import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.EventType;
+
+import java.util.Collections;
+import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class EventMapper {
 
     public EventDto toDto(Event event) {
@@ -17,21 +24,20 @@ public class EventMapper {
                 .id(event.getId())
                 .title(event.getTitle())
                 .description(event.getDescription())
-                .startDate(event.getStartDate())
-                .endDate(event.getEndDate())
-                .time(event.getTime())
-                .recurring(event.isRecurring())
-                .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
-                .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
-                .instructorFullName(getInstructorFullName(event))
+                .recurring(event.getRecurring())
+                .rrule(event.getRrule())
+                .exdates(Optional.ofNullable(event.getExdates()).orElseGet(Collections::emptyList))
+                .maxParticipants(event.getOccurrenceLimit())
+                .recurrenceEndDate(event.getRecurrenceEndDate())
+                .createdById(Optional.ofNullable(event.getCreatedBy()).map(AppUser::getId).orElse(null))
                 .maxParticipants(event.getMaxParticipants())
                 .status(event.getStatus())
-                .currentParticipants(event.getCurrentParticipants())
-                .eventTypeId(event.getEventType() != null ? event.getEventType().getId() : null)
-                .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
-                .frequency(event.getFrequency())
-                .daysOfWeek(event.getDaysOfWeek())
-                .recurrenceEndDate(event.getRecurrenceEndDate())
+                .eventTypeId(Optional.ofNullable(event.getEventType()).map(EventType::getId).orElse(null))
+                .eventTypeName(Optional.ofNullable(event.getEventType()).map(EventType::getName).orElse(null))
+                .instructorId(Optional.ofNullable(event.getInstructor()).map(AppUser::getId).orElse(null))
+                .startDate(event.getStartDate())
+                .startTime(event.getStartTime())
+                .endTime(event.getEndTime())
                 .build();
     }
 
@@ -44,16 +50,16 @@ public class EventMapper {
                 .id(dto.id())
                 .title(dto.title())
                 .description(dto.description())
-                .startDate(dto.startDate())
-                .endDate(dto.endDate())
-                .time(dto.time())
                 .recurring(dto.recurring())
-                .maxParticipants(dto.maxParticipants())
-                .status(dto.status() != null ? dto.status() : EventStatus.SCHEDULED)
-                .currentParticipants(dto.currentParticipants())
-                .frequency(dto.frequency())
-                .daysOfWeek(dto.daysOfWeek())
+                .rrule(dto.rrule())
+                .exdates(Optional.ofNullable(dto.exdates()).orElseGet(Collections::emptyList))
+                .occurrenceLimit(dto.maxParticipants())
                 .recurrenceEndDate(dto.recurrenceEndDate())
+                .status(dto.status() != null ? dto.status() : EventStatus.SCHEDULED)
+                .maxParticipants(dto.maxParticipants())
+                .startDate(dto.startDate())
+                .startTime(dto.startTime())
+                .endTime(dto.endTime())
                 .build();
     }
 
@@ -62,38 +68,29 @@ public class EventMapper {
             throw new IllegalArgumentException("ExistingEvent and UpdatedEventDto cannot be null");
         }
 
-        if (updatedEventDto.title() != null) {
-            existingEvent.setTitle(updatedEventDto.title());
+        Optional.ofNullable(updatedEventDto.title()).ifPresent(existingEvent::setTitle);
+        Optional.ofNullable(updatedEventDto.description()).ifPresent(existingEvent::setDescription);
+        Optional.ofNullable(updatedEventDto.exdates()).ifPresent(existingEvent::setExdates);
+        Optional.of(updatedEventDto.maxParticipants()).ifPresent(existingEvent::setOccurrenceLimit);
+        Optional.ofNullable(updatedEventDto.recurrenceEndDate()).ifPresent(existingEvent::setRecurrenceEndDate);
+        Optional.ofNullable(updatedEventDto.status()).ifPresent(existingEvent::setStatus);
+
+        if (updatedEventDto.recurring() != null) {
+            existingEvent.setRecurring(updatedEventDto.recurring());
         }
-        if (updatedEventDto.description() != null) {
-            existingEvent.setDescription(updatedEventDto.description());
+        existingEvent.setMaxParticipants(updatedEventDto.maxParticipants());
+        if (updatedEventDto.rrule() != null) {
+            existingEvent.setRrule(updatedEventDto.rrule());
         }
         if (updatedEventDto.startDate() != null) {
             existingEvent.setStartDate(updatedEventDto.startDate());
         }
-        if (updatedEventDto.endDate() != null) {
-            existingEvent.setEndDate(updatedEventDto.endDate());
+        if (updatedEventDto.startTime() != null) {
+            existingEvent.setStartTime(updatedEventDto.startTime());
         }
-        if (updatedEventDto.time() != null) {
-            existingEvent.setTime(updatedEventDto.time());
+        if (updatedEventDto.endTime() != null) {
+            existingEvent.setEndTime(updatedEventDto.endTime());
         }
-
-        existingEvent.setRecurring(updatedEventDto.recurring());
-        existingEvent.setMaxParticipants(updatedEventDto.maxParticipants());
-
-        if (updatedEventDto.status() != null) {
-            existingEvent.setStatus(updatedEventDto.status());
-        }
-
-        existingEvent.setFrequency(updatedEventDto.frequency());
-        existingEvent.setDaysOfWeek(updatedEventDto.daysOfWeek() != null ?
-                (updatedEventDto.daysOfWeek()) : null);
-        existingEvent.setRecurrenceEndDate(updatedEventDto.recurrenceEndDate());
     }
 
-    private String getInstructorFullName(Event event) {
-        return event.getInstructor() != null
-                ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName()
-                : null;
-    }
 }

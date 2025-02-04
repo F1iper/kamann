@@ -2,12 +2,12 @@ package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.services.admin.AdminEventService;
 
@@ -24,14 +24,17 @@ public class AdminEventController {
             summary = "List events",
             description = "Admins can list all events, or filter by instructor if an instructor ID is provided."
     )
-    public ResponseEntity<Page<EventDto>> listEvents(
+    public ResponseEntity<PaginatedResponseDto<EventDto>> listEvents(
             @RequestParam(required = false) Long instructorId,
             Pageable pageable
     ) {
+        PaginatedResponseDto<EventDto> response;
         if (instructorId == null) {
-            return ResponseEntity.ok(adminEventService.listAllEvents(pageable));
+            response = adminEventService.listAllEvents(pageable);
+        } else {
+            response = adminEventService.listEventsByInstructor(instructorId, pageable);
         }
-        return ResponseEntity.ok(adminEventService.listEventsByInstructor(instructorId, pageable));
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
@@ -53,7 +56,6 @@ public class AdminEventController {
         EventDto updatedEvent = adminEventService.updateEvent(id, eventDto);
         return ResponseEntity.ok(updatedEvent);
     }
-
 
     @DeleteMapping("/{id}")
     @Operation(
@@ -81,7 +83,7 @@ public class AdminEventController {
     @GetMapping("/{eventId}")
     @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event by its ID.")
     public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
-        var event = adminEventService.getEventById(eventId);
+        EventDto event = adminEventService.getEventById(eventId);
         return ResponseEntity.ok(event);
     }
 }
