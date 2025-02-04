@@ -1,11 +1,15 @@
 package pl.kamann.services;
 
+import lombok.RequiredArgsConstructor;
 import org.dmfs.rfc5545.DateTime;
 import org.dmfs.rfc5545.recur.RecurrenceRule;
 import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
 import org.springframework.stereotype.Service;
+import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
+import pl.kamann.mappers.OccurrenceEventMapper;
+import pl.kamann.repositories.OccurrenceEventRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,8 +18,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class OccurrenceService {
 
+    private final OccurrenceEventRepository repository;
+    private final OccurrenceEventMapper mapper;
+
+    // Generate occurrences for a recurring event
     public List<OccurrenceEvent> generateOccurrences(Event event) {
         if (!event.getRecurring() || event.getRecurrenceRule() == null) {
             return List.of(createSingleOccurrence(event));
@@ -39,6 +48,42 @@ public class OccurrenceService {
         }
 
         return occurrences;
+    }
+
+    // Get all occurrences
+    public List<OccurrenceEventDto> getAllOccurrences() {
+        List<OccurrenceEvent> occurrences = repository.findAll();
+        return occurrences.stream().map(mapper::toDto).toList();
+    }
+
+    // Get a specific occurrence by ID
+    public OccurrenceEventDto getOccurrenceById(Long id) {
+        OccurrenceEvent occurrence = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Occurrence not found with ID: " + id));
+        return mapper.toDto(occurrence);
+    }
+
+    // Update an occurrence
+    public OccurrenceEventDto updateOccurrence(Long id, OccurrenceEventDto dto) {
+        OccurrenceEvent existingOccurrence = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Occurrence not found with ID: " + id));
+
+        // Update fields
+        existingOccurrence.setCanceled(dto.canceled());
+        existingOccurrence.setStartTime(dto.startTime());
+        existingOccurrence.setEndTime(dto.endTime());
+
+        // Save updated occurrence
+        OccurrenceEvent updatedOccurrence = repository.save(existingOccurrence);
+        return mapper.toDto(updatedOccurrence);
+    }
+
+    // Delete an occurrence
+    public void deleteOccurrence(Long id) {
+        if (!repository.existsById(id)) {
+            throw new IllegalArgumentException("No occurrence found with ID: " + id);
+        }
+        repository.deleteById(id);
     }
 
     private OccurrenceEvent createSingleOccurrence(Event event) {

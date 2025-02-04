@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.attendance.Attendance;
+import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
@@ -54,6 +56,9 @@ public class DataSeeder {
 
     @Autowired
     private EventValidationService eventValidationService;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
 
     @PostConstruct
@@ -260,6 +265,32 @@ public class DataSeeder {
                     .instructor(monthlyWorkshop.getInstructor())
                     .build();
             occurrenceEventRepository.save(savedOccurrence);
+
+            Attendance singleAttendance = Attendance.builder()
+                    .occurrenceEvent(singleOccurrence)
+                    .user(client1)
+                    .status(AttendanceStatus.CONFIRMED)
+                    .build();
+            attendanceRepository.save(singleAttendance);
+
+            Attendance yogaAttendance = Attendance.builder()
+                    .occurrenceEvent(savedOccurrence)
+                    .user(client1)
+                    .status(AttendanceStatus.CONFIRMED)
+                    .build();
+            attendanceRepository.save(yogaAttendance);
+
+            Attendance pilatesAttendance = Attendance.builder()
+                    .occurrenceEvent(savedOccurrence)
+                    .user(client1)
+                    .status(AttendanceStatus.CONFIRMED)
+                    .build();
+            attendanceRepository.save(pilatesAttendance);
+
         });
+
+
+
+
     }
 }

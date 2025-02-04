@@ -14,22 +14,25 @@ import java.util.List;
 
 public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent, Long> {
 
-    @Query("SELECT o FROM OccurrenceEvent o WHERE LOWER(o.event.title) LIKE LOWER(CONCAT('%', :title, '%'))")
-    List<OccurrenceEvent> findByEventTitleContaining(@Param("title") String title);
+    @Query("SELECT o FROM OccurrenceEvent o WHERE o.date >= :date AND o.startTime >= :time AND o.event.createdBy.id <> :userId")
+    List<OccurrenceEvent> findAvailableEventsExcludingClient(@Param("date") LocalDate date, @Param("time") LocalTime time, @Param("userId") Long userId);
 
-    @Query("""
-    SELECT e FROM OccurrenceEvent e
-    WHERE (e.date > :nowDate OR (e.date = :nowDate AND e.startTime > :nowTime))
-    AND e.id NOT IN (
-        SELECT a.occurrenceEvent.id FROM Attendance a 
-        WHERE a.user.id = :clientId
-    )
-    ORDER BY e.date ASC, e.startTime ASC
-""")
-    List<OccurrenceEvent> findAvailableEventsExcludingClient(
-            @Param("nowDate") LocalDate nowDate,
-            @Param("nowTime") LocalTime nowTime,
-            @Param("clientId") Long clientId);
+    @Query("SELECT o FROM OccurrenceEvent o JOIN o.attendances a WHERE a.user.id = :userId AND a.status = 'REGISTERED'")
+    List<OccurrenceEvent> findRegisteredOccurrencesByUser(@Param("userId") Long userId);
+
+//    @Query("""
+//    SELECT e FROM OccurrenceEvent e
+//    WHERE (e.date > :nowDate OR (e.date = :nowDate AND e.startTime > :nowTime))
+//    AND e.id NOT IN (
+//        SELECT a.occurrenceEvent.id FROM Attendance a
+//        WHERE a.user.id = :clientId
+//    )
+//    ORDER BY e.date ASC, e.startTime ASC
+//""")
+//    List<OccurrenceEvent> findAvailableEventsExcludingClient(
+//            @Param("nowDate") LocalDate nowDate,
+//            @Param("nowTime") LocalTime nowTime,
+//            @Param("clientId") Long clientId);
 
     List<OccurrenceEvent> findByEventAndDateAfter(Event event, LocalDate date);
 
