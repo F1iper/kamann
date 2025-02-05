@@ -83,7 +83,6 @@ public class AdminEventController {
     @GetMapping("/{eventId}")
     @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event by its ID.")
     public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
-        EventDto event = adminEventService.getEventById(eventId);
-        return ResponseEntity.ok(event);
+        return ResponseEntity.ok(adminEventService.getEventById(eventId));
     }
 }

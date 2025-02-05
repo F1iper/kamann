@@ -8,8 +8,6 @@ import java.time.LocalTime;
 
 @Builder
 public record OccurrenceEventDto(
-        @NotNull(message = "OccurrenceEvent ID cannot be null")
-        Long id,
 
         @NotNull(message = "Event ID cannot be null")
         Long eventId,
@@ -21,6 +19,8 @@ public record OccurrenceEventDto(
         LocalTime startTime,
 
         LocalTime endTime,
+
+        int durationMinutes,
 
         boolean canceled,
 

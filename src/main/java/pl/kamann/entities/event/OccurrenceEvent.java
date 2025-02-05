@@ -5,8 +5,9 @@ import lombok.*;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,10 +18,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(indexes = {
-        @Index(name = "idx_occurrence_event", columnList = "event_id,date"),
-        @Index(name = "idx_occurrence_date", columnList = "date")
+        @Index(name = "idx_occurrence_event", columnList = "event_id,start"),
+        @Index(name = "idx_occurrence_start", columnList = "start")
 })
-public class OccurrenceEvent {
+public class OccurrenceEvent implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,24 +35,21 @@ public class OccurrenceEvent {
     private Event event;
 
     @Column(nullable = false)
-    private LocalDate date;
+    private LocalDateTime start;
 
     @Column(nullable = false)
-    private LocalTime startTime;
-
-    @Column(nullable = false)
-    private LocalTime endTime;
+    private Integer durationMinutes;
 
     private boolean canceled;
+
+    private boolean excluded;
+
+    private AppUser createdBy;
 
     private int maxParticipants;
 
     @Column(nullable = false)
     private int seriesIndex;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id")
-    private AppUser createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id")
@@ -65,10 +66,29 @@ public class OccurrenceEvent {
     )
     private List<AppUser> participants = new ArrayList<>();
 
+    public LocalDateTime getEnd() {
+        return start.plusMinutes(durationMinutes);
+    }
+
     public boolean isModified() {
-        return !startTime.equals(event.getStartTime()) ||
-                !endTime.equals(event.getEndTime()) ||
+        return !start.equals(event.getStart()) ||
+                !durationMinutes.equals(event.getDurationMinutes()) ||
                 canceled ||
+                excluded ||
                 (instructor != null && !instructor.equals(event.getInstructor()));
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void setDefaults() {
+        if (durationMinutes == null) {
+            durationMinutes = event.getDurationMinutes();
+        }
+        if (maxParticipants == 0) {
+            maxParticipants = event.getMaxParticipants();
+        }
+        if (instructor == null) {
+            instructor = event.getInstructor();
+        }
     }
 }

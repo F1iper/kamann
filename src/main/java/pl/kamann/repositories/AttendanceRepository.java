@@ -10,15 +10,20 @@ import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
-    Optional<Attendance> findByUserAndOccurrenceEvent(AppUser appUser, OccurrenceEvent occurrenceEvent);
+    Optional<Attendance> findByUserAndOccurrenceEvent(AppUser user, OccurrenceEvent occurrenceEvent);
 
-    Optional<Attendance> findByUserAndOccurrenceEventEvent(AppUser user, Event event);  // Updated method
+    @Query("SELECT a FROM Attendance a WHERE a.user = :user AND a.occurrenceEvent.start > :dateTime")
+    List<Attendance> findByUserAndOccurrenceEventStartAfter(
+            @Param("user") AppUser user,
+            @Param("dateTime") LocalDateTime dateTime
+    );
 
     @Query("""
         SELECT new map(

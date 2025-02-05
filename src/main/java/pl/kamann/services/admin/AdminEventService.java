@@ -1,7 +1,9 @@
 package pl.kamann.services.admin;
 
 import lombok.RequiredArgsConstructor;
+import org.dmfs.rfc5545.DateTime;
 import org.dmfs.rfc5545.recur.RecurrenceRule;
+import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -14,10 +16,8 @@ import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventFrequency;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
-import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.services.EventValidationService;
@@ -25,19 +25,19 @@ import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminEventService {
-
     private final EventRepository eventRepository;
-    private final OccurrenceEventRepository occurrenceRepository;
+    private final OccurrenceEventRepository occurrenceEventRepository;
     private final EventMapper eventMapper;
     private final EventValidationService eventValidationService;
     private final NotificationService notificationService;
@@ -48,59 +48,53 @@ public class AdminEventService {
     public EventDto createEvent(EventDto eventDto) {
         eventValidationService.validate(eventDto);
 
-        var createdBy = entityLookupService.findUserById(eventDto.createdById());
-        var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
+        Event event = eventMapper.toEntity(eventDto);
+        event.setCreatedBy(entityLookupService.findUserById(eventDto.createdById()));
+        event.setEventType(entityLookupService.findEventTypeById(eventDto.eventTypeId()));
 
-        var event = eventMapper.toEntity(eventDto);
-        event.setCreatedBy(createdBy);
-        event.setEventType(eventType);
+        Event savedEvent = eventRepository.save(event);
+        generateOccurrences(savedEvent);
 
-        eventRepository.save(event);
-
-        LocalTime startTime = eventDto.startTime();
-        LocalTime endTime = eventDto.endTime();
-
-        generateOccurrencesForEvent(event, startTime, endTime);
-
-        return eventMapper.toDto(event);
+        return eventMapper.toDto(savedEvent);
     }
 
     @Transactional
     public EventDto updateEvent(Long eventId, EventDto eventDto) {
-        eventValidationService.validate(eventDto);
-        var existingEvent = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found",
-                        HttpStatus.NOT_FOUND,
-                        EventCodes.EVENT_NOT_FOUND.name()
-                ));
+        Event existingEvent = findEventById(eventId);
+        boolean rruleChanged = !Objects.equals(existingEvent.getRrule(), eventDto.rrule());
 
-        var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
+        updateEventFields(existingEvent, eventDto);
+        Event savedEvent = eventRepository.save(existingEvent);
 
-        eventMapper.updateEventFromDto(existingEvent, eventDto);
+        if (rruleChanged) {
+            regenerateOccurrences(savedEvent);
+        }
 
-        existingEvent.setEventType(eventType);
-
-        existingEvent.setInstructor(entityLookupService.findUserById(eventDto.instructorId()));
-        existingEvent.setStartTime(eventDto.startTime());
-        existingEvent.setEndTime(eventDto.endTime());
-
-        occurrenceRepository.deleteByEvent(existingEvent);
-
-        generateOccurrencesForEvent(existingEvent, eventDto.startTime(), eventDto.endTime());
-
-        return eventMapper.toDto(eventRepository.save(existingEvent));
+        return eventMapper.toDto(savedEvent);
     }
 
-    public void deleteEvent(Long id, boolean force) {
-        var event = eventRepository.findById(id)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found",
-                        HttpStatus.NOT_FOUND,
-                        EventCodes.EVENT_NOT_FOUND.name()
-                ));
+    private void updateEventFields(Event event, EventDto dto) {
+        event.setTitle(dto.title());
+        event.setDescription(dto.description());
+        event.setStart(dto.start());
+        event.setDurationMinutes(dto.durationMinutes());
+        event.setRrule(dto.rrule());
+        event.setMaxParticipants(dto.maxParticipants());
 
-        if (!force && occurrenceRepository.existsByEvent(event)) {
+        if (dto.instructorId() != null) {
+            event.setInstructor(entityLookupService.findUserById(dto.instructorId()));
+        }
+
+        if (dto.eventTypeId() != null) {
+            event.setEventType(entityLookupService.findEventTypeById(dto.eventTypeId()));
+        }
+    }
+
+    @Transactional
+    public void deleteEvent(Long id, boolean force) {
+        Event event = findEventById(id);
+
+        if (!force && occurrenceEventRepository.existsByEvent(event)) {
             throw new ApiException(
                     "Cannot delete event with occurrences unless forced",
                     HttpStatus.BAD_REQUEST,
@@ -108,14 +102,94 @@ public class AdminEventService {
             );
         }
 
-        occurrenceRepository.deleteByEvent(event);
-
+        occurrenceEventRepository.deleteByEvent(event);
         eventRepository.delete(event);
+    }
+
+    @Transactional
+    public void cancelEvent(Long id) {
+        Event event = findEventById(id);
+        LocalDateTime now = LocalDateTime.now();
+
+        List<OccurrenceEvent> futureOccurrences =
+                occurrenceEventRepository.findByEventAndStartAfter(event, now);
+
+        futureOccurrences.forEach(occurrence -> occurrence.setCanceled(true));
+        occurrenceEventRepository.saveAll(futureOccurrences);
+
+        notificationService.notifyParticipants(event);
+    }
+
+    public List<OccurrenceEvent> generateOccurrences(Event event) {
+        List<OccurrenceEvent> occurrences = new ArrayList<>();
+
+        if (event.getRrule() == null || event.getRrule().isEmpty()) {
+            OccurrenceEvent singleOccurrence = OccurrenceEvent.builder()
+                    .event(event)
+                    .start(event.getStart())
+                    .durationMinutes(event.getDurationMinutes())
+                    .maxParticipants(event.getMaxParticipants())
+                    .instructor(event.getInstructor())
+                    .seriesIndex(0)
+                    .build();
+            occurrences.add(singleOccurrence);
+            return occurrences;
+        }
+
+        try {
+            RecurrenceRule rule = new RecurrenceRule(event.getRrule());
+            DateTime start = new DateTime(
+                    event.getStart().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            );
+
+            RecurrenceRuleIterator iterator = rule.iterator(start);
+            int seriesIndex = 0;
+            int maxInstances = 25;
+
+            while (iterator.hasNext() && maxInstances-- > 0) {
+                DateTime nextDateTime = iterator.nextDateTime();
+                LocalDateTime dateTime = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(nextDateTime.getTimestamp()),
+                        ZoneId.systemDefault()
+                );
+
+                OccurrenceEvent occurrence = OccurrenceEvent.builder()
+                        .event(event)
+                        .start(dateTime)
+                        .durationMinutes(event.getDurationMinutes())
+                        .maxParticipants(event.getMaxParticipants())
+                        .instructor(event.getInstructor())
+                        .seriesIndex(seriesIndex++)
+                        .build();
+                occurrences.add(occurrence);
+            }
+
+            return occurrences;
+        } catch (Exception e) {
+            throw new ApiException(
+                    "Failed to generate occurrences: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    EventCodes.OCCURRENCE_GENERATION_FAILED.name()
+            );
+        }
+    }
+
+    private void regenerateOccurrences(Event event) {
+        occurrenceEventRepository.deleteByEvent(event);
+        generateOccurrences(event);
+    }
+
+    private Event findEventById(Long id) {
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new ApiException(
+                        "Event not found with ID: " + id,
+                        HttpStatus.NOT_FOUND,
+                        EventCodes.EVENT_NOT_FOUND.name()
+                ));
     }
 
     public PaginatedResponseDto<EventDto> listAllEvents(Pageable pageable) {
         Pageable validatedPageable = paginationService.validatePageable(pageable);
-
         Page<Event> events = eventRepository.findAll(validatedPageable);
 
         if (events.isEmpty() && validatedPageable.getPageNumber() > 0) {
@@ -126,224 +200,75 @@ public class AdminEventService {
             );
         }
 
-        List<EventDto> eventDtos = events.stream()
+        List<EventDto> eventDtos = events.getContent().stream()
                 .map(eventMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
 
-        PaginationMetaData metaData = new PaginationMetaData(
-
-                events.getTotalPages(),
-                events.getTotalElements()
-                );
-
-        return new PaginatedResponseDto<>(eventDtos, metaData);
+        return new PaginatedResponseDto<>(
+                eventDtos,
+                new PaginationMetaData(events.getTotalPages(), events.getTotalElements())
+        );
     }
 
     public PaginatedResponseDto<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
         Pageable validatedPageable = paginationService.validatePageable(pageable);
+        Page<OccurrenceEvent> occurrencePage =
+                occurrenceEventRepository.findDistinctByInstructorId(instructorId, validatedPageable);
 
-        Page<OccurrenceEvent> occurrencePage = occurrenceRepository.findDistinctByInstructorId(instructorId, validatedPageable);
-
-        List<EventDto> eventDtos = occurrencePage.stream()
+        List<EventDto> eventDtos = occurrencePage.getContent().stream()
                 .map(occurrence -> eventMapper.toDto(occurrence.getEvent()))
-                .collect(Collectors.toList());
+                .toList();
 
-        PaginationMetaData metaData = new PaginationMetaData(
-                occurrencePage.getTotalPages(),
-                occurrencePage.getTotalElements()
+        return new PaginatedResponseDto<>(
+                eventDtos,
+                new PaginationMetaData(
+                        occurrencePage.getTotalPages(),
+                        occurrencePage.getTotalElements()
+                )
         );
-
-        return new PaginatedResponseDto<>(eventDtos, metaData);
     }
 
     public EventDto getEventById(Long eventId) {
-        var event = eventRepository.findById(eventId)
+        return eventRepository.findById(eventId)
+                .map(eventMapper::toDto)
                 .orElseThrow(() -> new ApiException(
-                        "Event not found with ID: " + eventId,
-                        HttpStatus.NOT_FOUND, EventCodes.EVENT_NOT_FOUND.name()
-                ));
-        return eventMapper.toDto(event);
+                        "Event not found with id: " + eventId,
+                        HttpStatus.NOT_FOUND,
+                        EventCodes.EVENT_NOT_FOUND.name()));
     }
 
-    @Transactional
-    public void cancelEvent(Long id) {
-        var event = eventRepository.findById(id)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found", HttpStatus.NOT_FOUND, EventCodes.EVENT_NOT_FOUND.name()
-                ));
-
-        // Cancel future occurrences
-        List<OccurrenceEvent> futureOccurrences = occurrenceRepository.findByEventAndDateAfter(event, LocalDate.now());
-        futureOccurrences.forEach(occurrence -> occurrence.setCanceled(true));
-        occurrenceRepository.saveAll(futureOccurrences);
-
-        notificationService.notifyParticipants(event);
+    public void createSingleOccurrence(Event event) {
+        createOccurrence(event, event.getStart(), 0);
     }
 
-    private void generateOccurrencesForEvent(Event event, LocalTime startTime, LocalTime endTime) {
-        if (!event.getRecurring()) {
-            OccurrenceEvent occurrence = OccurrenceEvent.builder()
-                    .event(event)
-                    .date(event.getStartDate())
-                    .startTime(startTime)
-                    .endTime(endTime)
-                    .instructor(event.getInstructor())
-                    .canceled(false)
-                    .seriesIndex(1)
-                    .build();
-
-            occurrenceRepository.save(occurrence);
-            return;
-        }
-
-        if (event.getRecurrenceRule() != null) {
-            // Extract days of the week and frequency from the recurrence rule
-            String daysOfWeek = extractDaysOfWeek(event.getRecurrenceRule());
-            EventFrequency frequency = extractFrequency(event.getRecurrenceRule());
-            LocalDate endDate = event.getRecurrenceEndDate();
-
-            // Generate the event dates
-            List<LocalDate> dates = generateEventDates(
-                    event.getStartDate(),
-                    daysOfWeek,
-                    frequency,
-                    endDate
-            );
-
-            // Map the dates to OccurrenceEvent objects
-            List<OccurrenceEvent> occurrences = dates.stream()
-                    .map(date -> OccurrenceEvent.builder()
-                            .event(event)
-                            .date(date)
-                            .startTime(startTime)
-                            .endTime(endTime)
-                            .instructor(event.getInstructor())
-                            .canceled(false)
-                            .seriesIndex(getSeriesIndex(date, event))
-                            .build())
-                    .collect(Collectors.toList());
-
-            // Save all occurrences to the repository
-            occurrenceRepository.saveAll(occurrences);
-        } else {
-            throw new ApiException("Invalid recurrence rule for event", HttpStatus.BAD_REQUEST, EventCodes.INVALID_RECURRENCE_RULE.name());
-        }
-
+    private void createOccurrence(Event event, LocalDateTime start, int seriesIndex) {
+        OccurrenceEvent occurrence = OccurrenceEvent.builder()
+                .event(event)
+                .start(start)
+                .durationMinutes(event.getDurationMinutes())
+                .maxParticipants(event.getMaxParticipants())
+                .instructor(event.getInstructor())
+                .createdBy(event.getCreatedBy())  // Set createdBy from Event
+                .seriesIndex(seriesIndex)
+                .build();
+        occurrenceEventRepository.save(occurrence);
     }
 
+    public void createRecurringOccurrences(Event event) {
+        List<OccurrenceEvent> occurrences = generateOccurrences(event).stream()
+                .map(occurrence -> OccurrenceEvent.builder()
+                        .event(occurrence.getEvent())
+                        .start(occurrence.getStart())
+                        .durationMinutes(occurrence.getDurationMinutes())
+                        .maxParticipants(occurrence.getMaxParticipants())
+                        .instructor(occurrence.getInstructor())
+                        .createdBy(event.getCreatedBy())
+                        .seriesIndex(occurrence.getSeriesIndex())
+                        .canceled(occurrence.isCanceled())
+                        .excluded(occurrence.isExcluded())
+                        .build())
+                .collect(Collectors.toList());
 
-    private int getSeriesIndex(LocalDate date, Event event) {
-        // Assuming the recurrence start date is the event's startDate
-        return (int) ChronoUnit.WEEKS.between(event.getStartDate(), date) + 1;
-    }
-
-
-    private List<LocalDate> generateEventDates(LocalDate startDate, String daysOfWeek, EventFrequency frequency, LocalDate endDate) {
-        List<LocalDate> generatedDates = new ArrayList<>();
-
-        // Convert the comma-separated list of days of the week to a Set
-        Set<DayOfWeek> daysOfWeekSet = Arrays.stream(daysOfWeek.split(","))
-                .map(String::trim)
-                .map(this::parseDayOfWeek)
-                .collect(Collectors.toSet());
-
-        LocalDate currentDate = startDate;
-
-        // Based on the frequency, increment the currentDate differently
-        switch (frequency) {
-            case DAILY:
-                // For daily recurrence, just add every day
-                while (!currentDate.isAfter(endDate)) {
-                    if (daysOfWeekSet.contains(currentDate.getDayOfWeek())) {
-                        generatedDates.add(currentDate);
-                    }
-                    currentDate = currentDate.plusDays(1);
-                }
-                break;
-
-            case WEEKLY:
-                // For weekly recurrence, increment the date by one week
-                while (!currentDate.isAfter(endDate)) {
-                    if (daysOfWeekSet.contains(currentDate.getDayOfWeek())) {
-                        generatedDates.add(currentDate);
-                    }
-                    currentDate = currentDate.plusWeeks(1);
-                }
-                break;
-
-            case MONTHLY:
-                // For monthly recurrence, increment the date by one month
-                while (!currentDate.isAfter(endDate)) {
-                    if (daysOfWeekSet.contains(currentDate.getDayOfWeek())) {
-                        generatedDates.add(currentDate);
-                    }
-                    currentDate = currentDate.plusMonths(1);
-                }
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unsupported frequency: " + frequency);
-        }
-
-        return generatedDates;
-    }
-
-    private DayOfWeek parseDayOfWeek(String day) {
-        return switch (day.toLowerCase()) {
-            case "monday" -> DayOfWeek.MONDAY;
-            case "tuesday" -> DayOfWeek.TUESDAY;
-            case "wednesday" -> DayOfWeek.WEDNESDAY;
-            case "thursday" -> DayOfWeek.THURSDAY;
-            case "friday" -> DayOfWeek.FRIDAY;
-            case "saturday" -> DayOfWeek.SATURDAY;
-            case "sunday" -> DayOfWeek.SUNDAY;
-            default ->
-                    throw new ApiException("Invalid day of week: " + day,
-                            HttpStatus.BAD_REQUEST,
-                            EventCodes.INVALID_DAY_OF_THE_WEEK.name());
-        };
-    }
-
-    private String extractDaysOfWeek(RecurrenceRule recurrenceRule) {
-        StringBuilder daysOfWeek = new StringBuilder();
-
-        List<RecurrenceRule.WeekdayNum> byDays = recurrenceRule.getByDayPart();
-
-        if (byDays != null && !byDays.isEmpty()) {
-            Map<String, String> dayMap = Map.of(
-                    "MO", "Monday",
-                    "TU", "Tuesday",
-                    "WE", "Wednesday",
-                    "TH", "Thursday",
-                    "FR", "Friday",
-                    "SA", "Saturday",
-                    "SU", "Sunday"
-            );
-
-            for (RecurrenceRule.WeekdayNum day : byDays) {
-                if (!daysOfWeek.isEmpty()) {
-                    daysOfWeek.append(", ");
-                }
-                String weekdayShort = day.weekday.name();
-                daysOfWeek.append(dayMap.getOrDefault(weekdayShort, weekdayShort));
-            }
-        }
-
-        return daysOfWeek.toString();
-    }
-
-    private EventFrequency extractFrequency(RecurrenceRule recurrenceRule) {
-        String freq = recurrenceRule.getFreq().name();
-
-        return switch (freq) {
-            case "DAILY" -> EventFrequency.DAILY;
-            case "WEEKLY" -> EventFrequency.WEEKLY;
-            case "MONTHLY" -> EventFrequency.MONTHLY;
-            case "YEARLY" -> EventFrequency.YEARLY;
-            default -> throw new ApiException(
-                    "Unsupported frequency: " + freq,
-                    HttpStatus.BAD_REQUEST,
-                    EventCodes.INVALID_FREQUENCY.name());
-        };
+        occurrenceEventRepository.saveAll(occurrences);
     }
 }

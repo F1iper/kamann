@@ -7,8 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.systemevents.EventHistoryLogEvent;
@@ -47,7 +49,7 @@ public class ClientAttendanceService {
         // Create a new attendance record
         var attendance = new Attendance();
         attendance.setUser(client);
-        attendance.setOccurrenceEvent(occurrenceEvent);  // Set the occurrence event
+        attendance.setOccurrenceEvent(occurrenceEvent);
         attendance.setStatus(AttendanceStatus.REGISTERED);
         attendanceRepository.save(attendance);
 
@@ -59,40 +61,59 @@ public class ClientAttendanceService {
 
     @Transactional
     public Attendance cancelAttendance(Long occurrenceEventId) {
-        var clientId = lookupService.getLoggedInUser().getId();
-        var attendance = attendanceRepository.findByUserAndOccurrenceEvent(
-                        lookupService.findUserById(clientId), lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId))
+        AppUser currentUser = lookupService.getLoggedInUser();
+        OccurrenceEvent occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+
+        Attendance attendance = attendanceRepository.findByUserAndOccurrenceEvent(currentUser, occurrenceEvent)
                 .orElseThrow(() -> new ApiException(
-                        "Attendance not found.",
+                        "Attendance not found for user and event",
                         HttpStatus.NOT_FOUND,
                         AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
+        validateAttendanceCancellation(attendance);
+
+        AttendanceStatus cancellationType = determineCancellationType(occurrenceEvent);
+
+        updateAttendanceStatus(attendance, cancellationType);
+
+        publishCancellationEvent(attendance, occurrenceEvent, cancellationType);
+
+        return attendance;
+    }
+
+    private void validateAttendanceCancellation(Attendance attendance) {
         if (attendance.getStatus() == AttendanceStatus.PRESENT) {
             throw new ApiException(
-                    "Cannot cancel attendance already marked as PRESENT.",
+                    "Cannot cancel attendance already marked as PRESENT",
                     HttpStatus.BAD_REQUEST,
                     AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
             );
         }
+    }
 
-        var occurrenceEvent = attendance.getOccurrenceEvent();
-        var currentDateTime = LocalDateTime.now();
+    private AttendanceStatus determineCancellationType(OccurrenceEvent occurrenceEvent) {
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime eventStartTime = occurrenceEvent.getStart();
+        LocalDateTime cancellationDeadline = eventStartTime.minusHours(24);
 
-        LocalDateTime eventStartTime = LocalDateTime.of(occurrenceEvent.getEvent().getStartDate(), occurrenceEvent.getStartTime());
-
-        // Determine whether the cancellation is early or late
-        var cancellationType = currentDateTime.isBefore(eventStartTime.minusHours(24))
+        return currentDateTime.isBefore(cancellationDeadline)
                 ? AttendanceStatus.EARLY_CANCEL
                 : AttendanceStatus.LATE_CANCEL;
+    }
 
-        attendance.setStatus(cancellationType);
+    private void updateAttendanceStatus(Attendance attendance, AttendanceStatus status) {
+        attendance.setStatus(status);
         attendanceRepository.save(attendance);
+    }
 
-        // Publish event history log for cancellation
-        eventPublisher.publishEvent(new EventHistoryLogEvent(attendance.getUser(), occurrenceEvent, cancellationType));
-
-        return attendance;
+    private void publishCancellationEvent(Attendance attendance, OccurrenceEvent occurrenceEvent,
+                                          AttendanceStatus cancellationType) {
+        eventPublisher.publishEvent(new EventHistoryLogEvent(
+                attendance.getUser(),
+                occurrenceEvent,
+                cancellationType
+        ));
     }
 
     public Map<String, Object> getAttendanceSummary() {

@@ -14,8 +14,6 @@ import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    List<Event> findByRecurring(boolean recurring);
-
     @Query("SELECT e FROM OccurrenceEvent e JOIN e.attendances a WHERE a.user = :user AND a.status = :status")
     List<OccurrenceEvent> findEventsByUserAndStatus(@Param("user") AppUser user, @Param("status") AttendanceStatus status);
 

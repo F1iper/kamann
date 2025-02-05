@@ -14,38 +14,32 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/client/occurrences")
 @RequiredArgsConstructor
-@Tag(name = "Client Occurrences", description = "Controller for managing specific occurrences of events for clients.")
+@Tag(name = "Client Occurrences", description = "Controller for viewing available and enrolled event occurrences.")
 public class ClientOccurrenceEventController {
 
     private final OccurrenceService occurrenceService;
 
-    @GetMapping
-    @Operation(summary = "List all occurrences", description = "Retrieves a list of all occurrences.")
-    public ResponseEntity<List<OccurrenceEventDto>> getAllOccurrences() {
-        List<OccurrenceEventDto> occurrences = occurrenceService.getAllOccurrences();
+    @GetMapping("/available")
+    @Operation(summary = "List available occurrences",
+            description = "Retrieves a list of all upcoming occurrences that are available for enrollment.")
+    public ResponseEntity<List<OccurrenceEventDto>> getAvailableOccurrences() {
+        List<OccurrenceEventDto> occurrences = occurrenceService.getAvailableOccurrences();
+        return ResponseEntity.ok(occurrences);
+    }
+
+    @GetMapping("/enrolled")
+    @Operation(summary = "List enrolled occurrences",
+            description = "Retrieves a list of occurrences the current user is enrolled in.")
+    public ResponseEntity<List<OccurrenceEventDto>> getEnrolledOccurrences() {
+        List<OccurrenceEventDto> occurrences = occurrenceService.getUserEnrolledOccurrences();
         return ResponseEntity.ok(occurrences);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get occurrence details", description = "Retrieves details of a specific occurrence by its ID.")
-    public ResponseEntity<OccurrenceEventDto> getOccurrenceById(@PathVariable Long id) {
-        OccurrenceEventDto occurrence = occurrenceService.getOccurrenceById(id);
+    @Operation(summary = "Get occurrence details",
+            description = "Retrieves details of a specific occurrence if the user has access to view it.")
+    public ResponseEntity<OccurrenceEventDto> getOccurrenceDetails(@PathVariable Long id) {
+        OccurrenceEventDto occurrence = occurrenceService.getOccurrenceDetailsForUser(id);
         return ResponseEntity.ok(occurrence);
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Update an occurrence", description = "Updates an existing occurrence (e.g., cancel or reschedule).")
-    public ResponseEntity<OccurrenceEventDto> updateOccurrence(
-            @PathVariable Long id,
-            @RequestBody @Valid OccurrenceEventDto occurrenceDto) {
-        OccurrenceEventDto updatedOccurrence = occurrenceService.updateOccurrence(id, occurrenceDto);
-        return ResponseEntity.ok(updatedOccurrence);
-    }
-
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete an occurrence", description = "Deletes a specific occurrence without affecting the parent event.")
-    public ResponseEntity<Void> deleteOccurrence(@PathVariable Long id) {
-        occurrenceService.deleteOccurrence(id);
-        return ResponseEntity.noContent().build();
     }
 }

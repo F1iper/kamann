@@ -6,10 +6,7 @@ import org.dmfs.rfc5545.recur.InvalidRecurrenceRuleException;
 import org.dmfs.rfc5545.recur.RecurrenceRule;
 import pl.kamann.entities.appuser.AppUser;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,9 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(indexes = @Index(name = "idx_recurring", columnList = "recurring"))
 public class Event {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,58 +25,52 @@ public class Event {
     private String description;
 
     @Column(nullable = false)
-    private Boolean recurring;
+    private LocalDateTime start;
 
+    @Column(nullable = false)
+    private Integer durationMinutes;
+
+    @Column(length = 1000)
     private String rrule;
-
-    @ElementCollection
-    @CollectionTable(name = "event_exdates", joinColumns = @JoinColumn(name = "event_id"))
-    private List<LocalDate> exdates = new ArrayList<>();
-
-    private Integer occurrenceLimit;
 
     @Enumerated(EnumType.STRING)
     private EventStatus status;
 
-    @Column(nullable = false)
-    private LocalDate startDate;
-
-    @Column(nullable = false)
-    private LocalTime startTime;
-
-    @Column(nullable = false)
-    private LocalTime endTime;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
     private AppUser createdBy;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_type_id", nullable = false)
     private EventType eventType;
 
     private int maxParticipants;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id")
     private AppUser instructor;
 
     @Transient
     private RecurrenceRule recurrenceRule;
 
-    @Column
-    private LocalDate recurrenceEndDate;
-
     @PostLoad
     @PostPersist
     @PostUpdate
     private void initializeRecurrenceRule() {
-        if (Boolean.TRUE.equals(recurring) && rrule != null && !rrule.isEmpty()) {
+        if (rrule != null && !rrule.isEmpty()) {
             try {
                 this.recurrenceRule = new RecurrenceRule(rrule);
             } catch (InvalidRecurrenceRuleException e) {
                 throw new IllegalArgumentException("Invalid recurrence rule: " + rrule, e);
             }
         }
+    }
+
+    public boolean isRecurring() {
+        return rrule != null && !rrule.isEmpty();
+    }
+
+    public LocalDateTime getEnd() {
+        return start.plusMinutes(durationMinutes);
     }
 }

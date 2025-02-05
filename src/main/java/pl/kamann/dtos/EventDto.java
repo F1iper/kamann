@@ -2,16 +2,12 @@ package pl.kamann.dtos;
 
 import jakarta.validation.constraints.*;
 import lombok.Builder;
-import pl.kamann.entities.event.EventFrequency;
 import pl.kamann.entities.event.EventStatus;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Builder
 public record EventDto(
-        @NotNull(message = "Event ID cannot be null")
         Long id,
 
         @NotBlank(message = "Title cannot be blank")
@@ -19,28 +15,20 @@ public record EventDto(
 
         String description,
 
-        @NotNull(message = "Start date cannot be null")
-        @Future(message = "Start date must be in the future")
-        LocalDate startDate,
+        @NotNull(message = "Start date/time cannot be null")
+        @Future(message = "Start date/time must be in the future")
+        LocalDateTime start,
 
-        @NotNull(message = "End date cannot be null")
-        @Future(message = "End date must be in the future")
-        LocalDate endDate,
+        @NotNull(message = "Duration in minutes cannot be null")
+        @Positive(message = "Duration must be positive")
+        Integer durationMinutes,
 
-        @NotNull(message = "Start time cannot be null")
-        LocalTime startTime,
-
-        @NotNull(message = "End time cannot be null")
-        LocalTime endTime,
-
-        Boolean recurring,
+        String rrule,
 
         @NotNull(message = "Creator ID cannot be null")
         Long createdById,
 
         Long instructorId,
-
-        List<LocalDate> exdates,
 
         String instructorFullName,
 
@@ -53,20 +41,25 @@ public record EventDto(
         @PositiveOrZero(message = "Current participants must be zero or a positive number")
         int currentParticipants,
 
+        @NotNull(message = "Event type ID cannot be null")
         Long eventTypeId,
 
-        String eventTypeName,
-
-        @NotNull(message = "Frequency is required for recurring events")
-        EventFrequency frequency,
-
-        @NotEmpty(message = "Days of week are required for recurring events")
-        String daysOfWeek,
-
-        @Future(message = "Recurrence end date must be in the future")
-        @NotNull(message = "Recurrence end date is required for recurring events")
-        LocalDate recurrenceEndDate,
-
-        String rrule
+        String eventTypeName
 ) {
+        public EventDto {
+                if (rrule != null && !rrule.isEmpty()) {
+                        validateRRule(rrule);
+                }
+        }
+
+        private void validateRRule(String rrule) {
+                if (!rrule.startsWith("FREQ=")) {
+                        throw new IllegalArgumentException("RRULE must start with FREQ=");
+                        // todo handle other cases (if possible to receive from client)
+                }
+        }
+
+        public LocalDateTime getEnd() {
+                return start.plusMinutes(durationMinutes);
+        }
 }

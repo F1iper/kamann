@@ -2,16 +2,14 @@ package pl.kamann.controllers.client;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.OccurrenceEventDto;
-import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.services.client.ClientEventService;
-import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 
@@ -35,26 +33,5 @@ public class ClientEventController {
     public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
         EventDto event = clientEventService.getEventDetails(eventId);
         return ResponseEntity.ok(event);
-    }
-
-    @PostMapping
-    @Operation(summary = "Create a new event", description = "Creates a new high-level event.")
-    public ResponseEntity<EventDto> createEvent(@RequestBody @Valid EventDto eventDto) {
-        EventDto createdEvent = clientEventService.createEvent(eventDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
-    }
-
-    @PutMapping("/{eventId}")
-    @Operation(summary = "Update an event", description = "Updates an existing high-level event.")
-    public ResponseEntity<EventDto> updateEvent(@PathVariable Long eventId, @RequestBody @Valid EventDto eventDto) {
-        EventDto updatedEvent = clientEventService.updateEvent(eventId, eventDto);
-        return ResponseEntity.ok(updatedEvent);
-    }
-
-    @DeleteMapping("/{eventId}")
-    @Operation(summary = "Delete an event", description = "Deletes a high-level event and all its occurrences.")
-    public ResponseEntity<Void> deleteEvent(@PathVariable Long eventId) {
-        clientEventService.deleteEvent(eventId);
-        return ResponseEntity.noContent().build();
     }
 }

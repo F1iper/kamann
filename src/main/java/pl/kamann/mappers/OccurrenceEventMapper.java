@@ -8,6 +8,7 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,11 +23,10 @@ public class OccurrenceEventMapper {
         }
 
         return OccurrenceEventDto.builder()
-                .id(occurrenceEvent.getId())
                 .eventId(getEventId(occurrenceEvent))
-                .date(occurrenceEvent.getDate())
-                .startTime(occurrenceEvent.getStartTime())
-                .endTime(occurrenceEvent.getEndTime())
+                .date(occurrenceEvent.getStart().toLocalDate())
+                .startTime(occurrenceEvent.getStart().toLocalTime())
+                .endTime(occurrenceEvent.getEnd().toLocalTime())
                 .canceled(occurrenceEvent.isCanceled())
                 .seriesIndex(occurrenceEvent.getSeriesIndex())
                 .instructorId(getInstructorId(occurrenceEvent))
@@ -36,6 +36,35 @@ public class OccurrenceEventMapper {
                 .eventTypeName(getEventTypeName(occurrenceEvent))
                 .isModified(isModified(occurrenceEvent))
                 .attendanceCount(getAttendanceCount(occurrenceEvent))
+                .build();
+    }
+
+    public OccurrenceEventDto toOccurrenceEventDto(OccurrenceEvent occurrence) {
+        if (occurrence == null) {
+            throw new IllegalArgumentException("OccurrenceEvent cannot be null");
+        }
+
+        Event event = occurrence.getEvent();
+        LocalDateTime start = occurrence.getStart();
+        AppUser instructor = occurrence.getInstructor();
+
+        return OccurrenceEventDto.builder()
+                .eventId(event != null ? event.getId() : null)
+                .date(start.toLocalDate())
+                .startTime(start.toLocalTime())
+                .endTime(occurrence.getEnd().toLocalTime())
+                .durationMinutes(occurrence.getDurationMinutes())
+                .canceled(occurrence.isCanceled())
+                .instructorId(instructor != null ? instructor.getId() : null)
+                .createdById(occurrence.getCreatedBy() != null ? occurrence.getCreatedBy().getId() : null)
+                .seriesIndex(occurrence.getSeriesIndex())
+                .maxParticipants(occurrence.getMaxParticipants())
+                .eventTypeName(event != null && event.getEventType() != null ? event.getEventType().getName() : null)
+                .instructorFullName(instructor != null ?
+                        instructor.getFirstName() + " " + instructor.getLastName() : null)
+                .isModified(occurrence.isModified())
+                .attendanceCount(occurrence.getAttendances() != null ?
+                        occurrence.getAttendances().size() : 0)
                 .build();
     }
 
@@ -79,8 +108,8 @@ public class OccurrenceEventMapper {
     private boolean isModified(OccurrenceEvent occurrenceEvent) {
         Event parentEvent = occurrenceEvent.getEvent();
         return parentEvent == null ||
-                !occurrenceEvent.getStartTime().equals(parentEvent.getStartTime()) ||
-                !occurrenceEvent.getEndTime().equals(parentEvent.getEndTime()) ||
+                !occurrenceEvent.getStart().toLocalDate().equals(parentEvent.getStart().toLocalDate()) ||
+                !occurrenceEvent.getEnd().toLocalDate().equals(parentEvent.getEnd().toLocalDate()) ||
                 occurrenceEvent.isCanceled() ||
                 !Objects.equals(occurrenceEvent.getInstructor(), parentEvent.getInstructor());
     }
