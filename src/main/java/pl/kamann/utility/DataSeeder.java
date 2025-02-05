@@ -1,15 +1,19 @@
 package pl.kamann.utility;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.attendance.Attendance;
+import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.*;
 import pl.kamann.services.EventValidationService;
@@ -64,24 +68,27 @@ public class DataSeeder {
     Role instructorRole = new Role("INSTRUCTOR");
     Role clientRole = new Role("CLIENT");
 
+    AppUser client1;
+
     @PostConstruct
     public void seedData() {
         createRoles();
         createUsers();
         seedEventTypes();
         seedEvents();
+        seedAttendancesTransactional();
     }
     private void createRoles() {
         roleRepository.saveAll(Arrays.asList(adminRole, instructorRole, clientRole));
     }
 
     private void createUsers() {
-        createAdmin();
+        createDefaultAdminAndClient();
         createInstructors();
         createClients();
     }
 
-    private void createAdmin() {
+    private void createDefaultAdminAndClient() {
         AppUser admin = AppUser.builder()
                 .email("admin@yoga.com")
                 .firstName("Admin")
@@ -91,6 +98,16 @@ public class DataSeeder {
                 .build();
 
         appUserRepository.save(admin);
+
+        client1 = AppUser.builder()
+                .email("client1@client.com")
+                .firstName("John")
+                .lastName("Wick")
+                .password(passwordEncoder.encode("admin"))
+                .roles(Set.of(clientRole))
+                .build();
+
+        appUserRepository.save(client1);
     }
 
     private void createInstructors() {
@@ -105,7 +122,7 @@ public class DataSeeder {
     }
 
     private void createClients() {
-        List<AppUser> clients = IntStream.range(1, 5)
+        List<AppUser> clients = IntStream.range(2, 5)
                 .mapToObj(i -> AppUser.builder()
                         .email("client" + i + "@client.com")
                         .firstName("Client" + i)
@@ -145,20 +162,26 @@ public class DataSeeder {
         AppUser instructor = appUserRepository.findByEmail("instructor1@yoga.com")
                 .orElseThrow(() -> new RuntimeException("Instructor not found"));
         EventType yogaType = eventTypeRepository.findByName("Yoga")
-                .orElseThrow(() -> new RuntimeException("Event type not found"));
+                .orElseThrow(() -> new RuntimeException("Yoga event type not found"));
+        EventType danceType = eventTypeRepository.findByName("Dance")
+                .orElseThrow(() -> new RuntimeException("Dance event type not found"));
+        EventType poleDanceType = eventTypeRepository.findByName("PoleDance")
+                .orElseThrow(() -> new RuntimeException("PoleDance event type not found"));
 
         // Create single events
         createSingleYogaWorkshop(admin, instructor, yogaType);
+        createSingleDanceWorkshop(admin, instructor, danceType);
 
         // Create recurring events
         createRecurringMorningYoga(admin, instructor, yogaType);
+        createRecurringPoleDance(admin, instructor, poleDanceType);
     }
 
     private void createSingleYogaWorkshop(AppUser admin, AppUser instructor, EventType yogaType) {
         Event event = Event.builder()
                 .title("Yoga Workshop")
                 .description("Intensive yoga session")
-                .start(LocalDateTime.of(2025, 2, 8, 18, 0))
+                .start(LocalDateTime.now().plusDays(1)) // 1 day in the future
                 .durationMinutes(120)
                 .maxParticipants(15)
                 .eventType(yogaType)
@@ -166,7 +189,22 @@ public class DataSeeder {
                 .instructor(instructor)
                 .status(EventStatus.SCHEDULED)
                 .build();
+        eventRepository.save(event);
+        adminEventService.createSingleOccurrence(event);
+    }
 
+    private void createSingleDanceWorkshop(AppUser admin, AppUser instructor, EventType danceType) {
+        Event event = Event.builder()
+                .title("Dance Workshop")
+                .description("Intensive dance session")
+                .start(LocalDateTime.now().plusDays(1).withHour(17).withMinute(0))
+                .durationMinutes(90)
+                .maxParticipants(20)
+                .eventType(danceType)
+                .createdBy(admin)
+                .instructor(instructor)
+                .status(EventStatus.SCHEDULED)
+                .build();
         eventRepository.save(event);
         adminEventService.createSingleOccurrence(event);
     }
@@ -176,7 +214,7 @@ public class DataSeeder {
                 .title("Morning Yoga")
                 .description("Daily morning yoga sessions")
                 .rrule("FREQ=WEEKLY;BYDAY=MO,WE,FR;INTERVAL=1;COUNT=12")
-                .start(LocalDateTime.of(2025, 2, 6, 7, 0))
+                .start(LocalDateTime.now().plusDays(2).withHour(7).withMinute(0))
                 .durationMinutes(60)
                 .maxParticipants(20)
                 .eventType(yogaType)
@@ -184,8 +222,63 @@ public class DataSeeder {
                 .instructor(instructor)
                 .status(EventStatus.SCHEDULED)
                 .build();
-
         eventRepository.save(event);
         adminEventService.createRecurringOccurrences(event);
+    }
+
+    private void createRecurringPoleDance(AppUser admin, AppUser instructor, EventType poleDanceType) {
+        Event event = Event.builder()
+                .title("Evening Pole Dance")
+                .description("Weekly pole dance classes")
+                .rrule("FREQ=WEEKLY;BYDAY=TU,TH;INTERVAL=1;COUNT=10")
+                .start(LocalDateTime.now().plusDays(3).withHour(19).withMinute(0))
+                .durationMinutes(75)
+                .maxParticipants(12)
+                .eventType(poleDanceType)
+                .createdBy(admin)
+                .instructor(instructor)
+                .status(EventStatus.SCHEDULED)
+                .build();
+        eventRepository.save(event);
+        adminEventService.createRecurringOccurrences(event);
+    }
+
+    @Transactional
+    public void seedAttendancesTransactional() {
+        seedAttendances();
+    }
+
+
+    private void seedAttendances() {
+
+
+        // For each event, enroll client1 in the first occurrence (if available)
+        seedAttendanceForEvent("Yoga Workshop", client1);
+        seedAttendanceForEvent("Morning Yoga", client1);
+        seedAttendanceForEvent("Dance Workshop", client1);
+        seedAttendanceForEvent("Evening Pole Dance", client1);
+    }
+
+    private void seedAttendanceForEvent(String eventTitle, AppUser client) {
+        List<Attendance> attendances = attendanceRepository.findAll();
+        Optional<Event> eventOpt = eventRepository.findByTitle(eventTitle);
+        eventOpt.ifPresent(event -> {
+            var occurrences = occurrenceEventRepository.findAllByEventId(event.getId());
+            if (!occurrences.isEmpty()) {
+                OccurrenceEvent occurrence = occurrences.get(0);
+                // Force initialization of the lazy collection
+                occurrence.getParticipants().size();
+                if (!occurrence.getParticipants().contains(client)) {
+                    Attendance attendance = Attendance.builder()
+                            .user(client)
+                            .occurrenceEvent(occurrence)
+                            .status(AttendanceStatus.REGISTERED)
+                            .build();
+                    attendanceRepository.save(attendance);
+                    occurrence.getParticipants().add(client);
+                    occurrenceEventRepository.save(occurrence);
+                }
+            }
+        });
     }
 }

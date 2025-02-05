@@ -20,7 +20,7 @@ import pl.kamann.services.AuthService;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
-@Tag(name = "/api/auth", description = "Auth controller")
+@Tag(name = "1. login", description = "Auth controller")
 public class AuthController {
 
     private final AuthService authService;

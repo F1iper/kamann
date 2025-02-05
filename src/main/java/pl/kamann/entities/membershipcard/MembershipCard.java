@@ -50,7 +50,6 @@ public class MembershipCard {
     @Column(nullable = false)
     private BigDecimal price;
 
-    // todo: is required? need client opinion
     @Column(nullable = false)
     private LocalDateTime purchaseDate;
 

@@ -14,6 +14,9 @@ import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
+import pl.kamann.dtos.EventResponseDto;
+import pl.kamann.dtos.EventUpdateRequestDto;
+import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
@@ -30,12 +33,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminEventService {
+
     private final EventRepository eventRepository;
     private final OccurrenceEventRepository occurrenceEventRepository;
     private final EventMapper eventMapper;
@@ -58,20 +61,44 @@ public class AdminEventService {
         return eventMapper.toDto(savedEvent);
     }
 
-    @Transactional
-    public EventDto updateEvent(Long eventId, EventDto eventDto) {
-        Event existingEvent = findEventById(eventId);
-        boolean rruleChanged = !Objects.equals(existingEvent.getRrule(), eventDto.rrule());
-
-        updateEventFields(existingEvent, eventDto);
-        Event savedEvent = eventRepository.save(existingEvent);
-
-        if (rruleChanged) {
-            regenerateOccurrences(savedEvent);
-        }
-
-        return eventMapper.toDto(savedEvent);
+    public EventResponseDto updateEvent(Long id, EventUpdateRequestDto requestDto, EventUpdateScope scope) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+        event.setTitle(requestDto.title());
+        event.setDescription(requestDto.description());
+        event.setStart(requestDto.start());
+        event.setDurationMinutes(requestDto.durationMinutes());
+        event.setRrule(requestDto.rrule());
+        event.setMaxParticipants(requestDto.maxParticipants());
+        event = eventRepository.save(event);
+        propagateChanges(event, scope);
+        Long instructorId = event.getInstructor() != null ? event.getInstructor().getId() : null;
+        return new EventResponseDto(
+                event.getId(),
+                event.getTitle(),
+                event.getDescription(),
+                event.getStart(),
+                event.getDurationMinutes(),
+                event.getRrule(),
+                instructorId,
+                event.getMaxParticipants()
+        );
     }
+
+    private void propagateChanges(Event event, EventUpdateScope scope) {
+        if (scope == EventUpdateScope.EVENT_ONLY) return;
+        List<OccurrenceEvent> occurrences = occurrenceEventRepository.findAllByEventId(event.getId());
+        LocalDateTime now = LocalDateTime.now();
+        for (OccurrenceEvent occ : occurrences) {
+            if (scope == EventUpdateScope.ALL_OCCURRENCES || (scope == EventUpdateScope.FUTURE_OCCURRENCES && occ.getStart().isAfter(now))) {
+                occ.setDurationMinutes(event.getDurationMinutes());
+                occ.setMaxParticipants(event.getMaxParticipants());
+                occ.setInstructor(event.getInstructor());
+                occurrenceEventRepository.save(occ);
+            }
+        }
+    }
+
 
     private void updateEventFields(Event event, EventDto dto) {
         event.setTitle(dto.title());
@@ -248,7 +275,7 @@ public class AdminEventService {
                 .durationMinutes(event.getDurationMinutes())
                 .maxParticipants(event.getMaxParticipants())
                 .instructor(event.getInstructor())
-                .createdBy(event.getCreatedBy())  // Set createdBy from Event
+                .createdBy(event.getCreatedBy())
                 .seriesIndex(seriesIndex)
                 .build();
         occurrenceEventRepository.save(occurrence);

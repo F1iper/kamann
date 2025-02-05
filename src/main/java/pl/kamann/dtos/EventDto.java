@@ -55,7 +55,6 @@ public record EventDto(
         private void validateRRule(String rrule) {
                 if (!rrule.startsWith("FREQ=")) {
                         throw new IllegalArgumentException("RRULE must start with FREQ=");
-                        // todo handle other cases (if possible to receive from client)
                 }
         }
 

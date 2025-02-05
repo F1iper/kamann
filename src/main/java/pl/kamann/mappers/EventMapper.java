@@ -13,6 +13,11 @@ import java.util.Optional;
 public class EventMapper {
 
     public EventDto toDto(Event event) {
+        int currentParticipants = event.getOccurrences() != null
+                ? event.getOccurrences().stream()
+                .mapToInt(occ -> occ.getParticipants() != null ? occ.getParticipants().size() : 0)
+                .sum()
+                : 0;
         return EventDto.builder()
                 .id(event.getId())
                 .title(event.getTitle())
@@ -20,12 +25,14 @@ public class EventMapper {
                 .start(event.getStart())
                 .durationMinutes(event.getDurationMinutes())
                 .rrule(event.getRrule())
-                .createdById(event.getCreatedBy().getId())
-                .instructorId(Optional.ofNullable(event.getInstructor()).map(AppUser::getId).orElse(null))
+                .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
+                .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
+                .instructorFullName(event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null)
                 .maxParticipants(event.getMaxParticipants())
                 .status(event.getStatus())
-                .eventTypeId(event.getEventType().getId())
-                .eventTypeName(event.getEventType().getName())
+                .currentParticipants(currentParticipants)
+                .eventTypeId(event.getEventType() != null ? event.getEventType().getId() : null)
+                .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
                 .build();
     }
 

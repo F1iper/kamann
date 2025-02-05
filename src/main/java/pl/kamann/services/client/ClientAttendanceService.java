@@ -2,7 +2,6 @@ package pl.kamann.services.client;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AttendanceCodes;
@@ -12,8 +11,6 @@ import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.repositories.OccurrenceEventRepository;
-import pl.kamann.systemevents.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
@@ -24,17 +21,15 @@ import java.util.Map;
 public class ClientAttendanceService {
 
     private final AttendanceRepository attendanceRepository;
-    private final OccurrenceEventRepository occurrenceEventRepository;
     private final EntityLookupService lookupService;
     private final ClientMembershipCardService clientMembershipCardService;
-    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Attendance joinEvent(Long occurrenceEventId) {
-        var client = lookupService.getLoggedInUser();
-        var occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+        AppUser client = lookupService.getLoggedInUser();
+        OccurrenceEvent occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
 
-        // Ensure the user isn't already registered for the same occurrence
+        // Check if the client is already registered.
         if (attendanceRepository.findByUserAndOccurrenceEvent(client, occurrenceEvent).isPresent()) {
             throw new ApiException(
                     "Client is already registered for the event.",
@@ -43,18 +38,17 @@ public class ClientAttendanceService {
             );
         }
 
-        // Deduct an entry from the client's membership card
+        // Deduct an entry from the client's membership card.
         clientMembershipCardService.deductEntry(client.getId());
 
-        // Create a new attendance record
-        var attendance = new Attendance();
+        // Create a new attendance record.
+        Attendance attendance = new Attendance();
         attendance.setUser(client);
         attendance.setOccurrenceEvent(occurrenceEvent);
         attendance.setStatus(AttendanceStatus.REGISTERED);
-        attendanceRepository.save(attendance);
+        occurrenceEvent.getParticipants().add(client);
 
-        // Publish an event history log
-        eventPublisher.publishEvent(new EventHistoryLogEvent(client, occurrenceEvent, AttendanceStatus.REGISTERED));
+        attendanceRepository.save(attendance);
 
         return attendance;
     }
@@ -71,35 +65,33 @@ public class ClientAttendanceService {
                         AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
-        validateAttendanceCancellation(attendance);
+        validateCancellation(occurrenceEvent);
 
-        AttendanceStatus cancellationType = determineCancellationType(occurrenceEvent);
+        AttendanceStatus cancellationStatus = determineCancellationStatus(occurrenceEvent);
 
-        updateAttendanceStatus(attendance, cancellationType);
+        updateAttendanceStatus(attendance, cancellationStatus);
 
-        publishCancellationEvent(attendance, occurrenceEvent, cancellationType);
+        publishCancellationEvent(attendance, occurrenceEvent, cancellationStatus);
 
         return attendance;
     }
 
-    private void validateAttendanceCancellation(Attendance attendance) {
-        if (attendance.getStatus() == AttendanceStatus.PRESENT) {
+    public AttendanceStatus determineCancellationStatus(OccurrenceEvent occurrenceEvent) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime cancellationDeadline = occurrenceEvent.getStart().minusHours(24);
+        return now.isBefore(cancellationDeadline)
+                ? AttendanceStatus.EARLY_CANCEL
+                : AttendanceStatus.LATE_CANCEL;
+    }
+
+    public void validateCancellation(OccurrenceEvent occurrenceEvent) {
+        if (occurrenceEvent.getStart().isBefore(LocalDateTime.now())) {
             throw new ApiException(
-                    "Cannot cancel attendance already marked as PRESENT",
+                    "Cannot cancel an occurrence that has already started",
                     HttpStatus.BAD_REQUEST,
                     AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
             );
         }
-    }
-
-    private AttendanceStatus determineCancellationType(OccurrenceEvent occurrenceEvent) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-        LocalDateTime eventStartTime = occurrenceEvent.getStart();
-        LocalDateTime cancellationDeadline = eventStartTime.minusHours(24);
-
-        return currentDateTime.isBefore(cancellationDeadline)
-                ? AttendanceStatus.EARLY_CANCEL
-                : AttendanceStatus.LATE_CANCEL;
     }
 
     private void updateAttendanceStatus(Attendance attendance, AttendanceStatus status) {
@@ -108,15 +100,12 @@ public class ClientAttendanceService {
     }
 
     private void publishCancellationEvent(Attendance attendance, OccurrenceEvent occurrenceEvent,
-                                          AttendanceStatus cancellationType) {
-        eventPublisher.publishEvent(new EventHistoryLogEvent(
-                attendance.getUser(),
-                occurrenceEvent,
-                cancellationType
-        ));
+                                          AttendanceStatus attendanceStatus) {
+        // TODO: Implement event publishing if needed.
     }
 
     public Map<String, Object> getAttendanceSummary() {
+        // TODO: Implement attendance summary logic.
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 }

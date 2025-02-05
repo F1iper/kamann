@@ -2,22 +2,29 @@ package pl.kamann.controllers.client;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.services.OccurrenceService;
+import pl.kamann.services.client.ClientEventService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/client/occurrences")
 @RequiredArgsConstructor
-@Tag(name = "Client Occurrences", description = "Controller for viewing available and enrolled event occurrences.")
+@Tag(name = "2. client events", description = "Controller for viewing available and enrolled event occurrences.")
 public class ClientOccurrenceEventController {
 
     private final OccurrenceService occurrenceService;
+    private final ClientEventService clientEventService;
+
+    @GetMapping("/upcoming")
+    public List<OccurrenceEventLightDto> getUpcomingEvents() {
+        return clientEventService.getUpcomingEvents();
+    }
 
     @GetMapping("/available")
     @Operation(summary = "List available occurrences",

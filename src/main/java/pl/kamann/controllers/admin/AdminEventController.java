@@ -1,6 +1,7 @@
 package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.dtos.EventResponseDto;
+import pl.kamann.dtos.EventUpdateRequestDto;
+import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.services.admin.AdminEventService;
 
@@ -50,10 +54,15 @@ public class AdminEventController {
     @PutMapping("/{id}")
     @Operation(
             summary = "Update an event",
-            description = "Updates the details of an event and can reassign its instructor."
+            description = "Updates event details. 'EVENT_ONLY' updates only the event metadata; " +
+                    "'FUTURE_OCCURRENCES' updates event and future occurrences; " +
+                    "'ALL_OCCURRENCES' updates event and all occurrences."
     )
-    public ResponseEntity<EventDto> updateEvent(@PathVariable Long id, @RequestBody EventDto eventDto) {
-        EventDto updatedEvent = adminEventService.updateEvent(id, eventDto);
+    public ResponseEntity<EventResponseDto> updateEvent(
+            @PathVariable Long id,
+            @Valid @RequestBody EventUpdateRequestDto requestDto,
+            @RequestParam(name = "scope", defaultValue = "EVENT_ONLY") EventUpdateScope updateScope) {
+        EventResponseDto updatedEvent = adminEventService.updateEvent(id, requestDto, updateScope);
         return ResponseEntity.ok(updatedEvent);
     }
 

@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/client/membership-cards")
 @RequiredArgsConstructor
-@Tag(name = "/api/client/membership-cards", description = "Client membership cards controller")
+@Tag(name = "4. client membership-cards", description = "Client membership cards controller")
 public class ClientMembershipCardController {
 
     private final ClientMembershipCardService clientMembershipCardService;

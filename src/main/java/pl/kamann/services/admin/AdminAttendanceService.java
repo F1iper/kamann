@@ -12,7 +12,6 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.AttendanceDetailsDto;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
-import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.AttendanceMapper;
 import pl.kamann.repositories.AttendanceRepository;

@@ -7,6 +7,8 @@ import org.dmfs.rfc5545.recur.RecurrenceRule;
 import pl.kamann.entities.appuser.AppUser;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -52,6 +54,9 @@ public class Event {
 
     @Transient
     private RecurrenceRule recurrenceRule;
+
+    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY)
+    private List<OccurrenceEvent> occurrences = new ArrayList<>();
 
     @PostLoad
     @PostPersist

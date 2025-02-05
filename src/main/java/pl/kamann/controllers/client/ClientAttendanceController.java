@@ -13,7 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/client/attendance")
 @RequiredArgsConstructor
-@Tag(name = "/api/client/attendance", description = "Client attendance controller")
+@Tag(name = "3. client attendance", description = "Client attendance controller")
 public class ClientAttendanceController {
 
     private final ClientAttendanceService clientAttendanceService;

@@ -10,7 +10,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.AttendanceDetailsDto;
-import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
@@ -21,7 +20,6 @@ import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

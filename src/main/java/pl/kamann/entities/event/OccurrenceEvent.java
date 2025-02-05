@@ -55,10 +55,10 @@ public class OccurrenceEvent implements Serializable {
     @JoinColumn(name = "instructor_id")
     private AppUser instructor;
 
-    @OneToMany(mappedBy = "occurrenceEvent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "occurrenceEvent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> attendances = new ArrayList<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "occurrence_event_participants",
             joinColumns = @JoinColumn(name = "occurrence_event_id"),

@@ -48,7 +48,6 @@ class AppUserServiceTest {
 
     @Test
     void getAllUsersReturnsPaginatedResponseDto() {
-        // Given
         var users = List.of(
                 AppUser.builder()
                         .id(1L)
@@ -75,10 +74,8 @@ class AppUserServiceTest {
         when(appUserRepository.findAllWithRoles(pageRequest))
                 .thenReturn(new PageImpl<>(users, pageRequest, users.size()));
 
-        // When
         var result = appUserService.getUsers(page, size, null);
 
-        // Then
         assertNotNull(result, "Result should not be null");
         assertEquals(users.size(), result.getMetaData().getTotalElements(),
                 "Total elements should match the size of the users list");
