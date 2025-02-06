@@ -172,11 +172,17 @@ public class DataSeeder {
         createSingleYogaWorkshop(admin, instructor, yogaType);
         createSingleDanceWorkshop(admin, instructor, danceType);
 
+        //Create single past events
+        createSingleMorningTango(admin, instructor, danceType);
+        createSingleEveningYoga(admin, instructor, yogaType);
+        createSinglePolDanceWorkshop(admin, instructor, poleDanceType);
+
         // Create recurring events
         createRecurringMorningYoga(admin, instructor, yogaType);
         createRecurringPoleDance(admin, instructor, poleDanceType);
     }
 
+    //Single future events
     private void createSingleYogaWorkshop(AppUser admin, AppUser instructor, EventType yogaType) {
         Event event = Event.builder()
                 .title("Yoga Workshop")
@@ -215,6 +221,65 @@ public class DataSeeder {
         );
     }
 
+    //Single past events
+    private void createSingleMorningTango(AppUser admin, AppUser instructor, EventType danceType) {
+        Event event = Event.builder()
+                .title("Morning Tango")
+                .description("Relaxing Tango session")
+                .start(LocalDateTime.now().minusDays(8).withHour(19).withMinute(0))
+                .durationMinutes(90)
+                .maxParticipants(25)
+                .eventType(danceType)
+                .createdBy(admin)
+                .instructor(instructor)
+                .status(EventStatus.COMPLETED)
+                .build();
+        eventRepository.save(event);
+        List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
+        occurrenceEvents.forEach(occurrenceEvent ->
+                occurrenceEventRepository.save(occurrenceEvent)
+        );
+    }
+
+    private void createSinglePolDanceWorkshop(AppUser admin, AppUser instructor, EventType danceType) {
+        Event event = Event.builder()
+                .title("Pol Dance Workshop")
+                .description("Try this")
+                .start(LocalDateTime.now().minusDays(10).withHour(17).withMinute(0))
+                .durationMinutes(100)
+                .maxParticipants(30)
+                .eventType(danceType)
+                .createdBy(admin)
+                .instructor(instructor)
+                .status(EventStatus.COMPLETED)
+                .build();
+        eventRepository.save(event);
+        List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
+        occurrenceEvents.forEach(occurrenceEvent ->
+                occurrenceEventRepository.save(occurrenceEvent)
+        );
+    }
+
+    private void createSingleEveningYoga(AppUser admin, AppUser instructor, EventType danceType) {
+        Event event = Event.builder()
+                .title("Evening Yoga")
+                .description("Relaxing yoga session")
+                .start(LocalDateTime.now().minusDays(6).withHour(16).withMinute(0))
+                .durationMinutes(100)
+                .maxParticipants(30)
+                .eventType(danceType)
+                .createdBy(admin)
+                .instructor(instructor)
+                .status(EventStatus.COMPLETED)
+                .build();
+        eventRepository.save(event);
+        List<OccurrenceEvent> occurrenceEvents = adminEventService.generateOccurrences(event);
+        occurrenceEvents.forEach(occurrenceEvent ->
+                occurrenceEventRepository.save(occurrenceEvent)
+        );
+    }
+
+    //Recurring future events
     private void createRecurringMorningYoga(AppUser admin, AppUser instructor, EventType yogaType) {
         Event event = Event.builder()
                 .title("Morning Yoga")
@@ -269,6 +334,9 @@ public class DataSeeder {
         seedAttendanceForEvent("Morning Yoga", client1);
         seedAttendanceForEvent("Dance Workshop", client1);
         seedAttendanceForEvent("Evening Pole Dance", client1);
+        seedAttendanceForEvent("Evening Yoga", client1);
+        seedAttendanceForEvent("Pol Dance Workshop", client1);
+        seedAttendanceForEvent("Morning Tango", client1);
     }
 
     private void seedAttendanceForEvent(String eventTitle, AppUser client) {
@@ -286,9 +354,9 @@ public class DataSeeder {
                             .occurrenceEvent(occurrence)
                             .status(AttendanceStatus.REGISTERED)
                             .build();
-                    attendanceRepository.save(attendance);
                     occurrence.getParticipants().add(client);
                     occurrenceEventRepository.save(occurrence);
+                    attendanceRepository.save(attendance);
                 }
             }
         });
