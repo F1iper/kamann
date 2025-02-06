@@ -190,7 +190,7 @@ public class DataSeeder {
                 .status(EventStatus.SCHEDULED)
                 .build();
         eventRepository.save(event);
-        adminEventService.createSingleOccurrence(event);
+        adminEventService.generateOccurrences(event);
     }
 
     private void createSingleDanceWorkshop(AppUser admin, AppUser instructor, EventType danceType) {
@@ -206,7 +206,7 @@ public class DataSeeder {
                 .status(EventStatus.SCHEDULED)
                 .build();
         eventRepository.save(event);
-        adminEventService.createSingleOccurrence(event);
+        adminEventService.generateOccurrences(event);
     }
 
     private void createRecurringMorningYoga(AppUser admin, AppUser instructor, EventType yogaType) {
@@ -223,7 +223,7 @@ public class DataSeeder {
                 .status(EventStatus.SCHEDULED)
                 .build();
         eventRepository.save(event);
-        adminEventService.createRecurringOccurrences(event);
+        adminEventService.generateOccurrences(event);
     }
 
     private void createRecurringPoleDance(AppUser admin, AppUser instructor, EventType poleDanceType) {
@@ -240,7 +240,7 @@ public class DataSeeder {
                 .status(EventStatus.SCHEDULED)
                 .build();
         eventRepository.save(event);
-        adminEventService.createRecurringOccurrences(event);
+        adminEventService.generateOccurrences(event);
     }
 
     @Transactional

@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -131,7 +132,7 @@ public class AdminEventService {
         occ.setInstructor(event.getInstructor());
     }
 
-    private List<OccurrenceEvent> generateOccurrences(Event event) {
+    public List<OccurrenceEvent> generateOccurrences(Event event) {
         if (event.getRrule() == null || event.getRrule().isEmpty()) {
             return List.of(createOccurrence(event, event.getStart(), 0));
         }
@@ -175,5 +176,27 @@ public class AdminEventService {
         return eventRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Event not found with ID: " + id,
                         HttpStatus.NOT_FOUND, EventCodes.EVENT_NOT_FOUND.name()));
+    }
+
+
+    public PaginatedResponseDto<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
+        Page<Event> eventPage = eventRepository.findAllByInstructorId(instructorId, validatedPageable);
+
+        return new PaginatedResponseDto<>(
+                eventPage.map(eventMapper::toDto).getContent(),
+                new PaginationMetaData(eventPage.getTotalPages(), eventPage.getTotalElements())
+        );
+    }
+
+    public EventDto getEventById(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ApiException(
+                        "Event not found with ID: " + eventId,
+                        HttpStatus.NOT_FOUND,
+                        EventCodes.EVENT_NOT_FOUND.name()
+                ));
+
+        return eventMapper.toDto(event);
     }
 }
