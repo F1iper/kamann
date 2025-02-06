@@ -4,12 +4,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.register.RegisterRequest;
@@ -26,7 +26,6 @@ public class AdminUserController {
 
     private final AppUserService appUserService;
     private final AuthService authService;
-    private final JwtUtils jwtUtils;
 
 
     @GetMapping
@@ -35,7 +34,7 @@ public class AdminUserController {
             description = "Retrieve a paginated list of all users in the system filtered by role."
     )
     public ResponseEntity<PaginatedResponseDto<AppUserDto>> getAllUsersByRole(
-            Pageable pageable,
+            @ParameterObject  Pageable pageable,
             @RequestParam(required = false) String role
     ) {
         return ResponseEntity.ok(appUserService.getUsers(pageable, role));

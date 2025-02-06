@@ -17,7 +17,6 @@ import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.*;
 import pl.kamann.services.EventValidationService;
-import pl.kamann.services.OccurrenceService;
 import pl.kamann.services.admin.AdminEventService;
 
 import java.time.LocalDateTime;
@@ -51,9 +50,6 @@ public class DataSeeder {
 
     @Autowired
     private OccurrenceEventRepository occurrenceEventRepository;
-
-    @Autowired
-    private OccurrenceService occurrenceService;
 
     @Autowired
     private EventValidationService eventValidationService;
@@ -243,7 +239,7 @@ public class DataSeeder {
 
     private void createSinglePolDanceWorkshop(AppUser admin, AppUser instructor, EventType danceType) {
         Event event = Event.builder()
-                .title("Pol Dance Workshop")
+                .title("Pole Dance Workshop")
                 .description("Try this")
                 .start(LocalDateTime.now().minusDays(10).withHour(17).withMinute(0))
                 .durationMinutes(100)
@@ -325,7 +321,6 @@ public class DataSeeder {
         seedAttendances();
     }
 
-
     private void seedAttendances() {
 
 
@@ -335,7 +330,7 @@ public class DataSeeder {
         seedAttendanceForEvent("Dance Workshop", client1);
         seedAttendanceForEvent("Evening Pole Dance", client1);
         seedAttendanceForEvent("Evening Yoga", client1);
-        seedAttendanceForEvent("Pol Dance Workshop", client1);
+        seedAttendanceForEvent("Pole Dance Workshop", client1);
         seedAttendanceForEvent("Morning Tango", client1);
     }
 

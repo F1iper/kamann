@@ -164,6 +164,7 @@ public class AdminEventService {
         return OccurrenceEvent.builder()
                 .event(event)
                 .start(start)
+                .createdBy(event.getCreatedBy())
                 .durationMinutes(event.getDurationMinutes())
                 .maxParticipants(event.getMaxParticipants())
                 .instructor(event.getInstructor())

@@ -1,33 +1,36 @@
 package pl.kamann.controllers.client;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.services.client.ClientEventService;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/client/events")
+@RequestMapping("/api/client/occurrences")
 @RequiredArgsConstructor
+@Tag(name = "Client Occurrences", description = "Fetch occurrences with filtering and pagination.")
 public class ClientEventController {
+
     private final ClientEventService clientEventService;
 
-    @GetMapping("/upcoming")
-    public List<OccurrenceEventLightDto> getUpcomingEvents() {
-        return clientEventService.getUpcomingEvents();
-    }
-
-    @GetMapping("/registered")
-    public List<OccurrenceEventLightDto> getRegisteredEvents(@RequestParam Long userId) {
-        return clientEventService.getRegisteredEvents(userId);
-    }
-
-    @GetMapping("/past")
-    public List<OccurrenceEventLightDto> getPastEvents() {
-        return clientEventService.getPastEvents();
+    @GetMapping
+    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter.")
+    public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
+            @RequestParam(defaultValue = "UPCOMING") String filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
+        return ResponseEntity.ok(clientEventService.getOccurrences(filter, pageable));
     }
 }

@@ -6,8 +6,6 @@ import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.entities.event.OccurrenceEvent;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class OccurrenceEventMapper {
@@ -35,14 +33,6 @@ public class OccurrenceEventMapper {
         String instructorName = event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null;
         LocalDateTime end = event.getStart().plusMinutes(event.getDurationMinutes());
         return new OccurrenceEventLightDto(event.getId(), event.getStart(), end, event.getEvent().getTitle(), instructorName);
-    }
-
-    public List<OccurrenceEventDto> toDtoList(List<OccurrenceEvent> events) {
-        return events.stream().map(this::toDto).collect(Collectors.toList());
-    }
-
-    public List<OccurrenceEventLightDto> toLightDtoList(List<OccurrenceEvent> events) {
-        return events.stream().map(this::toLightDto).collect(Collectors.toList());
     }
 
     public OccurrenceEventDto toDto(OccurrenceEvent occ) {
