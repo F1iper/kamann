@@ -3,10 +3,8 @@ package pl.kamann.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
-import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.entities.event.Event;
-
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -49,13 +47,16 @@ public class EventMapper {
                 .build();
     }
 
-    public void updateEntityFromDto(Event event, EventDto dto) {
-        event.setTitle(dto.title());
-        event.setDescription(dto.description());
-        event.setStart(dto.start());
-        event.setDurationMinutes(dto.durationMinutes());
-        event.setRrule(dto.rrule());
-        event.setStatus(dto.status());
-        event.setMaxParticipants(dto.maxParticipants());
+    public EventResponseDto toResponseDto(Event event) {
+        return new EventResponseDto(
+                event.getId(),
+                event.getTitle(),
+                event.getDescription(),
+                event.getStart(),
+                event.getDurationMinutes(),
+                event.getRrule(),
+                event.getInstructor() != null ? event.getInstructor().getId() : null,
+                event.getMaxParticipants()
+        );
     }
 }
