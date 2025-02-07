@@ -24,9 +24,9 @@ public class ClientEventController {
     private final ClientEventService clientEventService;
 
     @GetMapping
-    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter.")
+    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter ('upcoming', 'past' or 'available' .")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
-            @RequestParam(defaultValue = "UPCOMING") String filter,
+            @RequestParam(defaultValue = "upcoming") String filter,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
