@@ -1,24 +1,24 @@
 package pl.kamann.controllers.admin;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.dtos.EventUpdateRequestDto;
 import pl.kamann.entities.event.EventUpdateScope;
-import pl.kamann.dtos.EventDto;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
 @RequestMapping("/api/admin/events")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "3. admin events", description = "Auth controller")
 public class AdminEventController {
 
     private final AdminEventService adminEventService;

@@ -35,8 +35,4 @@ public class OccurrenceEventMapper {
         return new OccurrenceEventLightDto(event.getId(), event.getEvent().getId(), event.getStart(), end, event.getEvent().getTitle(), instructorName);
     }
 
-    public OccurrenceEventDto toDto(OccurrenceEvent occ) {
-        return toOccurrenceEventDto(occ);
-    }
-
 }

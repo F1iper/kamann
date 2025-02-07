@@ -18,7 +18,7 @@ public class PaginationService {
 
         pageNumber = (pageNumber <= 0) ? 0 : pageNumber - 1;
 
-        Sort sort = pageable.getSort().isSorted() ? pageable.getSort() : Sort.unsorted();
+        Sort sort = (pageable.getSort() != null && pageable.getSort().isSorted()) ? pageable.getSort() : Sort.unsorted();
 
         return PageRequest.of(pageNumber, pageSize, sort);
     }

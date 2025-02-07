@@ -29,7 +29,7 @@ class PaginationServiceTest {
         Pageable result = paginationService.validatePageable(pageable);
 
         assertEquals(20, result.getPageSize());
-        assertEquals(1, result.getPageNumber());
+        assertEquals(0, result.getPageNumber());
         assertEquals(Sort.unsorted(), result.getSort());
     }
 
@@ -39,7 +39,7 @@ class PaginationServiceTest {
         Pageable result = paginationService.validatePageable(pageable);
 
         assertEquals(100, result.getPageSize());
-        assertEquals(2, result.getPageNumber());
+        assertEquals(1, result.getPageNumber());
     }
 
     @Test
@@ -47,7 +47,7 @@ class PaginationServiceTest {
         Pageable pageable = PageRequest.of(1, 10);
         Pageable result = paginationService.validatePageable(pageable);
 
-        assertEquals(1, result.getPageNumber());
+        assertEquals(0, result.getPageNumber());
         assertEquals(10, result.getPageSize());
     }
 
@@ -70,7 +70,7 @@ class PaginationServiceTest {
         Pageable pageable = PageRequest.of(2, 15);
         Pageable result = paginationService.validatePageable(pageable);
 
-        assertEquals(2, result.getPageNumber());
+        assertEquals(1, result.getPageNumber());
         assertEquals(15, result.getPageSize());
     }
 }

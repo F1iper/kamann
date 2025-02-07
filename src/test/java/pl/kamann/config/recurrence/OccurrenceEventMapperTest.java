@@ -36,7 +36,8 @@ class OccurrenceEventMapperTest {
         OccurrenceEventMapper mapper = new OccurrenceEventMapper();
         OccurrenceEventLightDto lightDto = mapper.toLightDto(occ);
 
-        assertEquals(occ.getId(), lightDto.id());
+        assertEquals(occ.getEvent().getId(), lightDto.eventId());
+        assertEquals(occ.getId(), lightDto.occurrenceId());
         assertEquals(occ.getStart(), lightDto.start());
         assertEquals(occ.getStart().plusMinutes(occ.getDurationMinutes()), lightDto.end());
         assertEquals(event.getTitle(), lightDto.title());
@@ -71,7 +72,7 @@ class OccurrenceEventMapperTest {
                 .build();
 
         OccurrenceEventMapper mapper = new OccurrenceEventMapper();
-        OccurrenceEventDto dto = mapper.toDto(occ);
+        OccurrenceEventDto dto = mapper.toOccurrenceEventDto(occ);
 
         assertEquals(event.getId(), dto.eventId());
         assertEquals(start.toLocalDate(), dto.date());

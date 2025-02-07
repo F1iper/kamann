@@ -18,7 +18,7 @@ import pl.kamann.services.client.ClientEventService;
 @RestController
 @RequestMapping("/api/client/occurrences")
 @RequiredArgsConstructor
-@Tag(name = "Client Occurrences", description = "Fetch occurrences with filtering and pagination.")
+@Tag(name = "2. Client Occurrences", description = "Fetch occurrences with filtering and pagination.")
 public class ClientEventController {
 
     private final ClientEventService clientEventService;
