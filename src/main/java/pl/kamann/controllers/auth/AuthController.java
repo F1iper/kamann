@@ -1,6 +1,7 @@
 package pl.kamann.controllers.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import pl.kamann.services.AuthService;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
+@Tag(name = "1. login", description = "Auth controller")
 public class AuthController {
 
     private final AuthService authService;

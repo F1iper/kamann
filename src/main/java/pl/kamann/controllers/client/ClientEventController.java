@@ -1,55 +1,36 @@
 package pl.kamann.controllers.client;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import pl.kamann.dtos.EventDto;
-import pl.kamann.entities.attendance.AttendanceStatus;
-import pl.kamann.services.client.ClientEventHistoryService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.services.client.ClientEventService;
-import pl.kamann.utility.EntityLookupService;
-
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/client/events")
+@RequestMapping("/api/client/occurrences")
 @RequiredArgsConstructor
+@Tag(name = "2. Client Occurrences", description = "Fetch occurrences with filtering and pagination.")
 public class ClientEventController {
 
     private final ClientEventService clientEventService;
-    private final ClientEventHistoryService clientEventHistoryService;
-    private final EntityLookupService lookupService;
 
-    @GetMapping("/available")
-    @Operation(summary = "List available events", description = "Retrieves a list of events available for the client to join.")
-    public ResponseEntity<List<EventDto>> getAvailableEvents() {
-        List<EventDto> events = clientEventService.getAvailableEvents(lookupService.getLoggedInUser());
-        return ResponseEntity.ok(events);
-    }
-
-    @GetMapping("/registered")
-    @Operation(summary = "List registered events", description = "Retrieves a list of events the client is registered for.")
-    public ResponseEntity<List<EventDto>> getRegisteredEvents() {
-        List<EventDto> events = clientEventService.getRegisteredEvents(lookupService.getLoggedInUser());
-        return ResponseEntity.ok(events);
-    }
-
-    @GetMapping("/{eventId}")
-    @Operation(summary = "Get event details", description = "Retrieves details of a specific event by its ID.")
-    public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
-        var event = clientEventService.getEventDetails(eventId);
-        return ResponseEntity.ok(event);
-    }
-
-    @PostMapping("/{eventId}/history")
-    @Operation(summary = "Update event history", description = "Updates the event history for a client with the specified status.")
-    public ResponseEntity<String> updateEventHistory(
-            @PathVariable Long eventId,
-            @RequestParam AttendanceStatus status) {
-        var user = lookupService.getLoggedInUser();
-
-        clientEventHistoryService.updateEventHistory(user, eventId, status);
-        return ResponseEntity.ok("Event history updated successfully");
+    @GetMapping
+    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter ('upcoming', 'past' or 'available' .")
+    public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
+            @RequestParam(defaultValue = "upcoming") String filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
+        return ResponseEntity.ok(clientEventService.getOccurrences(filter, pageable));
     }
 }

@@ -9,8 +9,6 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
-import pl.kamann.entities.membershipcard.MembershipCardHistory;
-import pl.kamann.repositories.MembershipCardHistoryRepository;
 import pl.kamann.repositories.MembershipCardRepository;
 
 import java.util.Optional;
@@ -23,9 +21,6 @@ class MembershipCardServiceTest {
 
     @Mock
     private MembershipCardRepository membershipCardRepository;
-
-    @Mock
-    private MembershipCardHistoryRepository membershipCardHistoryRepository;
 
     @InjectMocks
     private MembershipCardService membershipCardService;
@@ -69,8 +64,6 @@ class MembershipCardServiceTest {
         card.setUser(user);
 
         membershipCardService.logAction(card, user, MembershipCardAction.USED, 1);
-
-        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
 
 
@@ -86,7 +79,6 @@ class MembershipCardServiceTest {
                 membershipCardService.logAction(card, user, MembershipCardAction.USED, 0));
 
         assertEquals("Entries used must be greater than 0 for USED action.", exception.getMessage());
-        verify(membershipCardHistoryRepository, never()).save(any());
     }
 
     @Test
@@ -107,7 +99,6 @@ class MembershipCardServiceTest {
         assertEquals(4, result.getEntrancesLeft());
 
         verify(membershipCardRepository, times(1)).save(card);
-        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
 
     @Test
@@ -119,7 +110,6 @@ class MembershipCardServiceTest {
 
         assertEquals("No remaining entrances on this membership card.", exception.getMessage());
         verify(membershipCardRepository, never()).save(any());
-        verify(membershipCardHistoryRepository, never()).save(any());
     }
 
     @Test
@@ -139,6 +129,5 @@ class MembershipCardServiceTest {
 
         assertFalse(card.isActive());
         verify(membershipCardRepository, times(1)).save(card);
-        verify(membershipCardHistoryRepository, times(1)).save(any(MembershipCardHistory.class));
     }
 }

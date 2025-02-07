@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
@@ -19,10 +21,13 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AppUserService;
 import pl.kamann.utility.EntityLookupService;
+import pl.kamann.utility.PaginationService;
+import pl.kamann.utility.PaginationUtil;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,12 +48,17 @@ class AppUserServiceTest {
     @Mock
     private EntityLookupService entityLookupService;
 
+    @Mock
+    private PaginationService paginationService;
+
+    @Mock
+    private PaginationUtil paginationUtil;
+
     @InjectMocks
     private AppUserService appUserService;
 
     @Test
     void getAllUsersReturnsPaginatedResponseDto() {
-        // Given
         var users = List.of(
                 AppUser.builder()
                         .id(1L)
@@ -70,23 +80,25 @@ class AppUserServiceTest {
 
         int page = 1;
         int size = users.size();
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<AppUser> pagedUsers = new PageImpl<>(users, pageable, users.size());
 
-        when(appUserRepository.findAllWithRoles(pageRequest))
-                .thenReturn(new PageImpl<>(users, pageRequest, users.size()));
+        when(paginationService.validatePageable(pageable)).thenReturn(pageable);
+        when(appUserRepository.findAllWithRoles(pageable)).thenReturn(pagedUsers);
+        when(paginationUtil.toPaginatedResponse(eq(pagedUsers), any(Function.class)))
+                .thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(1, users.size())));
 
-        // When
-        var result = appUserService.getUsers(page, size, null);
+        var result = appUserService.getUsers(pageable, null);
 
-        // Then
         assertNotNull(result, "Result should not be null");
         assertEquals(users.size(), result.getMetaData().getTotalElements(),
                 "Total elements should match the size of the users list");
         assertEquals(1, result.getMetaData().getTotalPages(), "Total pages should be 1");
 
-        verify(appUserRepository, times(1)).findAllWithRoles(pageRequest);
+        verify(paginationService, times(1)).validatePageable(pageable);
+        verify(appUserRepository, times(1)).findAllWithRoles(pageable);
+        verify(paginationUtil, times(1)).toPaginatedResponse(eq(pagedUsers), any(Function.class));
     }
-
 
     @Test
     void getUserByIdReturnsUserDto() {

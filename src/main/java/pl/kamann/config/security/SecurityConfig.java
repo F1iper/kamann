@@ -50,6 +50,7 @@ public class SecurityConfig {
             "/api/client/**",
             "/api/client/events/**",
             "/api/client/attendance/**",
+            "/api/client/occurrences/**",
             "/api/client/membership-cards/**"
     };
 

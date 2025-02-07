@@ -2,15 +2,15 @@ package pl.kamann.services.client;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.repositories.AttendanceRepository;
-import pl.kamann.systemevents.EventHistoryLogEvent;
 import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
@@ -23,14 +23,14 @@ public class ClientAttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final EntityLookupService lookupService;
     private final ClientMembershipCardService clientMembershipCardService;
-    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public Attendance joinEvent(Long eventId) {
-        var client = lookupService.getLoggedInUser();
-        var event = lookupService.findEventById(eventId);
+    public Attendance joinEvent(Long occurrenceEventId) {
+        AppUser client = lookupService.getLoggedInUser();
+        OccurrenceEvent occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
 
-        if (attendanceRepository.findByUserAndEvent(client, event).isPresent()) {
+        // Check if the client is already registered.
+        if (attendanceRepository.findByUserAndOccurrenceEvent(client, occurrenceEvent).isPresent()) {
             throw new ApiException(
                     "Client is already registered for the event.",
                     HttpStatus.CONFLICT,
@@ -38,54 +38,74 @@ public class ClientAttendanceService {
             );
         }
 
+        // Deduct an entry from the client's membership card.
         clientMembershipCardService.deductEntry(client.getId());
 
-        var attendance = new Attendance();
+        // Create a new attendance record.
+        Attendance attendance = new Attendance();
         attendance.setUser(client);
-        attendance.setEvent(event);
+        attendance.setOccurrenceEvent(occurrenceEvent);
         attendance.setStatus(AttendanceStatus.REGISTERED);
-        attendanceRepository.save(attendance);
+        occurrenceEvent.getParticipants().add(client);
 
-        eventPublisher.publishEvent(new EventHistoryLogEvent(client, event, AttendanceStatus.REGISTERED));
+        attendanceRepository.save(attendance);
 
         return attendance;
     }
 
     @Transactional
-    public Attendance cancelAttendance(Long eventId) {
-        var clientId = lookupService.getLoggedInUser().getId();
-        var attendance = attendanceRepository.findByUserAndEvent(
-                        lookupService.findUserById(clientId), lookupService.findEventById(eventId))
+    public Attendance cancelAttendance(Long occurrenceEventId) {
+        AppUser currentUser = lookupService.getLoggedInUser();
+        OccurrenceEvent occurrenceEvent = lookupService.findOccurrenceEventByOccurrenceEventId(occurrenceEventId);
+
+        Attendance attendance = attendanceRepository.findByUserAndOccurrenceEvent(currentUser, occurrenceEvent)
                 .orElseThrow(() -> new ApiException(
-                        "Attendance not found.",
+                        "Attendance not found for user and event",
                         HttpStatus.NOT_FOUND,
                         AttendanceCodes.ATTENDANCE_NOT_FOUND.name()
                 ));
 
-        if (attendance.getStatus() == AttendanceStatus.PRESENT) {
-            throw new ApiException(
-                    "Cannot cancel attendance already marked as PRESENT.",
-                    HttpStatus.BAD_REQUEST,
-                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
-            );
-        }
+        validateCancellation(occurrenceEvent);
 
-        var event = attendance.getEvent();
-        var currentDateTime = LocalDateTime.now();
+        AttendanceStatus cancellationStatus = determineCancellationStatus(occurrenceEvent);
 
-        var cancellationType = currentDateTime.isBefore(event.getStartTime().minusHours(24))
-                ? AttendanceStatus.EARLY_CANCEL
-                : AttendanceStatus.LATE_CANCEL;
+        updateAttendanceStatus(attendance, cancellationStatus);
 
-        attendance.setStatus(cancellationType);
-        attendanceRepository.save(attendance);
-
-        eventPublisher.publishEvent(new EventHistoryLogEvent(attendance.getUser(), event, cancellationType));
+        publishCancellationEvent(attendance, occurrenceEvent, cancellationStatus);
 
         return attendance;
     }
 
+    public AttendanceStatus determineCancellationStatus(OccurrenceEvent occurrenceEvent) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime cancellationDeadline = occurrenceEvent.getStart().minusHours(24);
+        return now.isBefore(cancellationDeadline)
+                ? AttendanceStatus.EARLY_CANCEL
+                : AttendanceStatus.LATE_CANCEL;
+    }
+
+    public void validateCancellation(OccurrenceEvent occurrenceEvent) {
+        if (occurrenceEvent.getStart().isBefore(LocalDateTime.now())) {
+            throw new ApiException(
+                    "Cannot cancel an occurrence that has already started",
+                    HttpStatus.BAD_REQUEST,
+                    AttendanceCodes.INVALID_ATTENDANCE_STATE.name()
+            );
+        }
+    }
+
+    private void updateAttendanceStatus(Attendance attendance, AttendanceStatus status) {
+        attendance.setStatus(status);
+        attendanceRepository.save(attendance);
+    }
+
+    private void publishCancellationEvent(Attendance attendance, OccurrenceEvent occurrenceEvent,
+                                          AttendanceStatus attendanceStatus) {
+        // TODO: Implement event publishing if needed.
+    }
+
     public Map<String, Object> getAttendanceSummary() {
+        // TODO: Implement attendance summary logic.
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 }

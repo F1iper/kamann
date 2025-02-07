@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import pl.kamann.config.codes.AttendanceCodes;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
@@ -11,10 +12,8 @@ import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventType;
-import pl.kamann.repositories.AppUserRepository;
-import pl.kamann.repositories.EventRepository;
-import pl.kamann.repositories.EventTypeRepository;
-import pl.kamann.repositories.RoleRepository;
+import pl.kamann.entities.event.OccurrenceEvent;
+import pl.kamann.repositories.*;
 
 import java.util.Set;
 
@@ -25,6 +24,7 @@ public class EntityLookupService {
     private final AppUserRepository appUserRepository;
     private final EventRepository eventRepository;
     private final EventTypeRepository eventTypeRepository;
+    private final OccurrenceEventRepository occurrenceEventRepository;
     private final RoleRepository roleRepository;
 
     public AppUser findUserById(Long userId) {
@@ -90,4 +90,12 @@ public class EntityLookupService {
         return findUserByEmail(email);
     }
 
+    public OccurrenceEvent findOccurrenceEventByOccurrenceEventId(Long occurrenceEventId) {
+        return occurrenceEventRepository.findById(occurrenceEventId)
+                .orElseThrow(() -> new ApiException(
+                        "OccurrenceEvent not found for ID: " + occurrenceEventId,
+                        HttpStatus.NOT_FOUND,
+                        AttendanceCodes.OCCURRENCE_EVENT_NOT_FOUND.name()
+                ));
+    }
 }

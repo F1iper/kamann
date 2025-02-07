@@ -1,73 +1,38 @@
 package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import pl.kamann.config.codes.EventCodes;
-import pl.kamann.config.codes.StatusCodes;
-import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.dtos.EventDto;
+import pl.kamann.config.filter.OccurrenceFilter;
+import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.attendance.AttendanceStatus;
-import pl.kamann.entities.event.Event;
-import pl.kamann.mappers.EventMapper;
-import pl.kamann.repositories.EventRepository;
-
-import java.time.LocalDateTime;
-import java.util.List;
+import pl.kamann.entities.event.OccurrenceEvent;
+import pl.kamann.mappers.OccurrenceEventMapper;
+import pl.kamann.repositories.OccurrenceEventRepository;
+import pl.kamann.utility.EntityLookupService;
+import pl.kamann.utility.PaginationService;
+import pl.kamann.utility.PaginationUtil;
 
 @Service
 @RequiredArgsConstructor
 public class ClientEventService {
+    private final OccurrenceEventRepository occurrenceEventRepository;
+    private final OccurrenceEventMapper occurrenceEventMapper;
+    private final EntityLookupService lookupService;
+    private final PaginationService paginationService;
+    private final PaginationUtil paginationUtil;
 
-    private final EventRepository eventRepository;
-    private final EventMapper eventMapper;
+    public PaginatedResponseDto<OccurrenceEventLightDto> getOccurrences(String filter, Pageable pageable) {
+        OccurrenceFilter validFilter = OccurrenceFilter.fromString(filter);
+        pageable = paginationService.validatePageable(pageable);
 
-    public List<EventDto> getAvailableEvents(AppUser client) {
-        validateClient(client);
+        AppUser loggedInUser = lookupService.getLoggedInUser();
 
-        return eventRepository.findAvailableEventsExcludingClient(LocalDateTime.now(), client.getId())
-                .stream()
-                .map(eventMapper::toDto)
-                .toList();
-    }
+        Page<OccurrenceEvent> pagedOccurrences = occurrenceEventRepository.findFilteredOccurrences(
+                validFilter.name(), loggedInUser, pageable);
 
-
-    public List<EventDto> getRegisteredEvents(AppUser user) {
-        if (user == null) {
-            throw new ApiException(
-                    "User cannot be null",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_REQUEST.name()
-            );
-        }
-
-        var registeredEvents = eventRepository.findEventsByUserAndStatus(user, AttendanceStatus.REGISTERED);
-        return registeredEvents.stream()
-                .map(eventMapper::toDto)
-                .toList();
-    }
-
-    public EventDto getEventDetails(Long eventId) {
-        var event = findEventById(eventId);
-        return eventMapper.toDto(event);
-    }
-
-    private Event findEventById(Long eventId) {
-        return eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found with ID: " + eventId,
-                        HttpStatus.NOT_FOUND,
-                        EventCodes.EVENT_NOT_FOUND.name()
-                ));
-    }
-
-    private void validateClient(AppUser client) {
-        if (client == null) {
-            throw new ApiException("Client cannot be null.",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_REQUEST.name()
-            );
-        }
+        return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toLightDto);
     }
 }

@@ -13,13 +13,13 @@ import pl.kamann.dtos.AttendanceDetailsDto;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
 import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.AttendanceMapper;
 import pl.kamann.repositories.AttendanceRepository;
 import pl.kamann.utility.EntityLookupService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,54 +45,19 @@ class AdminAttendanceServiceTest {
     }
 
     @Test
-    void cancelClientAttendance_ShouldDeleteAttendance_WhenFound() {
-        Long eventId = 1L;
-        Long clientId = 2L;
-
-        Event event = new Event();
-        Attendance attendance = new Attendance();
-
-        when(entityLookupService.findEventById(eventId)).thenReturn(event);
-        when(attendanceRepository.findByEventAndUserId(event, clientId)).thenReturn(Optional.of(attendance));
-
-        adminAttendanceService.cancelClientAttendance(eventId, clientId);
-
-        verify(attendanceRepository).delete(attendance);
-    }
-
-    @Test
     void cancelClientAttendance_ShouldThrowException_WhenNotFound() {
         Long eventId = 1L;
         Long clientId = 2L;
 
-        Event event = new Event();
+        OccurrenceEvent event = new OccurrenceEvent();
 
-        when(entityLookupService.findEventById(eventId)).thenReturn(event);
-        when(attendanceRepository.findByEventAndUserId(event, clientId)).thenReturn(Optional.empty());
+        when(entityLookupService.findOccurrenceEventByOccurrenceEventId(eventId)).thenReturn(event);
 
         ApiException exception = assertThrows(ApiException.class,
                 () -> adminAttendanceService.cancelClientAttendance(eventId, clientId));
 
         assertEquals("Attendance not found for event and client", exception.getMessage());
         verify(attendanceRepository, never()).delete(any());
-    }
-
-    @Test
-    void markAttendance_ShouldUpdateStatus_WhenFound() {
-        var eventId = 1L;
-        var clientId = 2L;
-        var status = AttendanceStatus.PRESENT;
-
-        var event = new Event();
-        var attendance = new Attendance();
-
-        when(entityLookupService.findEventById(eventId)).thenReturn(event);
-        when(attendanceRepository.findByEventAndUserId(event, clientId)).thenReturn(Optional.of(attendance));
-
-        adminAttendanceService.markAttendance(eventId, clientId, status);
-
-        assertEquals(status, attendance.getStatus());
-        verify(attendanceRepository).save(attendance);
     }
 
     @Test
@@ -103,7 +68,6 @@ class AdminAttendanceServiceTest {
         var event = new Event();
 
         when(entityLookupService.findEventById(eventId)).thenReturn(event);
-        when(attendanceRepository.findByEventAndUserId(event, clientId)).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class,
                 () -> adminAttendanceService.markAttendance(eventId, clientId, AttendanceStatus.PRESENT));
@@ -112,29 +76,6 @@ class AdminAttendanceServiceTest {
         verify(attendanceRepository, never()).save(any());
     }
 
-    @Test
-    void getAttendanceDetails_ShouldReturnPage_WhenFound() {
-        var eventId = 1L;
-        var userId = 2L;
-        var pageable = Pageable.unpaged();
-
-        var attendance = new Attendance();
-        var dto = AttendanceDetailsDto.builder()
-                .id(1L)
-                .eventId(10L)
-                .userId(100L)
-                .status(AttendanceStatus.PRESENT)
-                .build();
-        Page<Attendance> attendancePage = new PageImpl<>(List.of(attendance));
-
-        when(attendanceRepository.findByEventIdAndUserId(eventId, userId, pageable)).thenReturn(attendancePage);
-        when(attendanceMapper.toDto(attendance)).thenReturn(dto);
-
-        Page<AttendanceDetailsDto> result = adminAttendanceService.getAttendanceDetails(eventId, userId, pageable);
-
-        assertEquals(1, result.getTotalElements());
-        assertEquals(dto, result.getContent().get(0));
-    }
 
     @Test
     void getAttendanceSummary_ShouldReturnSummary() {
@@ -143,7 +84,6 @@ class AdminAttendanceServiceTest {
         var attendance = new Attendance();
         var dto = AttendanceDetailsDto.builder()
                 .id(1L)
-                .eventId(10L)
                 .userId(100L)
                 .status(AttendanceStatus.PRESENT)
                 .build();

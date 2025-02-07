@@ -11,7 +11,6 @@ import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.membershipcard.MembershipCard;
 import pl.kamann.entities.membershipcard.MembershipCardAction;
 import pl.kamann.entities.membershipcard.MembershipCardHistory;
-import pl.kamann.repositories.MembershipCardHistoryRepository;
 import pl.kamann.repositories.MembershipCardRepository;
 
 import java.time.LocalDateTime;
@@ -22,7 +21,6 @@ import java.time.LocalDateTime;
 public class MembershipCardService {
 
     private final MembershipCardRepository membershipCardRepository;
-    private final MembershipCardHistoryRepository membershipCardHistoryRepository;
 
     public MembershipCard validateActiveCard(Long clientId) {
         return membershipCardRepository.findActiveCardByUserId(clientId)
@@ -48,7 +46,7 @@ public class MembershipCardService {
         history.setAction(action);
         history.setEntriesUsed(action == MembershipCardAction.USED ? entriesUsed : 0);
         history.setActionDate(LocalDateTime.now());
-        membershipCardHistoryRepository.save(history);
+
     }
 
     @Transactional
@@ -79,7 +77,6 @@ public class MembershipCardService {
         history.setAction(MembershipCardAction.EXPIRE);
         history.setActionDate(LocalDateTime.now());
         history.setUser(card.getUser());
-        membershipCardHistoryRepository.save(history);
 
         membershipCardRepository.save(card);
     }
