@@ -12,7 +12,7 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 ## 🌟 Features
 
 ### 🛡️ Admin
-- Full class lifecycle management
+- Full event lifecycle management
 - User administration with activation/deactivation
 - Financial reporting (weekly/monthly/yearly)
 - Attendance analytics dashboard
@@ -24,9 +24,10 @@ A modern reservation system built with **Java 21** and **Spring Boot 3**, featur
 - Class cancellation notifications
 
 ### 💃 Client
+- Calender for booking events
 - Class booking system with membership integration
 - Membership usage tracking
-- Advanced class search filters
+- Advanced event search filters
 
 ## 🛠️ Technologies
 
