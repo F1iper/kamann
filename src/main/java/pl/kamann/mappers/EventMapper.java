@@ -4,11 +4,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventResponseDto;
+import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
+import pl.kamann.repositories.EventTypeRepository;
+import pl.kamann.utility.EntityLookupService;
 
 @Component
 @RequiredArgsConstructor
 public class EventMapper {
+
+    private final EntityLookupService lookupService;
+    private final EventTypeRepository eventTypeRepository;
 
     public EventDto toDto(Event event) {
         int currentParticipants = event.getOccurrences() != null
@@ -29,7 +36,6 @@ public class EventMapper {
                 .maxParticipants(event.getMaxParticipants())
                 .status(event.getStatus())
                 .currentParticipants(currentParticipants)
-                .eventTypeId(event.getEventType() != null ? event.getEventType().getId() : null)
                 .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
                 .build();
     }
@@ -58,5 +64,20 @@ public class EventMapper {
                 event.getInstructor() != null ? event.getInstructor().getId() : null,
                 event.getMaxParticipants()
         );
+    }
+
+    public Event toEntity(CreateEventRequest request) {
+        return Event.builder()
+                .title(request.title())
+                .description(request.description())
+                .start(request.start())
+                .durationMinutes(request.durationMinutes())
+                .rrule(request.rrule())
+                .createdBy(lookupService.getLoggedInUser())
+                .instructor(lookupService.findUserById(request.instructorId()))
+                .maxParticipants(request.maxParticipants())
+                .eventType(eventTypeRepository.getReferenceByName(request.eventTypeName()).get())
+                .status(EventStatus.SCHEDULED)
+                .build();
     }
 }

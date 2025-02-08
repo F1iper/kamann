@@ -8,6 +8,7 @@ import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
+import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;

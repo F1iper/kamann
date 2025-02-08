@@ -41,15 +41,15 @@ public class AdminEventController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping
-    @Operation(
-            summary = "Create an event",
-            description = "Creates a new event and assigns an instructor."
-    )
-    public ResponseEntity<EventDto> createEvent(@RequestBody EventDto eventDto) {
-        EventDto createdEvent = adminEventService.createEvent(eventDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
-    }
+//    @PostMapping
+//    @Operation(
+//            summary = "Create an event",
+//            description = "Creates a new event and assigns an instructor."
+//    )
+//    public ResponseEntity<EventDto> createEvent(@RequestBody EventDto eventDto) {
+//        EventDto createdEvent = adminEventService.createEvent(eventDto);
+//        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
+//    }
 
     @PutMapping("/{id}")
     @Operation(

@@ -2,6 +2,9 @@ package pl.kamann.dtos;
 
 import jakarta.validation.constraints.*;
 import lombok.Builder;
+import org.springframework.http.HttpStatus;
+import pl.kamann.config.codes.StatusCodes;
+import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
@@ -54,11 +57,10 @@ public record EventDto(
 
         private void validateRRule(String rrule) {
                 if (!rrule.startsWith("FREQ=")) {
-                        throw new IllegalArgumentException("RRULE must start with FREQ=");
+                        throw new ApiException(
+                                "RRULE must start with FREQ=",
+                                HttpStatus.BAD_REQUEST,
+                                StatusCodes.INVALID_INPUT.name());
                 }
-        }
-
-        public LocalDateTime getEnd() {
-                return start.plusMinutes(durationMinutes);
         }
 }

@@ -16,6 +16,8 @@ import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.dtos.EventUpdateRequestDto;
+import pl.kamann.dtos.event.CreateEventRequest;
+import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.entities.event.OccurrenceEvent;
@@ -46,12 +48,11 @@ public class AdminEventService {
     private final PaginationService paginationService;
 
     @Transactional
-    public EventDto createEvent(EventDto eventDto) {
-        eventValidationService.validate(eventDto);
+    public CreateEventResponse createEvent(CreateEventRequest request) {
+        eventValidationService.validate(request);
 
-        Event event = eventMapper.toEntity(eventDto);
-        event.setCreatedBy(entityLookupService.findUserById(eventDto.createdById()));
-        event.setEventType(entityLookupService.findEventTypeById(eventDto.eventTypeId()));
+        Event event = eventMapper.toEntity(request);
+        event.setCreatedBy(entityLookupService.findUserById(request.createdById()));
 
         event = eventRepository.save(event);
         occurrenceEventRepository.saveAll(generateOccurrences(event));
