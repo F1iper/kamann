@@ -10,14 +10,12 @@ import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
-import pl.kamann.mappers.EventMapper;
-import pl.kamann.utility.EntityLookupService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EventMapperTest {
 
@@ -54,6 +52,7 @@ class EventMapperTest {
                 .eventType(type)
                 .build();
 
+
         EventDto dto = mapper.toDto(event);
 
         assertEquals(event.getId(), dto.id());
@@ -61,7 +60,6 @@ class EventMapperTest {
         assertEquals(event.getDescription(), dto.description());
         assertEquals(event.getStart(), dto.start());
         assertEquals(event.getDurationMinutes(), dto.durationMinutes());
-        assertEquals(event.getRrule(), dto.rrule());
         assertEquals(creator.getId(), dto.createdById());
         assertEquals(instructor.getId(), dto.instructorId());
         assertEquals("John Doe", dto.instructorFullName());

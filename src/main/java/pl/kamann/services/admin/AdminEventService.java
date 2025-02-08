@@ -16,6 +16,7 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventUpdateRequest;
+import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
@@ -23,6 +24,7 @@ import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
+import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.services.EventTypeService;
@@ -44,11 +46,12 @@ public class AdminEventService {
 
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
-
-    private final OccurrenceEventRepository occurrenceEventRepository;
-
     private final EventTypeService eventTypeService;
     private final EventValidationService eventValidationService;
+
+    private final OccurrenceEventRepository occurrenceEventRepository;
+    private final OccurrenceEventMapper occurrenceEventMapper;
+
     private final NotificationService notificationService;
     private final EntityLookupService entityLookupService;
     private final PaginationService paginationService;
@@ -59,12 +62,14 @@ public class AdminEventService {
         eventValidationService.validateCreate(request);
 
         Event event = eventMapper.toEntity(request);
+
         event.setCreatedBy(entityLookupService.findUserById(request.createdById()));
 
         EventType eventType = eventTypeService.findOrCreateEventType(request.eventTypeName());
         event.setEventType(eventType);
 
         event = eventRepository.save(event);
+
         occurrenceEventRepository.saveAll(generateOccurrences(event));
 
         return eventMapper.toCreateEventResponse(event);
@@ -194,5 +199,11 @@ public class AdminEventService {
         Event eventById = entityLookupService.findEventById(eventId);
 
         return eventMapper.toDto(eventById);
+    }
+
+    public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
+        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.getReferenceById(occurrenceId);
+
+        return occurrenceEventMapper.toOccurrenceEventDto(occurrenceEvent);
     }
 }
