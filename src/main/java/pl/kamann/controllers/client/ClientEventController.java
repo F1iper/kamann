@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.dtos.EventDto;
+import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
@@ -27,10 +27,10 @@ public class ClientEventController {
     private final AdminEventService adminEventService;
 
     @GetMapping
-    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter ('upcoming', 'past' or 'available' .")
+    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter 'upcoming', 'past' or 'available' .")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
             @RequestParam(defaultValue = "upcoming") String filter,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
@@ -45,6 +45,15 @@ public class ClientEventController {
     public ResponseEntity<CreateEventResponse> createEvent(@RequestBody CreateEventRequest request) {
         CreateEventResponse createdEvent = adminEventService.createEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
+    }
+
+    @GetMapping("/{occurrenceId}")
+    @Operation(
+            summary = "Get OccurrenceEvent details by id",
+            description = "Creates a new event and assigns an instructor."
+    )
+    public ResponseEntity<OccurrenceEventDto> getEventDto(@PathVariable Long occurrenceId) {
+        return ResponseEntity.ok(adminEventService.getOccurrenceById(occurrenceId));
     }
 
 }

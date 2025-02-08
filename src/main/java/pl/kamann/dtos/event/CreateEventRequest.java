@@ -3,6 +3,9 @@ package pl.kamann.dtos.event;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
+import org.springframework.http.HttpStatus;
+import pl.kamann.config.codes.EventCodes;
+import pl.kamann.config.exception.handler.ApiException;
 
 import java.time.LocalDateTime;
 
@@ -51,7 +54,9 @@ public record CreateEventRequest(
 
         private void validateRRule(String rrule) {
                 if (!rrule.startsWith("FREQ=")) {
-                        throw new IllegalArgumentException("RRULE must start with FREQ=");
+                        throw new ApiException("RRULE must start with FREQ=",
+                                HttpStatus.BAD_REQUEST,
+                                EventCodes.OCCURRENCE_GENERATION_FAILED.name());
                 }
         }
 }

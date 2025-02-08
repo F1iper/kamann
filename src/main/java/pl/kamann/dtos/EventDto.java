@@ -2,9 +2,6 @@ package pl.kamann.dtos;
 
 import jakarta.validation.constraints.*;
 import lombok.Builder;
-import org.springframework.http.HttpStatus;
-import pl.kamann.config.codes.StatusCodes;
-import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
@@ -25,8 +22,6 @@ public record EventDto(
         @NotNull(message = "Duration in minutes cannot be null")
         @Positive(message = "Duration must be positive")
         Integer durationMinutes,
-
-        String rrule,
 
         @NotNull(message = "Creator ID cannot be null")
         Long createdById,
@@ -49,18 +44,4 @@ public record EventDto(
 
         String eventTypeName
 ) {
-        public EventDto {
-                if (rrule != null && !rrule.isEmpty()) {
-                        validateRRule(rrule);
-                }
-        }
-
-        private void validateRRule(String rrule) {
-                if (!rrule.startsWith("FREQ=")) {
-                        throw new ApiException(
-                                "RRULE must start with FREQ=",
-                                HttpStatus.BAD_REQUEST,
-                                StatusCodes.INVALID_INPUT.name());
-                }
-        }
 }

@@ -55,9 +55,24 @@ public class EventValidationService {
             RecurrenceRule rule = new RecurrenceRule(rrule);
             if (rule.getUntil() != null) {
                 DateTime untilDateTime = rule.getUntil();
-                if (untilDateTime.getTimestamp() < request.start().toInstant(java.time.ZoneOffset.UTC).toEpochMilli()) {
+
+                if (untilDateTime.getTimestamp() < request.start()
+                        .toInstant(java.time.ZoneOffset.UTC).toEpochMilli()) {
                     throw new ApiException(
                             "RRULE UNTIL date cannot be before start date",
+                            HttpStatus.BAD_REQUEST,
+                            RecurrenceCodes.INVALID_UNTIL_DATE.name()
+                    );
+                }
+
+                LocalDateTime untilLocalDate = LocalDateTime.ofEpochSecond(
+                        untilDateTime.getTimestamp() / 1000, 0, java.time.ZoneOffset.UTC);
+
+                // Enforce a maximum allowed UNTIL date: 2 months after the event start.
+                LocalDateTime maxAllowedUntil = request.start().plusMonths(2);
+                if (untilLocalDate.isAfter(maxAllowedUntil)) {
+                    throw new ApiException(
+                            "RRULE UNTIL date cannot be more than 2 months after the event start.",
                             HttpStatus.BAD_REQUEST,
                             RecurrenceCodes.INVALID_UNTIL_DATE.name()
                     );

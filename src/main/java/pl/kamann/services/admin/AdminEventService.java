@@ -16,14 +16,18 @@ import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.dtos.EventUpdateRequestDto;
+import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
+import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
+import pl.kamann.services.EventTypeService;
 import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
@@ -40,8 +44,12 @@ import java.util.List;
 public class AdminEventService {
 
     private final EventRepository eventRepository;
-    private final OccurrenceEventRepository occurrenceEventRepository;
     private final EventMapper eventMapper;
+
+    private final OccurrenceEventRepository occurrenceEventRepository;
+    private final OccurrenceEventMapper occurrenceEventMapper;
+
+    private final EventTypeService eventTypeService;
     private final EventValidationService eventValidationService;
     private final NotificationService notificationService;
     private final EntityLookupService entityLookupService;
@@ -52,12 +60,17 @@ public class AdminEventService {
         eventValidationService.validate(request);
 
         Event event = eventMapper.toEntity(request);
+
         event.setCreatedBy(entityLookupService.findUserById(request.createdById()));
 
+        EventType eventType = eventTypeService.findOrCreateEventType(request.eventTypeName());
+        event.setEventType(eventType);
+
         event = eventRepository.save(event);
+
         occurrenceEventRepository.saveAll(generateOccurrences(event));
 
-        return eventMapper.toDto(event);
+        return eventMapper.toCreateEventResponse(event);
     }
 
     @Transactional
@@ -133,33 +146,42 @@ public class AdminEventService {
     }
 
     public List<OccurrenceEvent> generateOccurrences(Event event) {
+        List<OccurrenceEvent> occurrences = new ArrayList<>();
+
+        // If no RRULE is provided, create a single occurrence (one-time event)
         if (event.getRrule() == null || event.getRrule().isEmpty()) {
-            return List.of(createOccurrence(event, event.getStart(), 0));
+            occurrences.add(createOccurrence(event, event.getStart(), 0));
+            return occurrences;
         }
 
-        List<OccurrenceEvent> occurrences = new ArrayList<>();
         try {
             RecurrenceRule rule = new RecurrenceRule(event.getRrule());
-            DateTime start = new DateTime(event.getStart().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-            RecurrenceRuleIterator iterator = rule.iterator(start);
+            DateTime dtStart = new DateTime(
+                    event.getStart().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            );
+            RecurrenceRuleIterator iterator = rule.iterator(dtStart);
 
+            // Use a limit to avoid infinite loops if the RRULE lacks an UNTIL or COUNT
             int maxInstances = 25;
-            int seriesIndex = 0;
+            int seriesIndex = 1;
             while (iterator.hasNext() && maxInstances-- > 0) {
                 DateTime nextDateTime = iterator.nextDateTime();
-                LocalDateTime dateTime = LocalDateTime.ofInstant(
-                        Instant.ofEpochMilli(nextDateTime.getTimestamp()), ZoneId.systemDefault()
+                LocalDateTime occurrenceStart = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(nextDateTime.getTimestamp()),
+                        ZoneId.systemDefault()
                 );
-
-                occurrences.add(createOccurrence(event, dateTime, seriesIndex++));
+                occurrences.add(createOccurrence(event, occurrenceStart, seriesIndex++));
             }
         } catch (Exception e) {
-            throw new ApiException("Failed to generate occurrences: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR, EventCodes.OCCURRENCE_GENERATION_FAILED.name());
+            throw new ApiException(
+                    "Failed to generate occurrences: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    EventCodes.OCCURRENCE_GENERATION_FAILED.name());
         }
 
         return occurrences;
     }
+
 
     private OccurrenceEvent createOccurrence(Event event, LocalDateTime start, int seriesIndex) {
         return OccurrenceEvent.builder()
@@ -199,5 +221,11 @@ public class AdminEventService {
                 ));
 
         return eventMapper.toDto(event);
+    }
+
+    public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
+        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.getReferenceById(occurrenceId);
+
+        return occurrenceEventMapper.toOccurrenceEventDto(occurrenceEvent);
     }
 }
