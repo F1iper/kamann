@@ -101,7 +101,7 @@ public class EventValidationService {
 
     private void validateRrule(String rrule, LocalDateTime start) {
         if (rrule == null || rrule.isBlank()) {
-            return; // ✅ RRULE is optional, so return early if not provided
+            return; // RRULE is optional, so return early if not provided
         }
 
         try {

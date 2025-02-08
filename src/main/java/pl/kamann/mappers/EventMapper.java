@@ -4,15 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventLightDto;
-import pl.kamann.dtos.EventResponse;
+import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.utility.EntityLookupService;
-
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -33,6 +31,7 @@ public class EventMapper {
                 .start(event.getStart())
                 .durationMinutes(event.getDurationMinutes())
                 .updatedAt(event.getUpdatedAt())
+                .rrule(event.getRrule())
                 .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
                 .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
                 .instructorFullName(event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null)
@@ -45,18 +44,18 @@ public class EventMapper {
                 .build();
     }
 
-//    public EventResponse toResponseDto(Event event) {
-//        return new EventResponse(
-//                event.getId(),
-//                event.getTitle(),
-//                event.getDescription(),
-//                event.getStart(),
-//                event.getDurationMinutes(),
-//                event.getRrule(),
-//                event.getInstructor() != null ? event.getInstructor().getId() : null,
-//                event.getMaxParticipants()
-//        );
-//    }
+    public EventResponseDto toResponseDto(Event event) {
+        return new EventResponseDto(
+                event.getId(),
+                event.getTitle(),
+                event.getDescription(),
+                event.getStart(),
+                event.getDurationMinutes(),
+                event.getRrule(),
+                event.getInstructor() != null ? event.getInstructor().getId() : null,
+                event.getMaxParticipants()
+        );
+    }
 
     public CreateEventResponse toCreateEventResponse(Event event) {
         return new CreateEventResponse(
@@ -107,4 +106,5 @@ public class EventMapper {
                 updatedEvent.getMaxParticipants()
         );
     }
+
 }

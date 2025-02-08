@@ -130,7 +130,6 @@ public class AdminEventService {
         notificationService.notifyParticipants(event);
     }
 
-
     private void updateEventFields(Event event, EventUpdateRequest requestDto) {
         event.setTitle(requestDto.title());
         event.setDescription(requestDto.description());
@@ -140,23 +139,6 @@ public class AdminEventService {
         event.setMaxParticipants(requestDto.maxParticipants());
         event.setInstructor(requestDto.instructorId() != null ? entityLookupService.findUserById(requestDto.instructorId()) : null);
     }
-
-//    private void updateOccurrences(Event event, long futurePeriodWeeks) {
-//        List<OccurrenceEvent> occurrences = occurrenceEventRepository.findOccurrencesByEventId(event.getId());
-//
-//        List<OccurrenceEvent> occurrencesToUpdate = occurrences.stream()
-//                .filter(occurrence -> occurrenceValidationService.isOccurrenceUpdatable(occurrence, futurePeriodWeeks))
-//                .peek(occurrence -> updateOccurrenceFields(occurrence, event))
-//                .collect(Collectors.toList());
-//
-//        occurrenceEventRepository.saveAll(occurrencesToUpdate);
-//    }
-
-//    private void updateOccurrenceFields(OccurrenceEvent occ, Event event) {
-//        occ.setDurationMinutes(event.getDurationMinutes());
-//        occ.setMaxParticipants(event.getMaxParticipants());
-//        occ.setInstructor(event.getInstructor());
-//    }
 
     public List<OccurrenceEvent> generateOccurrences(Event event) {
         List<OccurrenceEvent> occurrences = new ArrayList<>();
@@ -195,7 +177,6 @@ public class AdminEventService {
 
         return occurrences;
     }
-
 
     private OccurrenceEvent createOccurrence(Event event, LocalDateTime start, int seriesIndex) {
         return OccurrenceEvent.builder()

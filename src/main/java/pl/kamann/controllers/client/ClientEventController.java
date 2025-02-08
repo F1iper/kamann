@@ -28,7 +28,7 @@ public class ClientEventController {
     @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter ('upcoming', 'past' or 'available' .")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
             @RequestParam(defaultValue = "upcoming") String filter,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
