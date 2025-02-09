@@ -10,6 +10,7 @@ import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
+import pl.kamann.repositories.EventTypeRepository;
 import pl.kamann.utility.EntityLookupService;
 
 @Component
@@ -17,6 +18,7 @@ import pl.kamann.utility.EntityLookupService;
 public class EventMapper {
 
     private final EntityLookupService lookupService;
+    private final EventTypeRepository eventTypeRepository;
 
     public EventDto toDto(Event event) {
         int currentParticipants = event.getOccurrences() != null

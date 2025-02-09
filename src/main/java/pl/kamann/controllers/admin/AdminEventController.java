@@ -8,14 +8,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.dtos.EventCancelResponse;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventUpdateRequest;
 import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.EventStatus;
-import pl.kamann.services.EventUpdateService;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
@@ -25,7 +23,6 @@ import pl.kamann.services.admin.AdminEventService;
 public class AdminEventController {
 
     private final AdminEventService adminEventService;
-    private final EventUpdateService eventUpdateService;
 
     @PostMapping
     @Operation(summary = "Create an event", description = "Creates a new event and assigns an instructor.")
@@ -35,7 +32,10 @@ public class AdminEventController {
     }
 
     @GetMapping
-    @Operation(summary = "List events", description = "Admins can list all events, optionally filtering by instructor ID.")
+    @Operation(
+            summary = "List events",
+            description = "Admins can list all events, or filter by instructor if an instructor ID is provided."
+    )
     public ResponseEntity<PaginatedResponseDto<EventDto>> listEvents(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
