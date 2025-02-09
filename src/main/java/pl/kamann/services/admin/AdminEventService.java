@@ -32,6 +32,7 @@ import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
+import pl.kamann.utility.PaginationUtil;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -54,6 +55,7 @@ public class AdminEventService {
     private final NotificationService notificationService;
     private final EntityLookupService entityLookupService;
     private final PaginationService paginationService;
+    private final PaginationUtil paginationUtil;
 
     @Transactional
     public CreateEventResponse createEvent(CreateEventRequest request) {
@@ -71,6 +73,18 @@ public class AdminEventService {
         occurrenceEventRepository.saveAll(generateOccurrences(event));
 
         return eventMapper.toCreateEventResponse(event);
+    }
+
+    public PaginatedResponseDto<EventDto> listEvents(Long instructorId, Pageable pageable) {
+        Page<Event> pagedEvents;
+
+        if (instructorId == null) {
+            pagedEvents = eventRepository.findAll(pageable);
+        } else {
+            pagedEvents = eventRepository.findByInstructorId(instructorId, pageable);
+        }
+
+        return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toDto);
     }
 
     @Transactional
@@ -105,15 +119,6 @@ public class AdminEventService {
 
         occurrenceEventRepository.saveAll(futureOccurrences);
         notificationService.notifyParticipants(event);
-    }
-
-    public PaginatedResponseDto<EventDto> listAllEvents(Pageable pageable) {
-        Pageable validatedPageable = paginationService.validatePageable(pageable);
-        Page<Event> events = eventRepository.findAll(validatedPageable);
-        return new PaginatedResponseDto<>(
-                events.map(eventMapper::toDto).getContent(),
-                new PaginationMetaData(events.getTotalPages(), events.getTotalElements())
-        );
     }
 
     private void updateEventFields(Event event, EventUpdateRequestDto requestDto) {

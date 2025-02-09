@@ -12,70 +12,48 @@ import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.dtos.EventUpdateRequestDto;
+import pl.kamann.dtos.event.CreateEventRequest;
+import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
-@RequestMapping("/api/admin/events")
+@RequestMapping("/api/v1/admin/events")
 @RequiredArgsConstructor
-@Tag(name = "3. admin events", description = "Auth controller")
+@Tag(name = "3. admin event controller", description = "Control events and event occurences from admin perspective.")
 public class AdminEventController {
 
     private final AdminEventService adminEventService;
 
     @GetMapping
-    @Operation(
-            summary = "List events",
-            description = "Admins can list all events, or filter by instructor if an instructor ID is provided."
-    )
+    @Operation(summary = "List events", description = "Admins can list all events, or filter by instructor ID.")
     public ResponseEntity<PaginatedResponseDto<EventDto>> listEvents(
             @RequestParam(required = false) Long instructorId,
             Pageable pageable
     ) {
-        PaginatedResponseDto<EventDto> response;
-        if (instructorId == null) {
-            response = adminEventService.listAllEvents(pageable);
-        } else {
-            response = adminEventService.listEventsByInstructor(instructorId, pageable);
-        }
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(adminEventService.listEvents(instructorId, pageable));
     }
 
-//    @PostMapping
-//    @Operation(
-//            summary = "Create an event",
-//            description = "Creates a new event and assigns an instructor."
-//    )
-//    public ResponseEntity<EventDto> createEvent(@RequestBody EventDto eventDto) {
-//        EventDto createdEvent = adminEventService.createEvent(eventDto);
-//        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
-//    }
+    @PostMapping
+    @Operation(summary = "Create an event", description = "Creates a new event and assigns an instructor.")
+    public ResponseEntity<CreateEventResponse> createEvent(@RequestBody @Valid CreateEventRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminEventService.createEvent(request));
+    }
 
     @PutMapping("/{id}")
-    @Operation(
-            summary = "Update an event",
-            description = "Updates event details. 'EVENT_ONLY' updates only the event metadata; " +
-                    "'FUTURE_OCCURRENCES' updates event and future occurrences; " +
-                    "'ALL_OCCURRENCES' updates event and all occurrences."
-    )
+    @Operation(summary = "Update an event", description = "Updates event details based on the given scope.")
     public ResponseEntity<EventResponseDto> updateEvent(
             @PathVariable Long id,
             @Valid @RequestBody EventUpdateRequestDto requestDto,
-            @RequestParam(name = "scope", defaultValue = "EVENT_ONLY") EventUpdateScope updateScope) {
-        EventResponseDto updatedEvent = adminEventService.updateEvent(id, requestDto, updateScope);
-        return ResponseEntity.ok(updatedEvent);
+            @RequestParam(name = "scope", defaultValue = "EVENT_ONLY") EventUpdateScope updateScope
+    ) {
+        return ResponseEntity.ok(adminEventService.updateEvent(id, requestDto, updateScope));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(
-            summary = "Delete an event",
-            description = "Deletes an event by its ID. If participants are registered, deletion requires force=true."
-    )
-    public ResponseEntity<Void> deleteEvent(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "false") boolean force
-    ) {
-        adminEventService.deleteEvent(id, force);
+    @Operation(summary = "Delete an event", description = "Deletes an event by its ID.")
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        adminEventService.deleteEvent(id, false);
         return ResponseEntity.noContent().build();
     }
 
@@ -89,9 +67,16 @@ public class AdminEventController {
         return ResponseEntity.ok("Event successfully canceled.");
     }
 
-    @GetMapping("/{eventId}")
-    @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event by its ID.")
-    public ResponseEntity<EventDto> getEventDetails(@PathVariable Long eventId) {
-        return ResponseEntity.ok(adminEventService.getEventById(eventId));
+    @DeleteMapping("/{id}/force")
+    @Operation(summary = "Force delete an event", description = "Deletes an event even if participants are registered.")
+    public ResponseEntity<Void> forceDeleteEvent(@PathVariable Long id) {
+        adminEventService.deleteEvent(id, true);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event.")
+    public ResponseEntity<EventDto> getEventDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(adminEventService.getEventById(id));
     }
 }

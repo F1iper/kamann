@@ -3,6 +3,7 @@ package pl.kamann.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
+import pl.kamann.dtos.EventLightDto;
 import pl.kamann.dtos.EventResponseDto;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
@@ -77,5 +78,16 @@ public class EventMapper {
                 .eventTypeName(request.eventTypeName())
                 .status(EventStatus.SCHEDULED)
                 .build();
+    }
+
+    public EventLightDto toLightDto(Event event) {
+        return new EventLightDto(
+                event.getId(),
+                event.getTitle(),
+                event.getStart(),
+                event.getDurationMinutes(),
+                event.getStatus(),
+                event.getEventType() != null ? event.getEventType().getName() : null
+        );
     }
 }
