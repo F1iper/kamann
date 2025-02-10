@@ -28,14 +28,15 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
     void deleteByEvent(Event event);
 
     @Query("""
-    SELECT o FROM OccurrenceEvent o
-    WHERE (:filter = 'UPCOMING' AND o.start >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
-       OR (:filter = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
-       OR (:filter = 'PAST' AND o.start < CURRENT_TIMESTAMP)
-""")
+            SELECT o FROM OccurrenceEvent o
+            WHERE (:scope = 'UPCOMING' AND o.start >= CURRENT_TIMESTAMP AND :user MEMBER OF o.participants)
+               OR (:scope = 'AVAILABLE' AND o.start >= CURRENT_TIMESTAMP AND :user NOT MEMBER OF o.participants)
+               OR (:scope = 'PAST' AND o.start < CURRENT_TIMESTAMP)
+            """)
     Page<OccurrenceEvent> findFilteredOccurrences(
-            @Param("filter") String filter,
+            @Param("scope") String scope,
             @Param("user") AppUser user,
             Pageable pageable
     );
+
 }

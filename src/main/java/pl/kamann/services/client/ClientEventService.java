@@ -9,12 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.config.filter.OccurrenceFilter;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.EventLightDto;
-import pl.kamann.dtos.OccurrenceEventDto;
-import pl.kamann.dtos.OccurrenceEventLightDto;
+import pl.kamann.dtos.*;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
@@ -39,16 +35,14 @@ public class ClientEventService {
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
 
-    public PaginatedResponseDto<OccurrenceEventLightDto> getOccurrences(String filter, int page, int size) {
-        OccurrenceFilter validFilter = OccurrenceFilter.fromString(filter);
-
+    public PaginatedResponseDto<OccurrenceEventLightDto> getOccurrences(OccurrenceEventScope scope, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
         pageable = paginationService.validatePageable(pageable);
 
         AppUser loggedInUser = lookupService.getLoggedInUser();
 
         Page<OccurrenceEvent> pagedOccurrences = occurrenceEventRepository.findFilteredOccurrences(
-                validFilter.name(), loggedInUser, pageable);
+                scope.name(), loggedInUser, pageable);
 
         return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toLightDto);
     }

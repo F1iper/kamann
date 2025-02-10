@@ -6,10 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.EventLightDto;
-import pl.kamann.dtos.OccurrenceEventDto;
-import pl.kamann.dtos.OccurrenceEventLightDto;
+import pl.kamann.dtos.*;
 import pl.kamann.services.client.ClientEventService;
 
 @RestController
@@ -21,13 +18,13 @@ public class ClientEventController {
     private final ClientEventService clientEventService;
 
     @GetMapping("/occurrences")
-    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter 'upcoming', 'past' or 'available'.")
+    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter.")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
-            @RequestParam(defaultValue = "upcoming") String filter,
+            @RequestParam(defaultValue = "upcoming") OccurrenceEventScope scope,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(clientEventService.getOccurrences(filter, page, size));
+        return ResponseEntity.ok(clientEventService.getOccurrences(scope, page, size));
     }
 
     @GetMapping("/occurrences/{occurrenceId}")
