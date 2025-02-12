@@ -36,6 +36,10 @@ public class ClientEventService {
     private final PaginationUtil paginationUtil;
 
     public PaginatedResponseDto<OccurrenceEventLightDto> getOccurrences(OccurrenceEventScope scope, int page, int size) {
+        if (scope == null) {
+            scope = OccurrenceEventScope.UPCOMING;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
         pageable = paginationService.validatePageable(pageable);
 

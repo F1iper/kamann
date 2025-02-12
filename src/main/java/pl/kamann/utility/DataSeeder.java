@@ -344,7 +344,7 @@ public class DataSeeder {
         List<Attendance> attendances = attendanceRepository.findAll();
         Optional<Event> eventOpt = eventRepository.findByTitle(eventTitle);
         eventOpt.ifPresent(event -> {
-            var occurrences = occurrenceEventRepository.findAllByEventId(event.getId());
+            var occurrences = occurrenceEventRepository.findOccurrencesByEventId(event.getId());
             if (!occurrences.isEmpty()) {
                 OccurrenceEvent occurrence = occurrences.get(0);
                 // Force initialization of the lazy collection

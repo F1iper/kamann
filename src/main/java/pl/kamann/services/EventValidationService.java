@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.RecurrenceCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.event.CreateEventRequest;
+import pl.kamann.entities.event.Event;
 
 import java.time.LocalDateTime;
 
@@ -85,5 +86,9 @@ public class EventValidationService {
                     RecurrenceCodes.INVALID_RECURRENCE_RULE.name()
             );
         }
+    }
+
+    public void validateEventForUpdate(Event event) {
+
     }
 }

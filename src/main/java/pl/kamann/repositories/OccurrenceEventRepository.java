@@ -19,7 +19,7 @@ public interface OccurrenceEventRepository extends JpaRepository<OccurrenceEvent
     @Query("SELECT o.start FROM OccurrenceEvent o WHERE o.event.id = :eventId")
     List<LocalDateTime> findStartDatesByEventId(@Param("eventId") Long eventId);
 
-    List<OccurrenceEvent> findAllByEventId(Long eventId);
+    List<OccurrenceEvent> findOccurrencesByEventId(Long eventId);
 
     List<OccurrenceEvent> findByEventAndStartAfter(Event event, LocalDateTime dateTime);
 

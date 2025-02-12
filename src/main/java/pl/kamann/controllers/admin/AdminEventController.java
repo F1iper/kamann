@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,23 +17,23 @@ import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
-@RequestMapping("/api/v1/admin/events")
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @Tag(name = "3. admin event controller", description = "Control events and event occurences from admin perspective.")
 public class AdminEventController {
 
     private final AdminEventService adminEventService;
 
-    @GetMapping
-    @Operation(summary = "List events", description = "Admins can list all events, or filter by instructor ID.")
+    @GetMapping("/events")
+    @Operation(summary = "List events", description = "Admins can list all events, optionally filtering by instructor ID.")
     public ResponseEntity<PaginatedResponseDto<EventDto>> listEvents(
-            @RequestParam(required = false) Long instructorId,
-            Pageable pageable
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(adminEventService.listEvents(instructorId, pageable));
+        return ResponseEntity.ok(adminEventService.listEvents(page, size));
     }
 
-    @PostMapping
+    @PostMapping("/create")
     @Operation(summary = "Create an event", description = "Creates a new event and assigns an instructor.")
     public ResponseEntity<CreateEventResponse> createEvent(@RequestBody @Valid CreateEventRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminEventService.createEvent(request));
@@ -45,9 +44,10 @@ public class AdminEventController {
     public ResponseEntity<EventResponseDto> updateEvent(
             @PathVariable Long id,
             @Valid @RequestBody EventUpdateRequestDto requestDto,
-            @RequestParam(name = "scope", defaultValue = "EVENT_ONLY") EventUpdateScope updateScope
+            @RequestParam(name = "scope", defaultValue = "EVENT_ONLY") EventUpdateScope updateScope,
+            @RequestParam(name = "futurePeriodWeeks", defaultValue = "1") long futurePeriodWeeks
     ) {
-        return ResponseEntity.ok(adminEventService.updateEvent(id, requestDto, updateScope));
+        return ResponseEntity.ok(adminEventService.updateEvent(id, requestDto, updateScope, futurePeriodWeeks));
     }
 
     @DeleteMapping("/{id}")
@@ -77,6 +77,6 @@ public class AdminEventController {
     @GetMapping("/{id}")
     @Operation(summary = "Get event details", description = "Retrieves detailed information about a specific event.")
     public ResponseEntity<EventDto> getEventDetails(@PathVariable Long id) {
-        return ResponseEntity.ok(adminEventService.getEventById(id));
+        return ResponseEntity.ok(adminEventService.getEventDtoById(id));
     }
 }

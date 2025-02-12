@@ -20,8 +20,8 @@ public class ClientEventController {
     @GetMapping("/occurrences")
     @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter.")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
-            @RequestParam(defaultValue = "upcoming") OccurrenceEventScope scope,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "upcoming", required = false) OccurrenceEventScope scope,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(clientEventService.getOccurrences(scope, page, size));
