@@ -46,6 +46,8 @@ public class Event {
     @JoinColumn(name = "event_type_id", nullable = false)
     private EventType eventType;
 
+    private String eventTypeName;
+
     private int maxParticipants;
 
     @ManyToOne(fetch = FetchType.LAZY)

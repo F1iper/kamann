@@ -3,12 +3,21 @@ package pl.kamann.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
+import pl.kamann.dtos.EventLightDto;
 import pl.kamann.dtos.EventResponseDto;
+import pl.kamann.dtos.event.CreateEventRequest;
+import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
+import pl.kamann.repositories.EventTypeRepository;
+import pl.kamann.utility.EntityLookupService;
 
 @Component
 @RequiredArgsConstructor
 public class EventMapper {
+
+    private final EntityLookupService lookupService;
+    private final EventTypeRepository eventTypeRepository;
 
     public EventDto toDto(Event event) {
         int currentParticipants = event.getOccurrences() != null
@@ -22,28 +31,14 @@ public class EventMapper {
                 .description(event.getDescription())
                 .start(event.getStart())
                 .durationMinutes(event.getDurationMinutes())
-                .rrule(event.getRrule())
                 .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
                 .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
                 .instructorFullName(event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null)
                 .maxParticipants(event.getMaxParticipants())
                 .status(event.getStatus())
                 .currentParticipants(currentParticipants)
-                .eventTypeId(event.getEventType() != null ? event.getEventType().getId() : null)
+                .eventTypeId(event.getEventType().getId())
                 .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
-                .build();
-    }
-
-    public Event toEntity(EventDto dto) {
-        return Event.builder()
-                .id(dto.id())
-                .title(dto.title())
-                .description(dto.description())
-                .start(dto.start())
-                .durationMinutes(dto.durationMinutes())
-                .rrule(dto.rrule())
-                .status(dto.status())
-                .maxParticipants(dto.maxParticipants())
                 .build();
     }
 
@@ -57,6 +52,42 @@ public class EventMapper {
                 event.getRrule(),
                 event.getInstructor() != null ? event.getInstructor().getId() : null,
                 event.getMaxParticipants()
+        );
+    }
+
+    public CreateEventResponse toCreateEventResponse(Event event) {
+        return new CreateEventResponse(
+                event.getId(),
+                event.getTitle(),
+                event.getStart(),
+                event.getDurationMinutes(),
+                event.getStatus()
+        );
+    }
+
+    public Event toEntity(CreateEventRequest request) {
+        return Event.builder()
+                .title(request.title())
+                .description(request.description())
+                .start(request.start())
+                .durationMinutes(request.durationMinutes())
+                .rrule(request.rrule())
+                .createdBy(lookupService.getLoggedInUser())
+                .instructor(lookupService.findUserById(request.instructorId()))
+                .maxParticipants(request.maxParticipants())
+                .eventTypeName(request.eventTypeName())
+                .status(EventStatus.SCHEDULED)
+                .build();
+    }
+
+    public EventLightDto toLightDto(Event event) {
+        return new EventLightDto(
+                event.getId(),
+                event.getTitle(),
+                event.getStart(),
+                event.getDurationMinutes(),
+                event.getStatus(),
+                event.getEventType() != null ? event.getEventType().getName() : null
         );
     }
 }

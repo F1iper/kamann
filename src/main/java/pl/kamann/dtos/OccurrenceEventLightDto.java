@@ -8,5 +8,6 @@ public record OccurrenceEventLightDto(
     LocalDateTime start,
     LocalDateTime end,
     String title,
-    String instructorName
+    String instructorName,
+    String eventTypeName
 ) {}

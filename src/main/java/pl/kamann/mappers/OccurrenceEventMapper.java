@@ -32,7 +32,7 @@ public class OccurrenceEventMapper {
     public OccurrenceEventLightDto toLightDto(OccurrenceEvent event) {
         String instructorName = event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null;
         LocalDateTime end = event.getStart().plusMinutes(event.getDurationMinutes());
-        return new OccurrenceEventLightDto(event.getId(), event.getEvent().getId(), event.getStart(), end, event.getEvent().getTitle(), instructorName);
+        return new OccurrenceEventLightDto(event.getId(), event.getEvent().getId(), event.getStart(), end, event.getEvent().getTitle(), instructorName, event.getEvent().getEventTypeName());
     }
 
 }

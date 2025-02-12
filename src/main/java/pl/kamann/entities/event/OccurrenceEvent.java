@@ -2,6 +2,7 @@ package pl.kamann.entities.event;
 
 import jakarta.persistence.*;
 import lombok.*;
+import pl.kamann.dtos.OccurrenceEventScope;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.attendance.Attendance;
 
@@ -50,6 +51,9 @@ public class OccurrenceEvent implements Serializable {
 
     @Column(nullable = false)
     private int seriesIndex;
+
+    @Enumerated(EnumType.STRING)
+    private OccurrenceEventScope scope;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id")
