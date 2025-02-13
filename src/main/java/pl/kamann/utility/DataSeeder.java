@@ -52,7 +52,7 @@ public class DataSeeder {
     private OccurrenceEventRepository occurrenceEventRepository;
 
     @Autowired
-    private EventValidationService eventValidationService;
+    private EventValidationService eventCreateValidationService;
 
     @Autowired
     private AttendanceRepository attendanceRepository;
@@ -74,6 +74,7 @@ public class DataSeeder {
         seedEvents();
         seedAttendancesTransactional();
     }
+
     private void createRoles() {
         roleRepository.saveAll(Arrays.asList(adminRole, instructorRole, clientRole));
     }

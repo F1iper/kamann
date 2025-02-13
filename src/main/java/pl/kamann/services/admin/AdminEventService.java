@@ -14,25 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.EventResponse;
 import pl.kamann.dtos.EventUpdateRequest;
-import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
-import pl.kamann.entities.event.EventUpdateScope;
 import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
-import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
 import pl.kamann.services.EventTypeService;
 import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
-import pl.kamann.services.OccurrenceValidationService;
 import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
 import pl.kamann.utility.PaginationUtil;
@@ -42,7 +37,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,8 +46,6 @@ public class AdminEventService {
     private final EventMapper eventMapper;
 
     private final OccurrenceEventRepository occurrenceEventRepository;
-    private final OccurrenceEventMapper occurrenceEventMapper;
-    private final OccurrenceValidationService occurrenceValidationService;
 
     private final EventTypeService eventTypeService;
     private final EventValidationService eventValidationService;
@@ -64,17 +56,15 @@ public class AdminEventService {
 
     @Transactional
     public CreateEventResponse createEvent(CreateEventRequest request) {
-        eventValidationService.validate(request);
+        eventValidationService.validateCreate(request);
 
         Event event = eventMapper.toEntity(request);
-
         event.setCreatedBy(entityLookupService.findUserById(request.createdById()));
 
         EventType eventType = eventTypeService.findOrCreateEventType(request.eventTypeName());
         event.setEventType(eventType);
 
         event = eventRepository.save(event);
-
         occurrenceEventRepository.saveAll(generateOccurrences(event));
 
         return eventMapper.toCreateEventResponse(event);
@@ -90,15 +80,15 @@ public class AdminEventService {
     }
 
     @Transactional
-    public EventResponse updateEvent(Long id, EventUpdateRequest requestDto, EventUpdateScope scope, Long futurePeriodWeeks) {
+    public EventDto updateEvent(Long id, EventUpdateRequest requestDto) {
         Event event = entityLookupService.findEventById(id);
 
-        eventValidationService.validateEventForUpdate(event);
+        eventValidationService.validateUpdate(requestDto, event.getStart());
 
         updateEventFields(event, requestDto);
         eventRepository.save(event);
-        updateOccurrences(event, scope, futurePeriodWeeks);
-        return eventMapper.toResponseDto(event);
+
+        return eventMapper.toDto(event);
     }
 
     @Transactional
@@ -115,16 +105,31 @@ public class AdminEventService {
     }
 
     @Transactional
-    public void cancelEvent(Long id) {
+    public void cancelEvent(Long id, EventStatus eventStatus) {
         Event event = entityLookupService.findEventById(id);
         LocalDateTime now = LocalDateTime.now();
 
-        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findByEventAndStartAfter(event, now);
-        futureOccurrences.forEach(occ -> occ.setCanceled(true));
+        if (event.getStatus() == EventStatus.CANCELED) {
+            throw new ApiException("Event is already canceled.",
+                    HttpStatus.BAD_REQUEST,
+                    EventCodes.EVENT_ALREADY_CANCELED.name());
+        }
 
+        event.setStatus(eventStatus);
+        event.setUpdatedAt(LocalDateTime.now());
+
+        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findByEventAndStartAfter(event, now);
+        futureOccurrences.forEach(occ -> {
+            occ.setCanceled(true);
+            occ.setEventStatus(eventStatus);
+        });
+
+        eventRepository.save(event);
         occurrenceEventRepository.saveAll(futureOccurrences);
+
         notificationService.notifyParticipants(event);
     }
+
 
     private void updateEventFields(Event event, EventUpdateRequest requestDto) {
         event.setTitle(requestDto.title());
@@ -136,26 +141,22 @@ public class AdminEventService {
         event.setInstructor(requestDto.instructorId() != null ? entityLookupService.findUserById(requestDto.instructorId()) : null);
     }
 
-    private void updateOccurrences(Event event, EventUpdateScope scope, long futurePeriodWeeks) {
-        if (scope == EventUpdateScope.EVENT_ONLY) {
-            return;
-        }
+//    private void updateOccurrences(Event event, long futurePeriodWeeks) {
+//        List<OccurrenceEvent> occurrences = occurrenceEventRepository.findOccurrencesByEventId(event.getId());
+//
+//        List<OccurrenceEvent> occurrencesToUpdate = occurrences.stream()
+//                .filter(occurrence -> occurrenceValidationService.isOccurrenceUpdatable(occurrence, futurePeriodWeeks))
+//                .peek(occurrence -> updateOccurrenceFields(occurrence, event))
+//                .collect(Collectors.toList());
+//
+//        occurrenceEventRepository.saveAll(occurrencesToUpdate);
+//    }
 
-        List<OccurrenceEvent> occurrences = occurrenceEventRepository.findOccurrencesByEventId(event.getId());
-
-        List<OccurrenceEvent> occurrencesToUpdate = occurrences.stream()
-                .filter(occurrence -> occurrenceValidationService.isOccurrenceUpdatable(occurrence, scope, futurePeriodWeeks))
-                .peek(occurrence -> updateOccurrenceFields(occurrence, event))
-                .collect(Collectors.toList());
-
-        occurrenceEventRepository.saveAll(occurrencesToUpdate);
-    }
-
-    private void updateOccurrenceFields(OccurrenceEvent occ, Event event) {
-        occ.setDurationMinutes(event.getDurationMinutes());
-        occ.setMaxParticipants(event.getMaxParticipants());
-        occ.setInstructor(event.getInstructor());
-    }
+//    private void updateOccurrenceFields(OccurrenceEvent occ, Event event) {
+//        occ.setDurationMinutes(event.getDurationMinutes());
+//        occ.setMaxParticipants(event.getMaxParticipants());
+//        occ.setInstructor(event.getInstructor());
+//    }
 
     public List<OccurrenceEvent> generateOccurrences(Event event) {
         List<OccurrenceEvent> occurrences = new ArrayList<>();
@@ -174,6 +175,7 @@ public class AdminEventService {
             RecurrenceRuleIterator iterator = rule.iterator(dtStart);
 
             // todo: At the moment we are using a limit to avoid infinite loops if the RRULE lacks an UNTIL or COUNT
+            //  system variable might be used
             int maxInstances = 25;
             int seriesIndex = 1;
             while (iterator.hasNext() && maxInstances-- > 0) {
@@ -207,25 +209,9 @@ public class AdminEventService {
                 .build();
     }
 
-    public PaginatedResponseDto<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
-        Pageable validatedPageable = paginationService.validatePageable(pageable);
-        Page<Event> eventPage = eventRepository.findAllByInstructorId(instructorId, validatedPageable);
-
-        return new PaginatedResponseDto<>(
-                eventPage.map(eventMapper::toDto).getContent(),
-                new PaginationMetaData(eventPage.getTotalPages(), eventPage.getTotalElements())
-        );
-    }
-
     public EventDto getEventDtoById(Long eventId) {
         Event eventById = entityLookupService.findEventById(eventId);
 
         return eventMapper.toDto(eventById);
-    }
-
-    public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
-        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.getReferenceById(occurrenceId);
-
-        return occurrenceEventMapper.toOccurrenceEventDto(occurrenceEvent);
     }
 }

@@ -49,6 +49,8 @@ public class OccurrenceEvent implements Serializable {
 
     private int maxParticipants;
 
+    private EventStatus eventStatus;
+
     @Column(nullable = false)
     private int seriesIndex;
 
