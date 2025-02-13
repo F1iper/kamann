@@ -51,6 +51,15 @@ public class ClientEventService {
         return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toLightDto);
     }
 
+    public PaginatedResponseDto<EventDto> getEventsByType(String eventType, int page, int size) {
+        String capitalizedEventType = eventType.substring(0, 1).toUpperCase() + eventType.substring(1).toLowerCase();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
+        pageable = paginationService.validatePageable(pageable);
+
+        Page<Event> pagedEvent = eventRepository.findAllByEventTypeName(capitalizedEventType, pageable);
+        return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toDto);
+    }
+
     public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
         OccurrenceEvent occurrenceEvent = occurrenceEventRepository.findById(occurrenceId)
                 .orElseThrow(() -> new ApiException(
@@ -77,13 +86,5 @@ public class ClientEventService {
         Page<Event> pagedEvents = eventRepository.findAll(pageable);
 
         return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toLightDto);
-    }
-
-    public PaginatedResponseDto<EventDto> getEventsByType(String eventType, Pageable pageable){
-        pageable = paginationService.validatePageable(pageable);
-
-        Page<Event> pagedEvent = eventRepository.findAllByEventTypeName(eventType, pageable);
-
-        return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toDto);
     }
 }
