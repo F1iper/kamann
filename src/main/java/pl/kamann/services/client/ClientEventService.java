@@ -78,4 +78,12 @@ public class ClientEventService {
 
         return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toLightDto);
     }
+
+    public PaginatedResponseDto<EventDto> getEventsByType(String eventType, Pageable pageable){
+        pageable = paginationService.validatePageable(pageable);
+
+        Page<Event> pagedEvent = eventRepository.findAllByEventTypeName(eventType, pageable);
+
+        return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toDto);
+    }
 }
