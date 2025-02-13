@@ -4,21 +4,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventLightDto;
-import pl.kamann.dtos.EventResponseDto;
+import pl.kamann.dtos.EventResponse;
 import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
-import pl.kamann.repositories.EventTypeRepository;
 import pl.kamann.utility.EntityLookupService;
+
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
 public class EventMapper {
 
     private final EntityLookupService lookupService;
-    private final EventTypeRepository eventTypeRepository;
 
     public EventDto toDto(Event event) {
         int currentParticipants = event.getOccurrences() != null
@@ -33,7 +33,6 @@ public class EventMapper {
                 .start(event.getStart())
                 .durationMinutes(event.getDurationMinutes())
                 .updatedAt(event.getUpdatedAt())
-                .rrule(event.getRrule())
                 .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
                 .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
                 .instructorFullName(event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null)
@@ -42,12 +41,12 @@ public class EventMapper {
                 .currentParticipants(currentParticipants)
                 .eventTypeId(event.getEventType().getId())
                 .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
-                .createdAt(event.getCreatedAt())
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 
-    public EventResponseDto toResponseDto(Event event) {
-        return new EventResponseDto(
+    public EventResponse toResponseDto(Event event) {
+        return new EventResponse(
                 event.getId(),
                 event.getTitle(),
                 event.getDescription(),
@@ -108,5 +107,4 @@ public class EventMapper {
                 updatedEvent.getMaxParticipants()
         );
     }
-
 }

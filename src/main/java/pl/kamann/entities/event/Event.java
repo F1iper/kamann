@@ -57,7 +57,6 @@ public class Event {
     private AppUser instructor;
 
     @CreationTimestamp
-    @Column(updatable = false)
     LocalDateTime createdAt;
 
     @UpdateTimestamp
