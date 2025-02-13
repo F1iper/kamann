@@ -6,7 +6,6 @@ import pl.kamann.entities.event.Event;
 @Service
 public class NotificationService {
     public void notifyParticipants(Event event) {
-        // todo: for future implementation
         System.out.println("Notifying participants of event: " + event.getTitle());
     }
 }

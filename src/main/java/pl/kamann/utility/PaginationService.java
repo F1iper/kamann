@@ -11,12 +11,14 @@ public class PaginationService {
     private static final int MAX_PAGE_SIZE = 100;
 
     public Pageable validatePageable(Pageable pageable) {
-        int pageSize = pageable.getPageSize() > 0 ? pageable.getPageSize() : DEFAULT_PAGE_SIZE;
-        pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
+        int pageNumber = pageable.getPageNumber();
+        int pageSize = pageable.getPageSize();
 
-        int pageNumber = Math.max(0, pageable.getPageNumber());
+        pageSize = (pageSize > 0) ? Math.min(pageSize, MAX_PAGE_SIZE) : DEFAULT_PAGE_SIZE;
 
-        Sort sort = pageable.getSort() == null ? Sort.unsorted() : pageable.getSort();
+        pageNumber = (pageNumber <= 0) ? 0 : pageNumber - 1;
+
+        Sort sort = (pageable.getSort() != null && pageable.getSort().isSorted()) ? pageable.getSort() : Sort.unsorted();
 
         return PageRequest.of(pageNumber, pageSize, sort);
     }

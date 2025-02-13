@@ -1,145 +1,202 @@
 package pl.kamann.services.admin;
 
 import lombok.RequiredArgsConstructor;
+import org.dmfs.rfc5545.DateTime;
+import org.dmfs.rfc5545.recur.RecurrenceRule;
+import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.EventCodes;
-import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.EventDto;
+import pl.kamann.dtos.EventResponseDto;
+import pl.kamann.dtos.EventUpdateRequestDto;
 import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventStatus;
+import pl.kamann.entities.event.EventUpdateScope;
+import pl.kamann.entities.event.OccurrenceEvent;
 import pl.kamann.mappers.EventMapper;
 import pl.kamann.repositories.EventRepository;
+import pl.kamann.repositories.OccurrenceEventRepository;
+import pl.kamann.services.EventValidationService;
 import pl.kamann.services.NotificationService;
 import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AdminEventService {
 
     private final EventRepository eventRepository;
+    private final OccurrenceEventRepository occurrenceEventRepository;
     private final EventMapper eventMapper;
-
+    private final EventValidationService eventValidationService;
     private final NotificationService notificationService;
     private final EntityLookupService entityLookupService;
     private final PaginationService paginationService;
 
-
+    @Transactional
     public EventDto createEvent(EventDto eventDto) {
-        if (eventDto.createdById() == null) {
-            throw new ApiException(
-                    "Created by ID cannot be null",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
+        eventValidationService.validate(eventDto);
 
-        if (eventDto.instructorId() == null) {
-            throw new ApiException(
-                    "Instructor ID cannot be null",
-                    HttpStatus.BAD_REQUEST,
-                    StatusCodes.INVALID_INPUT.name()
-            );
-        }
+        Event event = eventMapper.toEntity(eventDto);
+        event.setCreatedBy(entityLookupService.findUserById(eventDto.createdById()));
+        event.setEventType(entityLookupService.findEventTypeById(eventDto.eventTypeId()));
 
-        var createdBy = entityLookupService.findUserById(eventDto.createdById());
-        var instructor = entityLookupService.findUserById(eventDto.instructorId());
-        var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
+        event = eventRepository.save(event);
+        occurrenceEventRepository.saveAll(generateOccurrences(event));
 
-        var event = eventMapper.toEntity(eventDto);
-        event.setCreatedBy(createdBy);
-        event.setInstructor(instructor);
-        event.setEventType(eventType);
-
-        return eventMapper.toDto(eventRepository.save(event));
+        return eventMapper.toDto(event);
     }
 
-    public EventDto updateEvent(Long eventId, EventDto eventDto) {
-        var existingEvent = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found",
-                        HttpStatus.NOT_FOUND,
-                        EventCodes.EVENT_NOT_FOUND.name()
-                ));
-
-        var instructor = entityLookupService.findUserById(eventDto.instructorId());
-        var eventType = entityLookupService.findEventTypeById(eventDto.eventTypeId());
-
-        eventMapper.updateEventFromDto(existingEvent, eventDto);
-        existingEvent.setInstructor(instructor);
-        existingEvent.setEventType(eventType);
-
-        return eventMapper.toDto(eventRepository.save(existingEvent));
+    @Transactional
+    public EventResponseDto updateEvent(Long id, EventUpdateRequestDto requestDto, EventUpdateScope scope) {
+        Event event = findEventById(id);
+        updateEventFields(event, requestDto);
+        eventRepository.save(event);
+        updateOccurrences(event, scope);
+        return eventMapper.toResponseDto(event);
     }
 
+    @Transactional
     public void deleteEvent(Long id, boolean force) {
-        var event = eventRepository.findById(id)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found",
-                        HttpStatus.NOT_FOUND,
-                        EventCodes.EVENT_NOT_FOUND.name()
-                ));
+        Event event = findEventById(id);
 
-        if (!force && !event.getAttendances().isEmpty()) {
-            throw new ApiException(
-                    "Cannot delete event with participants unless forced",
-                    HttpStatus.BAD_REQUEST,
-                    EventCodes.EVENT_HAS_PARTICIPANTS.name()
-            );
+        if (!force && occurrenceEventRepository.existsByEvent(event)) {
+            throw new ApiException("Cannot delete event with occurrences unless forced",
+                    HttpStatus.BAD_REQUEST, EventCodes.EVENT_HAS_OCCURRENCES.name());
         }
 
+        occurrenceEventRepository.deleteByEvent(event);
         eventRepository.delete(event);
     }
 
-    public Page<EventDto> listAllEvents(Pageable pageable) {
-        Pageable validatedPageable = paginationService.validatePageable(pageable);
-        Page<Event> events = eventRepository.findAll(validatedPageable);
+    @Transactional
+    public void cancelEvent(Long id) {
+        Event event = findEventById(id);
+        LocalDateTime now = LocalDateTime.now();
 
-        if (events.isEmpty() && validatedPageable.getPageNumber() > 0) {
-            throw new ApiException(
-                    "No results for the requested page",
-                    HttpStatus.NOT_FOUND,
-                    StatusCodes.NO_RESULTS.name()
-            );
-        }
+        List<OccurrenceEvent> futureOccurrences = occurrenceEventRepository.findByEventAndStartAfter(event, now);
+        futureOccurrences.forEach(occ -> occ.setCanceled(true));
 
-        return events.map(eventMapper::toDto);
+        occurrenceEventRepository.saveAll(futureOccurrences);
+        notificationService.notifyParticipants(event);
     }
 
-    public Page<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
-        var instructor = entityLookupService.findUserById(instructorId);
-
+    public PaginatedResponseDto<EventDto> listAllEvents(Pageable pageable) {
         Pageable validatedPageable = paginationService.validatePageable(pageable);
+        Page<Event> events = eventRepository.findAll(validatedPageable);
+        return new PaginatedResponseDto<>(
+                events.map(eventMapper::toDto).getContent(),
+                new PaginationMetaData(events.getTotalPages(), events.getTotalElements())
+        );
+    }
 
-        return eventRepository.findByInstructor(instructor, validatedPageable)
-                .map(eventMapper::toDto);
+    private void updateEventFields(Event event, EventUpdateRequestDto requestDto) {
+        event.setTitle(requestDto.title());
+        event.setDescription(requestDto.description());
+        event.setStart(requestDto.start());
+        event.setDurationMinutes(requestDto.durationMinutes());
+        event.setRrule(requestDto.rrule());
+        event.setMaxParticipants(requestDto.maxParticipants());
+        event.setInstructor(requestDto.instructorId() != null ? entityLookupService.findUserById(requestDto.instructorId()) : null);
+    }
+
+    private void updateOccurrences(Event event, EventUpdateScope scope) {
+        if (scope == EventUpdateScope.EVENT_ONLY) return;
+
+        LocalDateTime now = LocalDateTime.now();
+        List<OccurrenceEvent> occurrences = occurrenceEventRepository.findAllByEventId(event.getId());
+
+        occurrences.stream()
+                .filter(occ -> scope == EventUpdateScope.ALL_OCCURRENCES || occ.getStart().isAfter(now))
+                .forEach(occ -> updateOccurrenceFields(occ, event));
+
+        occurrenceEventRepository.saveAll(occurrences);
+    }
+
+    private void updateOccurrenceFields(OccurrenceEvent occ, Event event) {
+        occ.setDurationMinutes(event.getDurationMinutes());
+        occ.setMaxParticipants(event.getMaxParticipants());
+        occ.setInstructor(event.getInstructor());
+    }
+
+    public List<OccurrenceEvent> generateOccurrences(Event event) {
+        if (event.getRrule() == null || event.getRrule().isEmpty()) {
+            return List.of(createOccurrence(event, event.getStart(), 0));
+        }
+
+        List<OccurrenceEvent> occurrences = new ArrayList<>();
+        try {
+            RecurrenceRule rule = new RecurrenceRule(event.getRrule());
+            DateTime start = new DateTime(event.getStart().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            RecurrenceRuleIterator iterator = rule.iterator(start);
+
+            int maxInstances = 25;
+            int seriesIndex = 0;
+            while (iterator.hasNext() && maxInstances-- > 0) {
+                DateTime nextDateTime = iterator.nextDateTime();
+                LocalDateTime dateTime = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(nextDateTime.getTimestamp()), ZoneId.systemDefault()
+                );
+
+                occurrences.add(createOccurrence(event, dateTime, seriesIndex++));
+            }
+        } catch (Exception e) {
+            throw new ApiException("Failed to generate occurrences: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR, EventCodes.OCCURRENCE_GENERATION_FAILED.name());
+        }
+
+        return occurrences;
+    }
+
+    private OccurrenceEvent createOccurrence(Event event, LocalDateTime start, int seriesIndex) {
+        return OccurrenceEvent.builder()
+                .event(event)
+                .start(start)
+                .createdBy(event.getCreatedBy())
+                .durationMinutes(event.getDurationMinutes())
+                .maxParticipants(event.getMaxParticipants())
+                .instructor(event.getInstructor())
+                .seriesIndex(seriesIndex)
+                .build();
+    }
+
+    private Event findEventById(Long id) {
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Event not found with ID: " + id,
+                        HttpStatus.NOT_FOUND, EventCodes.EVENT_NOT_FOUND.name()));
+    }
+
+
+    public PaginatedResponseDto<EventDto> listEventsByInstructor(Long instructorId, Pageable pageable) {
+        Pageable validatedPageable = paginationService.validatePageable(pageable);
+        Page<Event> eventPage = eventRepository.findAllByInstructorId(instructorId, validatedPageable);
+
+        return new PaginatedResponseDto<>(
+                eventPage.map(eventMapper::toDto).getContent(),
+                new PaginationMetaData(eventPage.getTotalPages(), eventPage.getTotalElements())
+        );
     }
 
     public EventDto getEventById(Long eventId) {
-        var event = eventRepository.findById(eventId)
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ApiException(
                         "Event not found with ID: " + eventId,
                         HttpStatus.NOT_FOUND,
                         EventCodes.EVENT_NOT_FOUND.name()
                 ));
+
         return eventMapper.toDto(event);
-    }
-
-    public void cancelEvent(Long id) {
-        var event = eventRepository.findById(id)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found",
-                        HttpStatus.NOT_FOUND,
-                        EventCodes.EVENT_NOT_FOUND.name()
-                ));
-
-        event.setStatus(EventStatus.CANCELED);
-        eventRepository.save(event);
-
-        notificationService.notifyParticipants(event);
     }
 }

@@ -27,7 +27,7 @@ public class ClientAttendanceController {
     @Operation(summary = "Cancel attendance", description = "Cancels the client's attendance for the specified event.")
     public ResponseEntity<String> cancelAttendance(@PathVariable Long eventId) {
         var attendance = clientAttendanceService.cancelAttendance(eventId);
-        return ResponseEntity.ok("Attendance for event: " + attendance.getEvent().getTitle() + " successfully cancelled.");
+        return ResponseEntity.ok("Attendance for event: " + attendance.getOccurrenceEvent().getEvent().getTitle() + " successfully cancelled.");
     }
 
     @GetMapping("/summary")

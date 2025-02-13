@@ -3,7 +3,7 @@ package pl.kamann.entities.attendance;
 import jakarta.persistence.*;
 import lombok.*;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.OccurrenceEvent;
 
 import java.time.LocalDateTime;
 
@@ -24,8 +24,8 @@ public class Attendance {
     private AppUser user;
 
     @ManyToOne
-    @JoinColumn(name = "event_id", nullable = false)
-    private Event event;
+    @JoinColumn(name = "occurrence_event_id", nullable = false)
+    private OccurrenceEvent occurrenceEvent;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
