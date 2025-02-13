@@ -38,15 +38,13 @@ public class ClientEventController {
         return ResponseEntity.ok(clientEventService.getOccurrences(filter, pageable));
     }
 
-    @GetMapping("/get-event-by-type")
+    @GetMapping("event-types/{eventType}/events")
     @Operation(summary = "Get events by event type", description = "Retrieves paginated events based on type")
     public ResponseEntity<PaginatedResponseDto<EventDto>> getEventsByType(
             @RequestParam String  eventType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        String capitalizedEventType = eventType.substring(0, 1).toUpperCase() + eventType.substring(1).toLowerCase();
-        Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
-        return ResponseEntity.ok(clientEventService.getEventsByType(capitalizedEventType, pageable));
+        return ResponseEntity.ok(clientEventService.getEventsByType(eventType, page, size));
     }
 }

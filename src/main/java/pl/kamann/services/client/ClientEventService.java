@@ -2,7 +2,9 @@ package pl.kamann.services.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.filter.OccurrenceFilter;
 import pl.kamann.config.pagination.PaginatedResponseDto;
@@ -42,10 +44,15 @@ public class ClientEventService {
         return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toLightDto);
     }
 
-    public PaginatedResponseDto<EventDto> getEventsByType(String  eventType, Pageable pageable){
+    public PaginatedResponseDto<EventDto> getEventsByType(String  eventType, int page, int size){
+
+        String capitalizedEventType = eventType.substring(0, 1).toUpperCase() + eventType.substring(1).toLowerCase();
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
+
         pageable = paginationService.validatePageable(pageable);
 
-        Page<Event> pagedEvent = eventRepository.findAllByEventTypeName(eventType, pageable);
+        Page<Event> pagedEvent = eventRepository.findAllByEventTypeName(capitalizedEventType, pageable);
 
         return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toDto);
     }
