@@ -41,22 +41,22 @@ public class EventMapper {
                 .currentParticipants(currentParticipants)
                 .eventTypeId(event.getEventType().getId())
                 .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
-                .createdAt(LocalDateTime.now())
+                .createdAt(event.getCreatedAt())
                 .build();
     }
 
-    public EventResponse toResponseDto(Event event) {
-        return new EventResponse(
-                event.getId(),
-                event.getTitle(),
-                event.getDescription(),
-                event.getStart(),
-                event.getDurationMinutes(),
-                event.getRrule(),
-                event.getInstructor() != null ? event.getInstructor().getId() : null,
-                event.getMaxParticipants()
-        );
-    }
+//    public EventResponse toResponseDto(Event event) {
+//        return new EventResponse(
+//                event.getId(),
+//                event.getTitle(),
+//                event.getDescription(),
+//                event.getStart(),
+//                event.getDurationMinutes(),
+//                event.getRrule(),
+//                event.getInstructor() != null ? event.getInstructor().getId() : null,
+//                event.getMaxParticipants()
+//        );
+//    }
 
     public CreateEventResponse toCreateEventResponse(Event event) {
         return new CreateEventResponse(
