@@ -1,8 +1,11 @@
 package pl.kamann.dtos;
 
+import lombok.Builder;
+
 import java.time.LocalDateTime;
 
-public record EventResponseDto(
+@Builder
+public record EventResponse(
     Long id,
     String title,
     String description,

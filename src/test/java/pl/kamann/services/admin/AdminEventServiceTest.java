@@ -1,33 +1,5 @@
 package pl.kamann.services.admin;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import pl.kamann.dtos.EventResponseDto;
-import pl.kamann.dtos.EventUpdateRequestDto;
-import pl.kamann.entities.event.EventUpdateScope;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventStatus;
-import pl.kamann.entities.event.EventType;
-import pl.kamann.entities.event.OccurrenceEvent;
-import pl.kamann.mappers.EventMapper;
-import pl.kamann.repositories.EventRepository;
-import pl.kamann.repositories.OccurrenceEventRepository;
-import pl.kamann.services.EventValidationService;
-import pl.kamann.services.NotificationService;
-import pl.kamann.services.admin.AdminEventService;
-import pl.kamann.utility.EntityLookupService;
-import pl.kamann.utility.PaginationService;
-
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 class AdminEventServiceTest {
 
 //    private AdminEventService adminEventService;

@@ -26,6 +26,10 @@ public record EventDto(
         @NotNull(message = "Creator ID cannot be null")
         Long createdById,
 
+        LocalDateTime createdAt,
+
+        LocalDateTime updatedAt,
+
         Long instructorId,
 
         String instructorFullName,

@@ -9,11 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.EventResponseDto;
-import pl.kamann.dtos.EventUpdateRequestDto;
+import pl.kamann.dtos.EventUpdateRequest;
+import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
-import pl.kamann.entities.event.EventUpdateScope;
+import pl.kamann.services.EventUpdateService;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
@@ -23,6 +23,7 @@ import pl.kamann.services.admin.AdminEventService;
 public class AdminEventController {
 
     private final AdminEventService adminEventService;
+    private final EventUpdateService eventUpdateService;
 
     @GetMapping("/events")
     @Operation(summary = "List events", description = "Admins can list all events, optionally filtering by instructor ID.")
@@ -39,15 +40,13 @@ public class AdminEventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminEventService.createEvent(request));
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Update an event", description = "Updates event details based on the given scope.")
-    public ResponseEntity<EventResponseDto> updateEvent(
+    @PatchMapping("/{id}")
+    @Operation(summary = "Patch event details", description = "Updates event details partially – only fields provided in the request are updated.")
+    public ResponseEntity<EventUpdateResponse> patchEventDetails(
             @PathVariable Long id,
-            @Valid @RequestBody EventUpdateRequestDto requestDto,
-            @RequestParam(name = "scope", defaultValue = "EVENT_ONLY") EventUpdateScope updateScope,
-            @RequestParam(name = "futurePeriodWeeks", defaultValue = "1") long futurePeriodWeeks
+            @RequestBody EventUpdateRequest requestDto
     ) {
-        return ResponseEntity.ok(adminEventService.updateEvent(id, requestDto, updateScope, futurePeriodWeeks));
+        return ResponseEntity.ok(eventUpdateService.updateEventDetails(id, requestDto));
     }
 
     @DeleteMapping("/{id}")
