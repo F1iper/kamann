@@ -39,7 +39,7 @@ public class ClientEventController {
     @Operation(summary = "Get events by event type", description = "Retrieves paginated events based on type")
     public ResponseEntity<PaginatedResponseDto<EventDto>> getEventsByType(
             @RequestParam String eventType,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(clientEventService.getEventsByType(eventType, page, size));
