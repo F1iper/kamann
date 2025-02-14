@@ -23,10 +23,12 @@ public record EventDto(
         @Positive(message = "Duration must be positive")
         Integer durationMinutes,
 
-        String rrule,
-
         @NotNull(message = "Creator ID cannot be null")
         Long createdById,
+
+        LocalDateTime createdAt,
+
+        LocalDateTime updatedAt,
 
         Long instructorId,
 
@@ -46,19 +48,4 @@ public record EventDto(
 
         String eventTypeName
 ) {
-        public EventDto {
-                if (rrule != null && !rrule.isEmpty()) {
-                        validateRRule(rrule);
-                }
-        }
-
-        private void validateRRule(String rrule) {
-                if (!rrule.startsWith("FREQ=")) {
-                        throw new IllegalArgumentException("RRULE must start with FREQ=");
-                }
-        }
-
-        public LocalDateTime getEnd() {
-                return start.plusMinutes(durationMinutes);
-        }
 }

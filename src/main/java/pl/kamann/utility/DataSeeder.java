@@ -52,7 +52,7 @@ public class DataSeeder {
     private OccurrenceEventRepository occurrenceEventRepository;
 
     @Autowired
-    private EventValidationService eventValidationService;
+    private EventValidationService eventCreateValidationService;
 
     @Autowired
     private AttendanceRepository attendanceRepository;
@@ -74,6 +74,7 @@ public class DataSeeder {
         seedEvents();
         seedAttendancesTransactional();
     }
+
     private void createRoles() {
         roleRepository.saveAll(Arrays.asList(adminRole, instructorRole, clientRole));
     }
@@ -206,6 +207,7 @@ public class DataSeeder {
                 .durationMinutes(90)
                 .maxParticipants(20)
                 .eventType(danceType)
+                .eventTypeName(danceType.getName())
                 .createdBy(admin)
                 .instructor(instructor)
                 .status(EventStatus.SCHEDULED)
@@ -226,6 +228,7 @@ public class DataSeeder {
                 .durationMinutes(90)
                 .maxParticipants(25)
                 .eventType(danceType)
+                .eventTypeName(danceType.getName())
                 .createdBy(admin)
                 .instructor(instructor)
                 .status(EventStatus.COMPLETED)
@@ -245,6 +248,7 @@ public class DataSeeder {
                 .durationMinutes(100)
                 .maxParticipants(30)
                 .eventType(danceType)
+                .eventTypeName(danceType.getName())
                 .createdBy(admin)
                 .instructor(instructor)
                 .status(EventStatus.COMPLETED)
@@ -264,6 +268,7 @@ public class DataSeeder {
                 .durationMinutes(100)
                 .maxParticipants(30)
                 .eventType(danceType)
+                .eventTypeName(danceType.getName())
                 .createdBy(admin)
                 .instructor(instructor)
                 .status(EventStatus.COMPLETED)
@@ -285,6 +290,7 @@ public class DataSeeder {
                 .durationMinutes(60)
                 .maxParticipants(20)
                 .eventType(yogaType)
+                .eventTypeName(yogaType.getName())
                 .createdBy(admin)
                 .instructor(instructor)
                 .status(EventStatus.SCHEDULED)
@@ -305,6 +311,7 @@ public class DataSeeder {
                 .durationMinutes(75)
                 .maxParticipants(12)
                 .eventType(poleDanceType)
+                .eventTypeName(poleDanceType.getName())
                 .createdBy(admin)
                 .instructor(instructor)
                 .status(EventStatus.SCHEDULED)
@@ -338,7 +345,7 @@ public class DataSeeder {
         List<Attendance> attendances = attendanceRepository.findAll();
         Optional<Event> eventOpt = eventRepository.findByTitle(eventTitle);
         eventOpt.ifPresent(event -> {
-            var occurrences = occurrenceEventRepository.findAllByEventId(event.getId());
+            var occurrences = occurrenceEventRepository.findOccurrencesByEventId(event.getId());
             if (!occurrences.isEmpty()) {
                 OccurrenceEvent occurrence = occurrences.get(0);
                 // Force initialization of the lazy collection

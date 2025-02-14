@@ -1,21 +1,32 @@
-package pl.kamann.mapper;
+package pl.kamann.mappers;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.MockitoAnnotations;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.entities.event.EventType;
 import pl.kamann.entities.event.OccurrenceEvent;
-import pl.kamann.mappers.EventMapper;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EventMapperTest {
+
+    @InjectMocks
+    private EventMapper mapper;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
 
     @Test
     void toDto_shouldMapEventCorrectly() {
@@ -38,9 +49,10 @@ class EventMapperTest {
                 .maxParticipants(20)
                 .instructor(instructor)
                 .occurrences(Arrays.asList(occ1, occ2))
+                .eventType(type)
                 .build();
 
-        EventMapper mapper = new EventMapper();
+
         EventDto dto = mapper.toDto(event);
 
         assertEquals(event.getId(), dto.id());
@@ -48,7 +60,6 @@ class EventMapperTest {
         assertEquals(event.getDescription(), dto.description());
         assertEquals(event.getStart(), dto.start());
         assertEquals(event.getDurationMinutes(), dto.durationMinutes());
-        assertEquals(event.getRrule(), dto.rrule());
         assertEquals(creator.getId(), dto.createdById());
         assertEquals(instructor.getId(), dto.instructorId());
         assertEquals("John Doe", dto.instructorFullName());

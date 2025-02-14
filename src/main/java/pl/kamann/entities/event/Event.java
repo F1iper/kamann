@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.dmfs.rfc5545.recur.InvalidRecurrenceRuleException;
 import org.dmfs.rfc5545.recur.RecurrenceRule;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import pl.kamann.entities.appuser.AppUser;
 
 import java.time.LocalDateTime;
@@ -46,11 +48,20 @@ public class Event {
     @JoinColumn(name = "event_type_id", nullable = false)
     private EventType eventType;
 
+    private String eventTypeName;
+
     private int maxParticipants;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id")
     private AppUser instructor;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    LocalDateTime updatedAt;
 
     @Transient
     private RecurrenceRule recurrenceRule;
@@ -69,13 +80,5 @@ public class Event {
                 throw new IllegalArgumentException("Invalid recurrence rule: " + rrule, e);
             }
         }
-    }
-
-    public boolean isRecurring() {
-        return rrule != null && !rrule.isEmpty();
-    }
-
-    public LocalDateTime getEnd() {
-        return start.plusMinutes(durationMinutes);
     }
 }
