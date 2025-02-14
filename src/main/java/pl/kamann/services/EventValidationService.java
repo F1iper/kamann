@@ -11,6 +11,8 @@ import pl.kamann.config.codes.RecurrenceCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.dtos.EventUpdateRequest;
 import pl.kamann.dtos.event.CreateEventRequest;
+import pl.kamann.entities.event.Event;
+import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
 
@@ -26,12 +28,21 @@ public class EventValidationService {
         validateMaxParticipants(request.maxParticipants());
     }
 
-    public void validateUpdate(EventUpdateRequest requestDto, LocalDateTime originalStart) {
+    public void validateUpdate(EventUpdateRequest requestDto, Event event) {
+        validateStatus(event);
         validateTitle(requestDto.title());
         validateDescription(requestDto.description());
-        validateStart(requestDto.start(), originalStart);
+        validateStart(requestDto.start(), event.getStart());
         validateDuration(requestDto.durationMinutes());
         validateMaxParticipants(requestDto.maxParticipants());
+    }
+
+    private static void validateStatus(Event event) {
+        if (event.getStatus() == EventStatus.CANCELED) {
+            throw new ApiException("Cannot update a cancelled event.",
+                    HttpStatus.BAD_REQUEST,
+                    EventCodes.EVENT_ALREADY_CANCELLED.name());
+        }
     }
 
     private void validateTitle(String title) {

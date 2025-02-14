@@ -16,6 +16,7 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.EventUpdateRequest;
+import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
@@ -85,15 +86,15 @@ public class AdminEventService {
     }
 
     @Transactional
-    public EventDto updateEvent(Long id, EventUpdateRequest requestDto) {
+    public EventUpdateResponse updateEvent(Long id, EventUpdateRequest requestDto) {
         Event event = entityLookupService.findEventById(id);
 
-        eventValidationService.validateUpdate(requestDto, event.getStart());
+        eventValidationService.validateUpdate(requestDto, event);
 
         updateEventFields(event, requestDto);
         eventRepository.save(event);
 
-        return eventMapper.toDto(event);
+        return eventMapper.toEventUpdateResponse(event);
     }
 
     @Transactional
