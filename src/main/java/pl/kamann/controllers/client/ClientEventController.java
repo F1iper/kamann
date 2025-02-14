@@ -18,7 +18,7 @@ public class ClientEventController {
     private final ClientEventService clientEventService;
 
     @GetMapping("/occurrences")
-    @Operation(summary = "Get occurrences", description = "Retrieves paginated occurrences based on filter.")
+    @Operation(summary = "Get paginated occurrences", description = "Retrieves paginated occurrences based on scope.")
     public ResponseEntity<PaginatedResponseDto<OccurrenceEventLightDto>> getOccurrences(
             @RequestParam(defaultValue = "upcoming", required = false) OccurrenceEventScope scope,
             @RequestParam(defaultValue = "1") int page,
@@ -42,8 +42,17 @@ public class ClientEventController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-
         return ResponseEntity.ok(clientEventService.getLightEvents(page, size));
+    }
+
+    @GetMapping("/events/{eventId}")
+    @Operation(
+            summary = "Get Event details by ID",
+            description = "Retrieve details of a specific Event using its unique ID."
+    )
+    public ResponseEntity<EventDto> getEventById(
+            @PathVariable Long eventId) {
+        return ResponseEntity.ok(clientEventService.getEventById(eventId));
     }
 
     @GetMapping("event-types/{eventType}/events")
@@ -54,15 +63,5 @@ public class ClientEventController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(clientEventService.getEventsByType(eventType, page, size));
-    }
-
-    @GetMapping("/{occurrenceId}")
-    @Operation(
-            summary = "Get OccurrenceEvent details by id",
-            description = "Creates a new event and assigns an instructor."
-    )
-    public ResponseEntity<OccurrenceEventDto> getEventDto(
-            @PathVariable Long occurrenceId) {
-        return ResponseEntity.ok(clientEventService.getOccurrenceById(occurrenceId));
     }
 }

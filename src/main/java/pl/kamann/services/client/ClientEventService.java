@@ -10,13 +10,11 @@ import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
-import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.OccurrenceEventDto;
-import pl.kamann.dtos.OccurrenceEventLightDto;
-import pl.kamann.dtos.OccurrenceEventScope;
+import pl.kamann.dtos.*;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;
+import pl.kamann.mappers.EventMapper;
 import pl.kamann.mappers.OccurrenceEventMapper;
 import pl.kamann.repositories.EventRepository;
 import pl.kamann.repositories.OccurrenceEventRepository;
@@ -51,26 +49,6 @@ public class ClientEventService {
                 scope.name(), loggedInUser, pageable);
 
         return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toLightDto);
-    }
-
-    public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
-        OccurrenceEvent occurrenceEvent = occurrenceEventRepository.findById(occurrenceId)
-                .orElseThrow(() -> new ApiException(
-                        "OccurrenceEvent not found with ID: " + occurrenceId,
-                        HttpStatus.BAD_REQUEST,
-                        EventCodes.OCCURRENCE_NOT_FOUND.name()));
-
-        return occurrenceEventMapper.toOccurrenceEventDto(occurrenceEvent);
-    }
-
-    public EventDto getEventById(Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(
-                        "Event not found with ID: " + eventId,
-                        HttpStatus.BAD_REQUEST,
-                        EventCodes.EVENT_NOT_FOUND.name()));
-
-        return eventMapper.toDto(event);
     }
 
     public PaginatedResponseDto<EventLightDto> getLightEvents(int page, int size) {
@@ -108,13 +86,5 @@ public class ClientEventService {
                         EventCodes.EVENT_NOT_FOUND.name()));
 
         return eventMapper.toDto(event);
-    }
-
-    public PaginatedResponseDto<EventLightDto> getLightEvents(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("start").ascending());
-        pageable = paginationService.validatePageable(pageable);
-        Page<Event> pagedEvents = eventRepository.findAll(pageable);
-
-        return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toLightDto);
     }
 }
