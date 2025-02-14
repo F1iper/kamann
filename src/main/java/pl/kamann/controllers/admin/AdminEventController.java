@@ -15,7 +15,6 @@ import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.EventStatus;
-import pl.kamann.services.EventUpdateService;
 import pl.kamann.services.admin.AdminEventService;
 
 @RestController
@@ -25,7 +24,6 @@ import pl.kamann.services.admin.AdminEventService;
 public class AdminEventController {
 
     private final AdminEventService adminEventService;
-    private final EventUpdateService eventUpdateService;
 
     @PostMapping
     @Operation(summary = "Create an event", description = "Creates a new event and assigns an instructor.")
@@ -59,7 +57,7 @@ public class AdminEventController {
             @PathVariable Long id,
             @RequestBody EventUpdateRequest requestDto
     ) {
-        return ResponseEntity.ok(eventUpdateService.updateEventDetails(id, requestDto));
+        return ResponseEntity.ok(adminEventService.updateEvent(id, requestDto));
     }
 
     @PostMapping("/{id}/cancel")
