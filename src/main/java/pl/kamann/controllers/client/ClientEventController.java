@@ -14,10 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.EventDto;
 import pl.kamann.dtos.OccurrenceEventLightDto;
-import pl.kamann.entities.event.EventType;
 import pl.kamann.services.client.ClientEventService;
-
-import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/client/occurrences")
@@ -41,8 +38,8 @@ public class ClientEventController {
     @GetMapping("event-types/{eventType}/events")
     @Operation(summary = "Get events by event type", description = "Retrieves paginated events based on type")
     public ResponseEntity<PaginatedResponseDto<EventDto>> getEventsByType(
-            @RequestParam String  eventType,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam String eventType,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(clientEventService.getEventsByType(eventType, page, size));
