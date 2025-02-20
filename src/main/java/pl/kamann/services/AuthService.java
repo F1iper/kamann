@@ -37,6 +37,7 @@ public class AuthService {
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
+    private final ConfirmUser confirmUser;
 
     public LoginResponse login(@Valid LoginRequest request) {
         AppUser user = appUserRepository.findByEmail(request.email())
@@ -70,6 +71,8 @@ public class AuthService {
         AppUser user = createAppUser(request, userRole);
         AppUser savedUser = appUserRepository.save(user);
 
+        confirmUser.sendConfirmationEmail(savedUser);
+
         log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
         return savedUser;
     }
@@ -82,6 +85,8 @@ public class AuthService {
         user.setLastName(request.lastName());
         user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.ACTIVE);
+        user.setConfirmed(false);
+        user.setConfirmationToken(confirmUser.generateConfirmationToken());
         return user;
     }
 
