@@ -56,6 +56,15 @@ public class AuthService {
             );
         }
 
+        if (!user.isConfirmed()) {
+            log.warn("Attempted login with unconfirmed email: {}", request.email());
+            throw new ApiException(
+                    "Email not confirmed.",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.EMAIL_NOT_CONFIRMED.name()
+            );
+        }
+
         String token = jwtUtils.generateToken(user.getEmail(), user.getRoles());
         log.info("User logged in successfully: email={}", user.getEmail());
         return new LoginResponse(token);

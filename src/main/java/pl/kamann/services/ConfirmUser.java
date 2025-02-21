@@ -21,7 +21,7 @@ public class ConfirmUser {
     @Value("${confirmation.link}")
     private String confirmationLink;
 
-    public String generateConfirmationLink(String token) {
+    public String generateConfirmationLink(String token, String confirmationLink) {
         return confirmationLink + token;
     }
 
@@ -31,7 +31,7 @@ public class ConfirmUser {
 
     public void sendConfirmationEmail(AppUser appUser) {
         try {
-            emailSender.sendConfirmationEmail(appUser.getEmail(), generateConfirmationLink(appUser.getConfirmationToken()));
+            emailSender.sendConfirmationEmail(appUser.getEmail(), generateConfirmationLink(appUser.getConfirmationToken(), confirmationLink));
         } catch (MessagingException e) {
             throw new ApiException(
                     "Error sending the confirmation email.",

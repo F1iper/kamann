@@ -19,6 +19,7 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
+import pl.kamann.services.ConfirmUser;
 
 import java.util.Optional;
 import java.util.Set;
@@ -44,6 +45,9 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
+    @Mock
+    private ConfirmUser confirmUser;
+
     private Role clientRole;
 
     @BeforeEach
@@ -62,6 +66,7 @@ class AuthServiceTest {
         user.setEmail(email);
         user.setPassword(encodedPassword);
         user.setRoles(Set.of(clientRole));
+        user.setConfirmed(true);
 
         LoginRequest loginRequest = new LoginRequest(email, password);
 
@@ -77,6 +82,27 @@ class AuthServiceTest {
         verify(appUserRepository).findByEmail(email);
         verify(passwordEncoder).matches(password, encodedPassword);
         verify(jwtUtils).generateToken(email, user.getRoles());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenEmailIsNotConfirmedDuringLogin() {
+        String email = "user@example.com";
+        String password = "password";
+        String encodedPassword = "encodedPassword";
+
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPassword(encodedPassword);
+        user.setConfirmed(false);
+
+        LoginRequest loginRequest = new LoginRequest(email, password);
+
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        assertEquals("Email not confirmed.", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
     }
 
     @Test
