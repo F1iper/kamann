@@ -6,6 +6,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
@@ -32,6 +37,7 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+    private final AuthenticationManager authenticationManager;
 
     private final AppUserMapper appUserMapper;
 
@@ -40,34 +46,29 @@ public class AuthService {
     private final ConfirmUser confirmUser;
 
     public LoginResponse login(@Valid LoginRequest request) {
-        AppUser user = appUserRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ApiException(
-                        "Invalid email address.",
-                        HttpStatus.NOT_FOUND,
-                        AuthCodes.USER_NOT_FOUND.name()
-                ));
-
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            log.warn("Invalid login attempt for email: {}", request.email());
-            throw new ApiException(
-                    "Invalid password.",
-                    HttpStatus.UNAUTHORIZED,
-                    AuthCodes.UNAUTHORIZED.name()
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
-        }
 
-        if (!user.isConfirmed()) {
+            AppUser appUser = (AppUser) authentication.getPrincipal();
+            log.info("User logged in successfully: email={}", appUser.getEmail());
+            return new LoginResponse(jwtUtils.generateToken(appUser.getEmail(), appUser.getRoles()));
+        } catch (DisabledException e) {
             log.warn("Attempted login with unconfirmed email: {}", request.email());
             throw new ApiException(
                     "Email not confirmed.",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.EMAIL_NOT_CONFIRMED.name()
             );
+        } catch (BadCredentialsException e) {
+            log.warn("Invalid User credentials attempt for email: {}", request.email());
+            throw new ApiException(
+                    "Invalid user credentials.",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.UNAUTHORIZED.name()
+            );
         }
-
-        String token = jwtUtils.generateToken(user.getEmail(), user.getRoles());
-        log.info("User logged in successfully: email={}", user.getEmail());
-        return new LoginResponse(token);
     }
 
     @Transactional
@@ -94,7 +95,7 @@ public class AuthService {
         user.setLastName(request.lastName());
         user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.ACTIVE);
-        user.setConfirmed(false);
+        user.setEnabled(false);
         user.setConfirmationToken(confirmUser.generateConfirmationToken());
         return user;
     }

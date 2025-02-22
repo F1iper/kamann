@@ -46,7 +46,7 @@ public class ConfirmUser {
                 .ifPresentOrElse(
                         user -> {
                             user.setConfirmationToken(null);
-                            user.setConfirmed(true);
+                            user.setEnabled(true);
                             appUserRepository.save(user);
                         },
                         () -> {

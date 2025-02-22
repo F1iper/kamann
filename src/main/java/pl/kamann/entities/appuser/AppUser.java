@@ -55,7 +55,7 @@ public class AppUser implements UserDetails {
 
     private String confirmationToken;
 
-    private boolean isConfirmed;
+    private boolean enabled = false;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -100,6 +100,6 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

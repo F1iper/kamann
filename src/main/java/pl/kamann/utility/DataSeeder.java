@@ -87,7 +87,7 @@ public class DataSeeder {
 
     private void createDefaultAdminAndClient() {
         AppUser admin = AppUser.builder()
-                .isConfirmed(true)
+                .enabled(true)
                 .email("admin@yoga.com")
                 .firstName("Admin")
                 .lastName("Admin")
@@ -98,7 +98,7 @@ public class DataSeeder {
         appUserRepository.save(admin);
 
         client1 = AppUser.builder()
-                .isConfirmed(true)
+                .enabled(true)
                 .email("client1@client.com")
                 .firstName("John")
                 .lastName("Wick")
@@ -123,7 +123,7 @@ public class DataSeeder {
     private void createClients() {
         List<AppUser> clients = IntStream.range(2, 5)
                 .mapToObj(i -> AppUser.builder()
-                        .isConfirmed(true)
+                        .enabled(true)
                         .email("client" + i + "@client.com")
                         .firstName("Client" + i)
                         .lastName("Test")
@@ -138,7 +138,7 @@ public class DataSeeder {
 
     private AppUser createInstructor(String email, String firstName, String lastName, Role role) {
         return AppUser.builder()
-                .isConfirmed(true)
+                .enabled(true)
                 .email(email)
                 .firstName(firstName)
                 .lastName(lastName)

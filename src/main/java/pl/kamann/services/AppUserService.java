@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.StatusCodes;
@@ -24,7 +27,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class AppUserService {
+public class AppUserService implements UserDetailsService {
 
     private final AppUserRepository appUserRepository;
     private final AppUserMapper appUserMapper;
@@ -162,5 +165,11 @@ public class AppUserService {
         }
 
         return appUserMapper.toDtoPage(users);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return appUserRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }
