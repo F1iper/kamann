@@ -2,37 +2,34 @@ package pl.kamann.services;
 
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.ConfirmationEmail;
 
+import java.util.Locale;
 import java.util.UUID;
 
-@Component
+@Slf4j
+@Service
 @RequiredArgsConstructor
-public class ConfirmUser {
+public class ConfirmUserService {
     private final AppUserRepository appUserRepository;
     private final ConfirmationEmail emailSender;
-    @Value("${confirmation.link}")
-    private String confirmationLink;
-
-    public String generateConfirmationLink(String token, String confirmationLink) {
-        return confirmationLink + token;
-    }
-
-    public String generateConfirmationToken() {
-        return UUID.randomUUID().toString();
-    }
+    private final TokenService tokenService;
 
     public void sendConfirmationEmail(AppUser appUser) {
         try {
-            emailSender.sendConfirmationEmail(appUser.getEmail(), generateConfirmationLink(appUser.getConfirmationToken(), confirmationLink));
+            emailSender.sendConfirmationEmail(appUser.getEmail(), tokenService.generateConfirmationLink(appUser.getConfirmationToken(), tokenService.getConfirmationLink()), Locale.ENGLISH);
+            log.info("Confirmation email sent successfully to user: {}", appUser.getEmail());
         } catch (MessagingException e) {
+            log.error("Error sending the confirmation email to user: {}", appUser.getEmail(), e);
             throw new ApiException(
                     "Error sending the confirmation email.",
                     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -48,8 +45,10 @@ public class ConfirmUser {
                             user.setConfirmationToken(null);
                             user.setEnabled(true);
                             appUserRepository.save(user);
+                            log.info("User account confirmed for: {}", user.getEmail());
                         },
                         () -> {
+                            log.error("Invalid confirmation token: {}", token);
                             throw new ApiException(
                                     "Invalid confirmation token.",
                                     HttpStatus.NOT_FOUND,

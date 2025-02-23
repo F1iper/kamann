@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.login.LoginRequest;
@@ -23,7 +24,8 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
-import pl.kamann.services.ConfirmUser;
+import pl.kamann.services.ConfirmUserService;
+import pl.kamann.services.TokenService;
 
 import java.util.Optional;
 import java.util.Set;
@@ -51,7 +53,10 @@ class AuthServiceTest {
     private AuthenticationManager authenticationManager;
 
     @Mock
-    private ConfirmUser confirmUser;
+    private ConfirmUserService confirmUserService;
+
+    @Mock
+    private TokenService tokenService;
 
     @InjectMocks
     private AuthService authService;
@@ -105,7 +110,7 @@ class AuthServiceTest {
 
         LoginRequest loginRequest = new LoginRequest(email, password);
 
-        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, "EMAIL_NOT_ENABLED"));
+        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, AuthCodes.EMAIL_NOT_CONFIRMED.getCode()));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
         assertEquals("Email not confirmed.", exception.getMessage());
