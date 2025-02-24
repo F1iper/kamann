@@ -1,5 +1,6 @@
 package pl.kamann.auth.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -7,7 +8,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.login.LoginRequest;
@@ -19,6 +24,8 @@ import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
+import pl.kamann.services.ConfirmUserService;
+import pl.kamann.services.TokenService;
 
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +33,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Slf4j
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -40,6 +48,15 @@ class AuthServiceTest {
 
     @Mock
     private JwtUtils jwtUtils;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private ConfirmUserService confirmUserService;
+
+    @Mock
+    private TokenService tokenService;
 
     @InjectMocks
     private AuthService authService;
@@ -62,11 +79,13 @@ class AuthServiceTest {
         user.setEmail(email);
         user.setPassword(encodedPassword);
         user.setRoles(Set.of(clientRole));
+        user.setEnabled(true);
 
         LoginRequest loginRequest = new LoginRequest(email, password);
 
-        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+        Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, encodedPassword, user.getAuthorities());
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
+
         when(jwtUtils.generateToken(email, user.getRoles())).thenReturn("token");
 
         LoginResponse response = authService.login(loginRequest);
@@ -74,9 +93,28 @@ class AuthServiceTest {
         assertNotNull(response);
         assertEquals("token", response.token());
 
-        verify(appUserRepository).findByEmail(email);
-        verify(passwordEncoder).matches(password, encodedPassword);
+        verify(authenticationManager).authenticate(any(Authentication.class));
         verify(jwtUtils).generateToken(email, user.getRoles());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenEmailIsNotEnabledDuringLogin() {
+        String email = "user@example.com";
+        String password = "password";
+        String encodedPassword = "encodedPassword";
+
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPassword(encodedPassword);
+        user.setEnabled(false);
+
+        LoginRequest loginRequest = new LoginRequest(email, password);
+
+        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, AuthCodes.EMAIL_NOT_CONFIRMED.getCode()));
+
+        ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+        assertEquals("Email not confirmed.", exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
     }
 
     @Test
@@ -84,14 +122,13 @@ class AuthServiceTest {
         String email = "nonexistent@example.com";
         LoginRequest loginRequest = new LoginRequest(email, "password");
 
-        when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Invalid email address.", HttpStatus.NOT_FOUND, "INVALID_EMAIL"));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
         assertEquals("Invalid email address.", exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
-        verify(appUserRepository).findByEmail(email);
-        verifyNoInteractions(passwordEncoder, jwtUtils);
+        verify(authenticationManager).authenticate(any(Authentication.class));
     }
 
     @Test
@@ -106,16 +143,15 @@ class AuthServiceTest {
 
         LoginRequest loginRequest = new LoginRequest(email, password);
 
-        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(false);
+        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Invalid password.", HttpStatus.UNAUTHORIZED, "INVALID_PASSWORD"));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+
         assertEquals("Invalid password.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
 
-        verify(appUserRepository).findByEmail(email);
-        verify(passwordEncoder).matches(password, encodedPassword);
         verifyNoInteractions(jwtUtils);
+        verify(authenticationManager).authenticate(any(Authentication.class));
     }
 
     @Test

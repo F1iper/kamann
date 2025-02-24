@@ -32,4 +32,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     @EntityGraph(attributePaths = {"roles"})
     @Query("SELECT DISTINCT u FROM AppUser u JOIN u.roles r WHERE r = :role")
     Page<AppUser> findUsersByRoleWithRoles(Pageable pageable, Role role);
+
+    Optional<AppUser> findByConfirmationToken(String token);
 }

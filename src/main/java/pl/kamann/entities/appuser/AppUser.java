@@ -53,6 +53,10 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AppUserStatus status = AppUserStatus.ACTIVE;
 
+    private String confirmationToken;
+
+    private boolean enabled = false;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -96,6 +100,6 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }
