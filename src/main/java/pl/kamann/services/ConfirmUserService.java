@@ -33,7 +33,7 @@ public class ConfirmUserService {
             throw new ApiException(
                     "Error sending the confirmation email.",
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                    HttpStatus.INTERNAL_SERVER_ERROR.name()
+                    AuthCodes.CONFIRMATION_EMAIL_ERROR.name()
             );
         }
     }
@@ -45,6 +45,9 @@ public class ConfirmUserService {
                             user.setConfirmationToken(null);
                             user.setEnabled(true);
                             appUserRepository.save(user);
+
+                            sendConfirmationEmail(user);
+
                             log.info("User account confirmed for: {}", user.getEmail());
                         },
                         () -> {
