@@ -3,30 +3,30 @@ package pl.kamann.services;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserTokens;
 import pl.kamann.repositories.AppUserRepository;
-import pl.kamann.services.email.ConfirmationEmail;
+import pl.kamann.repositories.AppUserTokensRepository;
+import pl.kamann.services.email.EmailSender;
 
 import java.util.Locale;
-import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConfirmUserService {
     private final AppUserRepository appUserRepository;
-    private final ConfirmationEmail emailSender;
+    private final EmailSender emailSender;
     private final TokenService tokenService;
+    private final AppUserTokensRepository appUserTokensRepository;
 
     public void sendConfirmationEmail(AppUser appUser) {
         try {
-            emailSender.sendConfirmationEmail(appUser.getEmail(), tokenService.generateConfirmationLink(appUser.getConfirmationToken(), tokenService.getConfirmationLink()), Locale.ENGLISH);
+            emailSender.sendEmail(appUser.getEmail(), tokenService.generateConfirmationLink(appUser.getAppUserTokens().getConfirmationToken(), tokenService.getConfirmationLink()), Locale.ENGLISH, "registration");
             log.info("Confirmation email sent successfully to user: {}", appUser.getEmail());
         } catch (MessagingException e) {
             log.error("Error sending the confirmation email to user: {}", appUser.getEmail(), e);
@@ -42,11 +42,14 @@ public class ConfirmUserService {
         appUserRepository.findByConfirmationToken(token)
                 .ifPresentOrElse(
                         user -> {
-                            user.setConfirmationToken(null);
                             user.setEnabled(true);
-                            appUserRepository.save(user);
+                            AppUserTokens tokens = user.getAppUserTokens();
+                            if (tokens != null && !tokens.isTokenExpired()) {
+                                user.setAppUserTokens(null);
+                                appUserTokensRepository.save(tokens);
+                            }
 
-                            sendConfirmationEmail(user);
+                            appUserRepository.save(user);
 
                             log.info("User account confirmed for: {}", user.getEmail());
                         },

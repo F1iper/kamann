@@ -9,10 +9,13 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.entities.appuser.AppUserTokens;
+import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.repositories.AppUserRepository;
-import pl.kamann.services.email.ConfirmationEmail;
+
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ConfirmUserServiceTest {
 
     @MockBean
-    private ConfirmationEmail emailSender;
+    private EmailSender emailSender;
 
     @Autowired
     private AppUserRepository appUserRepository;
@@ -33,20 +36,27 @@ public class ConfirmUserServiceTest {
 
     @Test
     void shouldConfirmAccount() {
+        AppUserTokens tokens = new AppUserTokens();
+        tokens.setConfirmationToken("test_token");
+        tokens.setExpirationDate(new Date(System.currentTimeMillis() + 100000));
+
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setConfirmationToken("test_token");
-
+        user.setAppUserTokens(tokens);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
+
+        tokens.setAppUser(user);
 
         appUserRepository.save(user);
 
         confirmUserService.confirmUserAccount("test_token");
 
         AppUser updatedUser = appUserRepository.findByEmail("test@test.com").orElseThrow();
-        assertNull(updatedUser.getConfirmationToken());
+        AppUserTokens updatedTokens = updatedUser.getAppUserTokens();
+
+        assertNull(updatedTokens);
         assertTrue(updatedUser.isEnabled());
     }
 
@@ -61,40 +71,52 @@ public class ConfirmUserServiceTest {
 
     @Test
     void shouldNotConfirmAlreadyConfirmedAccount() {
+        AppUserTokens tokens = new AppUserTokens();
+        tokens.setConfirmationToken("test_token");
+        tokens.setExpirationDate(new Date(System.currentTimeMillis() + 100000));
+
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setConfirmationToken("test_token");
+        user.setAppUserTokens(tokens);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
         user.setEnabled(true);
+
+        tokens.setAppUser(user);
 
         appUserRepository.save(user);
 
         confirmUserService.confirmUserAccount("test_token");
 
         AppUser updatedUser = appUserRepository.findByEmail("test@test.com").orElseThrow();
+        AppUserTokens updatedTokens = updatedUser.getAppUserTokens();
         assertTrue(updatedUser.isEnabled());
-        assertNull(updatedUser.getConfirmationToken());
+        assertNull(updatedTokens);
     }
 
 
 
     @Test
     void shouldSendConfirmationEmailAfterActivation() throws MessagingException {
+        AppUserTokens tokens = new AppUserTokens();
+        tokens.setConfirmationToken("test_token");
+
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setConfirmationToken("test_token");
+        user.setAppUserTokens(tokens);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
 
+        tokens.setAppUser(user);
+
         appUserRepository.save(user);
 
-        confirmUserService.confirmUserAccount("test_token");
+        confirmUserService.sendConfirmationEmail(user);
 
         Mockito.verify(emailSender, Mockito.times(1))
-                .sendConfirmationEmail(Mockito.eq("test@test.com"), Mockito.anyString(), Mockito.any());
+                .sendEmail(Mockito.eq("test@test.com"), Mockito.anyString(), Mockito.any(), Mockito.eq("registration"));
     }
 
 }

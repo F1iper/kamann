@@ -53,7 +53,8 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AppUserStatus status = AppUserStatus.ACTIVE;
 
-    private String confirmationToken;
+    @OneToOne(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    private AppUserTokens appUserTokens;
 
     private boolean enabled = false;
 

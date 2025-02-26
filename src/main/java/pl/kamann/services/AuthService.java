@@ -23,6 +23,7 @@ import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AppUserTokens;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
@@ -89,6 +90,8 @@ public class AuthService {
     }
 
     private AppUser createAppUser(RegisterRequest request, Role role) {
+        AppUserTokens appUserTokens = new AppUserTokens();
+
         AppUser user = new AppUser();
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
@@ -97,7 +100,11 @@ public class AuthService {
         user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.ACTIVE);
         user.setEnabled(false);
-        user.setConfirmationToken(tokenService.generateConfirmationToken());
+        user.setAppUserTokens(appUserTokens);
+
+        appUserTokens.setConfirmationToken(tokenService.generateToken());
+        appUserTokens.setExpirationDate(tokenService.generateExpirationDate());
+        appUserTokens.setAppUser(user);
         return user;
     }
 
