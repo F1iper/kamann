@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.dtos.AppUserDto;
+import pl.kamann.dtos.ForgotPasswordDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
@@ -60,8 +61,8 @@ public class AuthController {
             summary = "Forgot password",
             description = "Send a password reset link to the provided email address."
     )
-    public ResponseEntity<String> forgotPassword(@RequestParam("email") String email) {
-        passwordResetService.forgotPassword(email);
+    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordDto forgotPasswordDto) {
+        passwordResetService.forgotPassword(forgotPasswordDto.email());
         return ResponseEntity.ok("Password reset link has been sent to your email address.");
 
     }

@@ -10,6 +10,7 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserTokens;
+import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.AppUserTokensRepository;
 import pl.kamann.services.email.EmailSender;
@@ -39,13 +40,14 @@ public class PasswordResetService {
         AppUserTokens tokens = new AppUserTokens();
 
         tokens.setAppUser(appUser);
-        tokens.setResetPasswordToken(tokenService.generateToken());
+        tokens.setToken(tokenService.generateToken());
+        tokens.setTokenType(TokenType.RESET_PASSWORD);
         tokens.setExpirationDate(tokenService.generateExpirationDate());
-        appUser.setAppUserTokens(tokens);
+        appUser.getAppUserTokens().add(tokens);
 
         try {
             log.info("Sending reset password email to: {}", email);
-            emailSender.sendEmail(appUser.getEmail(), tokenService.generateResetPasswordLink(tokens.getResetPasswordToken(), tokenService.getResetPasswordLink()), Locale.ENGLISH, "reset.password");
+            emailSender.sendEmail(appUser.getEmail(), tokenService.generateResetPasswordLink(tokens.getToken(), tokenService.getResetPasswordLink()), Locale.ENGLISH, "reset.password");
         } catch (MessagingException e) {
             log.error("Error sending the reset password email: {}", e.getMessage());
             throw new ApiException(
@@ -60,11 +62,11 @@ public class PasswordResetService {
 
     public void resetPassword(String token, String password) {
         log.info("Reset password request for token: {}", token);
-        AppUserTokens appUserTokens = appUserTokensRepository.findByResetPasswordToken(token)
+        AppUserTokens appUserTokens = appUserTokensRepository.findByToken(token)
                 .orElseThrow(() -> new ApiException(
                         "Invalid reset password token.",
                         HttpStatus.NOT_FOUND,
-                        AuthCodes.INVALID_RESET_PASSWORD_TOKEN.name()
+                        AuthCodes.INVALID_TOKEN.name()
                 ));
 
         if (appUserTokens.isTokenExpired()) {
@@ -78,10 +80,11 @@ public class PasswordResetService {
 
         AppUser appUser = appUserTokens.getAppUser();
         appUser.setPassword(passwordEncoder.encode(password));
+        appUser.getAppUserTokens().remove(appUserTokens);
         appUserRepository.save(appUser);
 
-        appUser.setAppUserTokens(null);
         appUserTokensRepository.save(appUserTokens);
+
         log.info("Password reset successfully for email: {}", appUser.getEmail());
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,8 +54,8 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AppUserStatus status = AppUserStatus.ACTIVE;
 
-    @OneToOne(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
-    private AppUserTokens appUserTokens;
+    @OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<AppUserTokens> appUserTokens = new HashSet<>();
 
     private boolean enabled = false;
 

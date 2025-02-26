@@ -2,7 +2,6 @@ package pl.kamann.services;
 
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -12,12 +11,15 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserTokens;
+import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +46,6 @@ public class PasswordResetServiceTest {
 
     @Test
     void shouldForgotPassword() {
-
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
         user.setFirstName("Test");
@@ -55,7 +56,7 @@ public class PasswordResetServiceTest {
 
         passwordResetService.forgotPassword(user.getEmail());
 
-        AppUserTokens updatedTokens = appUserRepository.findByEmail(user.getEmail()).orElseThrow().getAppUserTokens();
+        Set<AppUserTokens> updatedTokens = appUserRepository.findByEmail(user.getEmail()).orElseThrow().getAppUserTokens();
 
         assertNotNull(updatedTokens);
     }
@@ -63,12 +64,16 @@ public class PasswordResetServiceTest {
     @Test
     void shouldResetPassword() {
         AppUserTokens tokens = new AppUserTokens();
-        tokens.setResetPasswordToken("test_token");
-        tokens.setExpirationDate(new Date(System.currentTimeMillis() + 100000));
+        tokens.setToken("test_token");
+        tokens.setTokenType(TokenType.RESET_PASSWORD);
+        tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
+
+        Set<AppUserTokens> tokenSet = new HashSet<>();
+        tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokens);
+        user.setAppUserTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
@@ -80,7 +85,10 @@ public class PasswordResetServiceTest {
         passwordResetService.resetPassword("test_token", "new_password");
 
         AppUser updatedUser = appUserRepository.findByEmail(user.getEmail()).orElseThrow();
-        AppUserTokens updatedTokens = updatedUser.getAppUserTokens();
+        AppUserTokens updatedTokens = updatedUser.getAppUserTokens().stream()
+                .filter(t -> t.getToken().equals("test_token"))
+                .findFirst()
+                .orElse(null);
 
         assertNull(updatedTokens);
         assertTrue(passwordEncoder.matches("new_password", updatedUser.getPassword()));
@@ -97,12 +105,16 @@ public class PasswordResetServiceTest {
     @Test
     void shouldThrowExceptionForExpiredToken() {
         AppUserTokens tokens = new AppUserTokens();
-        tokens.setResetPasswordToken("test_token");
-        tokens.setExpirationDate(new Date(System.currentTimeMillis() - 100000));
+        tokens.setToken("test_token");
+        tokens.setTokenType(TokenType.RESET_PASSWORD);
+        tokens.setExpirationDate(LocalDateTime.now().minusMinutes(10));
+
+        Set<AppUserTokens> tokenSet = new HashSet<>();
+        tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokens);
+        user.setAppUserTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");

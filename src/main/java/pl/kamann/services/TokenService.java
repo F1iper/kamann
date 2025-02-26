@@ -4,7 +4,7 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -28,7 +28,7 @@ public class TokenService {
         return UUID.randomUUID().toString();
     }
 
-    public Date generateExpirationDate() {
-        return new Date(System.currentTimeMillis() + 1000 * 60 * 10);
+    public LocalDateTime generateExpirationDate() {
+        return LocalDateTime.now().plusMinutes(10);
     }
 }

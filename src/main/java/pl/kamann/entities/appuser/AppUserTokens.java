@@ -3,7 +3,7 @@ package pl.kamann.entities.appuser;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,17 +17,19 @@ public class AppUserTokens {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "app_user_id", nullable = false, unique = true)
     private AppUser appUser;
 
-    private String confirmationToken;
+    @Column(nullable = false, unique = true)
+    private String token;
 
-    private String resetPasswordToken;
+    @Column(nullable = false)
+    private TokenType tokenType;
 
-    private Date expirationDate;
+    private LocalDateTime expirationDate;
 
     public Boolean isTokenExpired() {
-        return new Date().after(expirationDate);
+        return expirationDate == null || LocalDateTime.now().isAfter(expirationDate);
     }
 }

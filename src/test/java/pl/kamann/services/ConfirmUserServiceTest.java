@@ -9,13 +9,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserTokens;
+import pl.kamann.entities.appuser.TokenType;
+import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.repositories.AppUserRepository;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,12 +40,16 @@ public class ConfirmUserServiceTest {
     @Test
     void shouldConfirmAccount() {
         AppUserTokens tokens = new AppUserTokens();
-        tokens.setConfirmationToken("test_token");
-        tokens.setExpirationDate(new Date(System.currentTimeMillis() + 100000));
+        tokens.setToken("test_token");
+        tokens.setTokenType(TokenType.CONFIRMATION);
+        tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
+
+        Set<AppUserTokens> tokenSet = new HashSet<>();
+        tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokens);
+        user.setAppUserTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
@@ -54,12 +61,11 @@ public class ConfirmUserServiceTest {
         confirmUserService.confirmUserAccount("test_token");
 
         AppUser updatedUser = appUserRepository.findByEmail("test@test.com").orElseThrow();
-        AppUserTokens updatedTokens = updatedUser.getAppUserTokens();
+        Set<AppUserTokens> updatedTokens = updatedUser.getAppUserTokens();
 
-        assertNull(updatedTokens);
         assertTrue(updatedUser.isEnabled());
+        assertTrue(updatedTokens.isEmpty(), "Token should be removed after confirmation");
     }
-
 
     @Test
     void shouldThrowExceptionForInvalidToken() {
@@ -72,12 +78,16 @@ public class ConfirmUserServiceTest {
     @Test
     void shouldNotConfirmAlreadyConfirmedAccount() {
         AppUserTokens tokens = new AppUserTokens();
-        tokens.setConfirmationToken("test_token");
-        tokens.setExpirationDate(new Date(System.currentTimeMillis() + 100000));
+        tokens.setToken("test_token");
+        tokens.setTokenType(TokenType.CONFIRMATION);
+        tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
+
+        Set<AppUserTokens> tokenSet = new HashSet<>();
+        tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokens);
+        user.setAppUserTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
@@ -90,21 +100,24 @@ public class ConfirmUserServiceTest {
         confirmUserService.confirmUserAccount("test_token");
 
         AppUser updatedUser = appUserRepository.findByEmail("test@test.com").orElseThrow();
-        AppUserTokens updatedTokens = updatedUser.getAppUserTokens();
-        assertTrue(updatedUser.isEnabled());
-        assertNull(updatedTokens);
+        Set<AppUserTokens> updatedTokens = updatedUser.getAppUserTokens();
+        assertTrue(updatedUser.isEnabled(), "User should still be enabled");
+        assertTrue(updatedTokens.isEmpty(), "Token should be removed after confirmation");
     }
-
-
 
     @Test
     void shouldSendConfirmationEmailAfterActivation() throws MessagingException {
         AppUserTokens tokens = new AppUserTokens();
-        tokens.setConfirmationToken("test_token");
+        tokens.setToken("test_token");
+        tokens.setTokenType(TokenType.CONFIRMATION);
+        tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
+
+        Set<AppUserTokens> tokenSet = new HashSet<>();
+        tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokens);
+        user.setAppUserTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
@@ -118,5 +131,4 @@ public class ConfirmUserServiceTest {
         Mockito.verify(emailSender, Mockito.times(1))
                 .sendEmail(Mockito.eq("test@test.com"), Mockito.anyString(), Mockito.any(), Mockito.eq("registration"));
     }
-
 }

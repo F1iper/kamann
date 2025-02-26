@@ -6,5 +6,5 @@ import pl.kamann.entities.appuser.AppUserTokens;
 import java.util.Optional;
 
 public interface AppUserTokensRepository extends JpaRepository<AppUserTokens, Long> {
-    Optional<AppUserTokens> findByResetPasswordToken(String token);
+    Optional<AppUserTokens> findByToken(String token);
 }

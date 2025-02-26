@@ -21,10 +21,7 @@ import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
-import pl.kamann.entities.appuser.AppUserTokens;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
@@ -100,9 +97,10 @@ public class AuthService {
         user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.ACTIVE);
         user.setEnabled(false);
-        user.setAppUserTokens(appUserTokens);
+        user.setAppUserTokens(Set.of(appUserTokens));
 
-        appUserTokens.setConfirmationToken(tokenService.generateToken());
+        appUserTokens.setToken(tokenService.generateToken());
+        appUserTokens.setTokenType(TokenType.CONFIRMATION);
         appUserTokens.setExpirationDate(tokenService.generateExpirationDate());
         appUserTokens.setAppUser(user);
         return user;

@@ -165,7 +165,7 @@ class AuthServiceTest {
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AppUser registeredUser = authService.registerUser(request);
-        AppUserTokens appUserTokens = registeredUser.getAppUserTokens();
+        Set<AppUserTokens> appUserTokens = registeredUser.getAppUserTokens();
 
         assertNotNull(registeredUser);
         assertNotNull(appUserTokens);
