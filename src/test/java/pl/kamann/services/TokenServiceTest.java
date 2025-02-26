@@ -24,9 +24,34 @@ public class TokenServiceTest {
     void shouldGenerateConfirmationLink() {
         AppUserTokens tokens = new AppUserTokens();
         tokens.setConfirmationToken("test_token");
+        tokens.setExpirationDate(tokenService.generateExpirationDate());
 
-        String confirmationLink = tokenService.generateConfirmationLink(tokens.getConfirmationToken(), "http://localhost:8080/users/confirm?token=");
+        long difference = tokens.getExpirationDate().getTime() - System.currentTimeMillis();
+        String confirmationLink = tokenService.generateConfirmationLink(tokens.getConfirmationToken(), "http://localhost:8080/api/auth/confirm?token=");
 
-        assertEquals("http://localhost:8080/users/confirm?token=test_token", confirmationLink);
+        assertEquals("http://localhost:8080/api/auth/confirm?token=test_token", confirmationLink);
+        assertEquals(600000, difference);
+    }
+
+    @Test
+    void shouldGenerateResetPasswordLink() {
+        AppUserTokens tokens = new AppUserTokens();
+        tokens.setResetPasswordToken("test_token");
+        tokens.setExpirationDate(tokenService.generateExpirationDate());
+
+        long difference = tokens.getExpirationDate().getTime() - System.currentTimeMillis();
+        String resetPasswordLink = tokenService.generateResetPasswordLink(tokens.getResetPasswordToken(), "http://localhost:8080/api/auth/reset-password?token=");
+
+        assertEquals("http://localhost:8080/api/auth/reset-password?token=test_token", resetPasswordLink);
+        assertEquals(600000, difference);
+    }
+
+    @Test
+    void shouldGenerateExpirationDate() {
+        long currentTime = System.currentTimeMillis();
+        long expirationTime = tokenService.generateExpirationDate().getTime();
+        long difference = expirationTime - currentTime;
+
+        assertEquals(600000, difference);
     }
 }

@@ -20,6 +20,7 @@ import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AppUserTokens;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
@@ -164,8 +165,10 @@ class AuthServiceTest {
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AppUser registeredUser = authService.registerUser(request);
+        AppUserTokens appUserTokens = registeredUser.getAppUserTokens();
 
         assertNotNull(registeredUser);
+        assertNotNull(appUserTokens);
         assertEquals(request.email(), registeredUser.getEmail());
         assertEquals(clientRole.getName(), registeredUser.getRoles().iterator().next().getName());
         assertEquals(AppUserStatus.ACTIVE, registeredUser.getStatus());

@@ -16,7 +16,7 @@ import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
-import pl.kamann.services.ResetPasswordService;
+import pl.kamann.services.PasswordResetService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,7 +29,7 @@ public class AuthController {
     private final ConfirmUserService confirmUserService;
     private final AuthService authService;
     private final AppUserMapper appUserMapper;
-    private final ResetPasswordService resetPasswordService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
@@ -61,7 +61,7 @@ public class AuthController {
             description = "Send a password reset link to the provided email address."
     )
     public ResponseEntity<String> forgotPassword(@RequestParam("email") String email) {
-        resetPasswordService.forgotPassword(email);
+        passwordResetService.forgotPassword(email);
         return ResponseEntity.ok("Password reset link has been sent to your email address.");
 
     }
@@ -72,7 +72,7 @@ public class AuthController {
             description = "Reset the password for the user account."
     )
     public ResponseEntity<String> resetPassword(@RequestParam("token") String token, @RequestBody String password) {
-        resetPasswordService.resetPassword(token, password);
+        passwordResetService.resetPassword(token, password);
         return ResponseEntity.ok("Password has been reset.");
     }
 }

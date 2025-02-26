@@ -19,7 +19,7 @@ import java.util.Locale;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ResetPasswordService {
+public class PasswordResetService {
 
     private final AppUserRepository appUserRepository;
     private final TokenService tokenService;
