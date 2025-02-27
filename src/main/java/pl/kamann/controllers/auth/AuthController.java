@@ -20,7 +20,7 @@ import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.PasswordResetService;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
