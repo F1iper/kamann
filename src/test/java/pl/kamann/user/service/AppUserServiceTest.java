@@ -9,21 +9,24 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.dtos.register.RegisterRequest;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AppUserService;
+import pl.kamann.services.TokenService;
 import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
 import pl.kamann.utility.PaginationUtil;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -53,6 +56,12 @@ class AppUserServiceTest {
 
     @Mock
     private PaginationUtil paginationUtil;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private TokenService tokenService;
 
     @InjectMocks
     private AppUserService appUserService;
@@ -90,14 +99,13 @@ class AppUserServiceTest {
 
         var result = appUserService.getUsers(pageable, null);
 
-        assertNotNull(result, "Result should not be null");
-        assertEquals(users.size(), result.getMetaData().getTotalElements(),
-                "Total elements should match the size of the users list");
-        assertEquals(1, result.getMetaData().getTotalPages(), "Total pages should be 1");
+        assertNotNull(result);
+        assertEquals(users.size(), result.getMetaData().getTotalElements());
+        assertEquals(1, result.getMetaData().getTotalPages());
 
-        verify(paginationService, times(1)).validatePageable(pageable);
-        verify(appUserRepository, times(1)).findAllWithRoles(pageable);
-        verify(paginationUtil, times(1)).toPaginatedResponse(eq(pagedUsers), any(Function.class));
+        verify(paginationService).validatePageable(pageable);
+        verify(appUserRepository).findAllWithRoles(pageable);
+        verify(paginationUtil).toPaginatedResponse(eq(pagedUsers), any(Function.class));
     }
 
     @Test
@@ -112,86 +120,62 @@ class AppUserServiceTest {
         var result = appUserService.getUserById(userId);
 
         assertEquals(userDto, result);
-        verify(entityLookupService, times(1)).findUserById(userId);
-        verify(appUserMapper, times(1)).toDto(user);
+        verify(entityLookupService).findUserById(userId);
+        verify(appUserMapper).toDto(user);
     }
 
     @Test
     void createUserSavesUserAndReturnsDto() {
-        var userDto = new AppUserDto(null, "test@example.com", "Test", "User", Set.of(new Role("CLIENT")), AppUserStatus.ACTIVE);
-        var roles = Set.of(new Role("CLIENT"));
+        var request = new RegisterRequest("test@example.com", "password123", "Test", "User", "CLIENT");
+        var role = new Role("CLIENT");
+
+        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
+        when(roleRepository.findByName(request.role().toUpperCase())).thenReturn(Optional.of(role));
+        when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
 
         var user = new AppUser();
-        when(appUserMapper.toEntity(any(AppUserDto.class), eq(roles))).thenReturn(user);
-
-        var savedUser = new AppUser();
-        savedUser.setId(1L);
-        when(appUserRepository.save(user)).thenReturn(savedUser);
-
-        var savedUserDto = new AppUserDto(1L, "test@example.com", "Test", "User", roles, AppUserStatus.ACTIVE);
-        when(appUserMapper.toDto(savedUser)).thenReturn(savedUserDto);
-
-        when(entityLookupService.findRolesByNameIn(userDto.roles())).thenReturn(roles);
-
-        var result = appUserService.createUser(userDto);
-
-        assertEquals(savedUserDto, result);
-        verify(entityLookupService, times(1)).validateEmailNotTaken(userDto.email());
-        verify(entityLookupService, times(1)).findRolesByNameIn(userDto.roles());
-        verify(appUserMapper, times(1)).toEntity(eq(userDto), eq(roles));
-        verify(appUserRepository, times(1)).save(user);
-        verify(appUserMapper, times(1)).toDto(savedUser);
-    }
-
-    @Test
-    void activateUserChangesStatusToActive() {
-        Long userId = 1L;
-        var user = new AppUser();
-        user.setStatus(AppUserStatus.INACTIVE);
-        when(entityLookupService.findUserById(userId)).thenReturn(user);
-
-        appUserService.activateUser(userId);
-
-        assertEquals(AppUserStatus.ACTIVE, user.getStatus());
-        verify(appUserRepository, times(1)).save(user);
-    }
-
-    @Test
-    void deactivateUserChangesStatusToInactive() {
-        Long userId = 1L;
-        var user = new AppUser();
+        user.setEmail(request.email());
+        user.setPassword("encodedPassword");
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.ACTIVE);
-        when(entityLookupService.findUserById(userId)).thenReturn(user);
+        user.setEnabled(false);
+        user.setTokens(new HashSet<>());
 
-        appUserService.deactivateUser(userId);
+        var token = new Token();
+        token.setToken("generated-token");
+        token.setTokenType(TokenType.CONFIRMATION);
+        token.setExpirationDate(LocalDateTime.now().plusMinutes(15));
+        token.setAppUser(user);
+        user.getTokens().add(token);
 
-        assertEquals(AppUserStatus.INACTIVE, user.getStatus());
-        verify(appUserRepository, times(1)).save(user);
+        when(tokenService.generateToken()).thenReturn("generated-token");
+        when(tokenService.generateExpirationDate()).thenReturn(LocalDateTime.now().plusMinutes(15));
+        when(appUserRepository.save(any(AppUser.class))).thenReturn(user);
+
+        var expectedUserDto = new AppUserDto(1L, request.email(), request.firstName(), request.lastName(), Set.of(role), AppUserStatus.ACTIVE);
+        when(appUserMapper.toDto(user)).thenReturn(expectedUserDto);
+
+        var result = appUserService.createUser(request);
+
+        assertEquals(expectedUserDto, result);
+        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(roleRepository).findByName(request.role().toUpperCase());
+        verify(passwordEncoder).encode(request.password());
+        verify(tokenService).generateToken();
+        verify(tokenService).generateExpirationDate();
+        verify(appUserRepository).save(any(AppUser.class));
+        verify(appUserMapper).toDto(user);
     }
 
     @Test
     void createUserThrowsExceptionWhenEmailIsNull() {
-        var userDto = new AppUserDto(null, null, "Test", "User", Set.of(new Role("CLIENT")), AppUserStatus.ACTIVE);
+        var request = new RegisterRequest(null, "password", "Test", "User", "CLIENT");
 
-        var exception = assertThrows(ApiException.class, () -> appUserService.createUser(userDto));
+        var exception = assertThrows(ApiException.class, () -> appUserService.createUser(request));
 
         assertEquals("Email cannot be null or blank", exception.getMessage());
         verifyNoInteractions(appUserRepository);
-    }
-
-    @Test
-    void getUsersByRoleReturnsEmptyPageWhenNoUsersExist() {
-        var pageable = Pageable.unpaged();
-        var role = new Role("INSTRUCTOR");
-
-        when(roleRepository.findByName("INSTRUCTOR")).thenReturn(Optional.of(role));
-        when(appUserRepository.findByRolesContaining(role, pageable)).thenReturn(Page.empty(pageable));
-
-        var result = appUserService.getUsersByRole("INSTRUCTOR", pageable);
-
-        assertTrue(result.isEmpty());
-        verify(roleRepository, times(1)).findByName("INSTRUCTOR");
-        verify(appUserRepository, times(1)).findByRolesContaining(role, pageable);
-        verifyNoMoreInteractions(appUserRepository, roleRepository);
     }
 }

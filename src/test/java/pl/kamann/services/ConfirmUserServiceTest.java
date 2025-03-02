@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserTokens;
+import pl.kamann.entities.appuser.Token;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.EmailSender;
@@ -39,17 +39,17 @@ public class ConfirmUserServiceTest {
 
     @Test
     void shouldConfirmAccount() {
-        AppUserTokens tokens = new AppUserTokens();
+        Token tokens = new Token();
         tokens.setToken("test_token");
         tokens.setTokenType(TokenType.CONFIRMATION);
         tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
 
-        Set<AppUserTokens> tokenSet = new HashSet<>();
+        Set<Token> tokenSet = new HashSet<>();
         tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokenSet);
+        user.setTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
@@ -61,7 +61,7 @@ public class ConfirmUserServiceTest {
         confirmUserService.confirmUserAccount("test_token");
 
         AppUser updatedUser = appUserRepository.findByEmail("test@test.com").orElseThrow();
-        Set<AppUserTokens> updatedTokens = updatedUser.getAppUserTokens();
+        Set<Token> updatedTokens = updatedUser.getTokens();
 
         assertTrue(updatedUser.isEnabled());
         assertTrue(updatedTokens.isEmpty(), "Token should be removed after confirmation");
@@ -77,17 +77,17 @@ public class ConfirmUserServiceTest {
 
     @Test
     void shouldNotConfirmAlreadyConfirmedAccount() {
-        AppUserTokens tokens = new AppUserTokens();
+        Token tokens = new Token();
         tokens.setToken("test_token");
         tokens.setTokenType(TokenType.CONFIRMATION);
         tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
 
-        Set<AppUserTokens> tokenSet = new HashSet<>();
+        Set<Token> tokenSet = new HashSet<>();
         tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokenSet);
+        user.setTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
@@ -100,24 +100,24 @@ public class ConfirmUserServiceTest {
         confirmUserService.confirmUserAccount("test_token");
 
         AppUser updatedUser = appUserRepository.findByEmail("test@test.com").orElseThrow();
-        Set<AppUserTokens> updatedTokens = updatedUser.getAppUserTokens();
+        Set<Token> updatedTokens = updatedUser.getTokens();
         assertTrue(updatedUser.isEnabled(), "User should still be enabled");
         assertTrue(updatedTokens.isEmpty(), "Token should be removed after confirmation");
     }
 
     @Test
     void shouldSendConfirmationEmailAfterActivation() throws MessagingException {
-        AppUserTokens tokens = new AppUserTokens();
+        Token tokens = new Token();
         tokens.setToken("test_token");
         tokens.setTokenType(TokenType.CONFIRMATION);
         tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
 
-        Set<AppUserTokens> tokenSet = new HashSet<>();
+        Set<Token> tokenSet = new HashSet<>();
         tokenSet.add(tokens);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokenSet);
+        user.setTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");

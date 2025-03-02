@@ -36,39 +36,54 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        String requestURI = request.getRequestURI();
+        log.debug("🔍 JWT Filter Intercepted Request: {}", requestURI);
+
+        if (requestURI.startsWith("/api/v1/auth/confirm") ||
+                requestURI.startsWith("/api/v1/auth/register") ||
+                requestURI.startsWith("/api/v1/auth/login")) {
+            log.debug("Skipping JWT authentication for: {}", requestURI);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = jwtUtils.extractTokenFromRequest(request);
+        log.debug("🔍 Extracted JWT Token: {}", token);
 
-        if (token != null && jwtUtils.validateToken(token)) {
-            String email = jwtUtils.extractEmail(token);
+        if (token == null || !jwtUtils.validateToken(token)) {
+            log.debug("No valid JWT token found. Skipping authentication.");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            try {
-                AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
-                        .orElseThrow(() -> {
-                            log.warn("User with email {} not found", email);
-                            return new UsernameNotFoundException("User not found");
-                        });
+        String email = jwtUtils.extractEmail(token);
 
-                List<GrantedAuthority> authorities = user.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                        .collect(Collectors.toList());
+        try {
+            AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
+                    .orElseThrow(() -> {
+                        log.warn("User with email {} not found", email);
+                        return new UsernameNotFoundException("User not found");
+                    });
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        user.getEmail(), null, authorities);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            List<GrantedAuthority> authorities = user.getRoles().stream()
+                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                    .collect(Collectors.toList());
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("Authenticated user: {}", email);
-            } catch (UsernameNotFoundException ex) {
-                log.error("Authentication failed: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-            } catch (Exception ex) {
-                log.error("An error occurred during authentication: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-            }
-        } else {
-            log.warn("Invalid or missing token");
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    user.getEmail(), null, authorities);
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.info("Authenticated user: {}", email);
+        } catch (UsernameNotFoundException ex) {
+            log.error("Authentication failed: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
+        } catch (Exception ex) {
+            log.error("An error occurred during authentication: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
     }
+
 }

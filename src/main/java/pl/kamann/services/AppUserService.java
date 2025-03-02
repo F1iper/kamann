@@ -7,15 +7,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
-import pl.kamann.entities.appuser.Role;
+import pl.kamann.dtos.register.RegisterRequest;
+import pl.kamann.entities.appuser.*;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
@@ -23,6 +23,7 @@ import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
 import pl.kamann.utility.PaginationUtil;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -33,8 +34,9 @@ public class AppUserService implements UserDetailsService {
     private final AppUserMapper appUserMapper;
     private final RoleRepository roleRepository;
 
+    private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
     private final EntityLookupService entityLookupService;
-
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
 
@@ -55,18 +57,7 @@ public class AppUserService implements UserDetailsService {
             pagedUsers = appUserRepository.findUsersByRoleWithRoles(pageable, role);
         }
 
-        return paginationUtil.toPaginatedResponse(pagedUsers, this::mapToDto);
-    }
-
-    private AppUserDto mapToDto(AppUser appUser) {
-        return new AppUserDto(
-                appUser.getId(),
-                appUser.getEmail(),
-                appUser.getFirstName(),
-                appUser.getLastName(),
-                appUser.getRoles(),
-                appUser.getStatus()
-        );
+        return paginationUtil.toPaginatedResponse(pagedUsers, appUserMapper::toDto);
     }
 
     public AppUserDto getUserById(Long id) {
@@ -82,8 +73,8 @@ public class AppUserService implements UserDetailsService {
         return appUserMapper.toDto(user);
     }
 
-    public AppUserDto createUser(AppUserDto userDto) {
-        if (userDto.email() == null || userDto.email().isBlank()) {
+    public AppUserDto createUser(RegisterRequest request) {
+        if (request.email() == null || request.email().isBlank()) {
             throw new ApiException(
                     "Email cannot be null or blank",
                     HttpStatus.BAD_REQUEST,
@@ -91,23 +82,42 @@ public class AppUserService implements UserDetailsService {
             );
         }
 
-        if (userDto.roles() == null || userDto.roles().isEmpty()) {
+        if (request.role() == null || request.role().isBlank()) {
             throw new ApiException(
-                    "Roles cannot be null or empty",
+                    "Role cannot be null or blank",
                     HttpStatus.BAD_REQUEST,
                     StatusCodes.INVALID_INPUT.name()
             );
         }
 
-        entityLookupService.validateEmailNotTaken(userDto.email());
+        entityLookupService.validateEmailNotTaken(request.email());
 
-        Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.roles());
+        Role role = roleRepository.findByName(request.role().toUpperCase())
+                .orElseThrow(() -> new ApiException(
+                        "Role not found: " + request.role(),
+                        HttpStatus.NOT_FOUND,
+                        AuthCodes.ROLE_NOT_FOUND.name()
+                ));
 
-        AppUser user = appUserMapper.toEntity(userDto, roles);
+        String encodedPassword = passwordEncoder.encode(request.password());
 
-        if (user.getStatus() == null) {
-            user.setStatus(AppUserStatus.ACTIVE);
-        }
+        AppUser user = new AppUser();
+        user.setEmail(request.email());
+        user.setPassword(encodedPassword);
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setRoles(Set.of(role));
+        user.setStatus(AppUserStatus.ACTIVE);
+        user.setEnabled(false);
+
+        Token token = new Token();
+        token.setToken(tokenService.generateToken());
+        token.setTokenType(TokenType.CONFIRMATION);
+        token.setExpirationDate(tokenService.generateExpirationDate());
+        token.setAppUser(user);
+
+        user.setTokens(new HashSet<>());
+        user.getTokens().add(token);
 
         return appUserMapper.toDto(appUserRepository.save(user));
     }

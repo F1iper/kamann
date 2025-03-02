@@ -10,11 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.dtos.AppUserDto;
-import pl.kamann.dtos.ForgotPasswordDto;
+import pl.kamann.dtos.ResetPasswordRequest;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.PasswordResetService;
@@ -29,21 +28,18 @@ public class AuthController {
 
     private final ConfirmUserService confirmUserService;
     private final AuthService authService;
-    private final AppUserMapper appUserMapper;
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token.")
-    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
-        LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
     }
 
     @PostMapping("/register")
     @Operation(summary = "User Registration", description = "Registers a new user.")
     public ResponseEntity<AppUserDto> register(@RequestBody @Valid RegisterRequest request) {
-        AppUserDto response = appUserMapper.toDto(authService.registerUser(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerUser(request));
     }
 
     @GetMapping("/confirm")
@@ -56,24 +52,17 @@ public class AuthController {
         return ResponseEntity.ok("Your account has been confirmed.");
     }
 
-    @PostMapping("/forgot-password")
-    @Operation(
-            summary = "Forgot password",
-            description = "Send a password reset link to the provided email address."
-    )
-    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordDto forgotPasswordDto) {
-        passwordResetService.forgotPassword(forgotPasswordDto.email());
-        return ResponseEntity.ok("Password reset link has been sent to your email address.");
-
+    @PostMapping("/request-password-reset")
+    @Operation(summary = "Request Password Reset", description = "Send reset password email to user.")
+    public ResponseEntity<String> requestPasswordReset(@RequestParam String email) {
+        passwordResetService.requestPasswordReset(email);
+        return ResponseEntity.ok("If an account exists with that email, a password reset email has been sent.");
     }
 
     @PostMapping("/reset-password")
-    @Operation(
-            summary = "Reset password",
-            description = "Reset the password for the user account."
-    )
-    public ResponseEntity<String> resetPassword(@RequestParam("token") String token, @RequestBody String password) {
-        passwordResetService.resetPassword(token, password);
-        return ResponseEntity.ok("Password has been reset.");
+    @Operation(summary = "Reset Password", description = "Reset the password using a reset token.")
+    public ResponseEntity<String> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        passwordResetService.resetPasswordWithToken(request);
+        return ResponseEntity.ok("Password has been reset successfully.");
     }
 }

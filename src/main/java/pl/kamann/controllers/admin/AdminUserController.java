@@ -54,8 +54,8 @@ public class AdminUserController {
             summary = "Register a new user",
             description = "Register a new user (client, instructor, or admin) with specified details and roles. The roles and other information are provided in the request body."
     )
-    public ResponseEntity<AppUser> registerUser(@RequestBody RegisterRequest request) {
-        AppUser registeredUser = authService.registerUser(request);
+    public ResponseEntity<AppUserDto> registerUser(@RequestBody RegisterRequest request) {
+        AppUserDto registeredUser = authService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
     }
 
@@ -84,8 +84,8 @@ public class AdminUserController {
             summary = "Change the status of a user",
             description = "Change the status of a user to ACTIVE, INACTIVE, or any other supported status. The new status is provided as a query parameter."
     )
-    public ResponseEntity<Void> changeStatus(@PathVariable Long userId, @RequestParam AppUserStatus status) {
-        appUserService.changeUserStatus(userId, status);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<AppUserDto> changeStatus(@PathVariable Long userId, @RequestParam AppUserStatus status) {
+        AppUserDto appUserDto = appUserService.changeUserStatus(userId, status);
+        return ResponseEntity.ok(appUserDto);
     }
 }

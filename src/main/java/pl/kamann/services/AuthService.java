@@ -17,6 +17,7 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
+import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
@@ -26,6 +27,7 @@ import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Slf4j
@@ -38,11 +40,11 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     private final AppUserMapper appUserMapper;
+    private final ConfirmUserService confirmUserService;
+    private final TokenService tokenService;
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
-    private final ConfirmUserService confirmUserService;
-    private final TokenService tokenService;
 
     public LoginResponse login(@Valid LoginRequest request) {
         try {
@@ -71,7 +73,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AppUser registerUser(RegisterRequest request) {
+    public AppUserDto registerUser(RegisterRequest request) {
         validateEmailNotTaken(request.email());
 
         String roleName = request.role() != null ? request.role() : RoleCodes.CLIENT.name();
@@ -83,26 +85,28 @@ public class AuthService {
         confirmUserService.sendConfirmationEmail(savedUser);
 
         log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
-        return savedUser;
+        return appUserMapper.toDto(savedUser);
     }
 
     private AppUser createAppUser(RegisterRequest request, Role role) {
-        AppUserTokens appUserTokens = new AppUserTokens();
-
         AppUser user = new AppUser();
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setRoles(Set.of(role));
-        user.setStatus(AppUserStatus.ACTIVE);
+        user.setStatus(AppUserStatus.PENDING);
         user.setEnabled(false);
-        user.setAppUserTokens(Set.of(appUserTokens));
+        user.setTokens(new HashSet<>());
 
-        appUserTokens.setToken(tokenService.generateToken());
-        appUserTokens.setTokenType(TokenType.CONFIRMATION);
-        appUserTokens.setExpirationDate(tokenService.generateExpirationDate());
-        appUserTokens.setAppUser(user);
+        Token token = new Token();
+        token.setToken(tokenService.generateToken());
+        token.setTokenType(TokenType.CONFIRMATION);
+        token.setExpirationDate(tokenService.generateExpirationDate());
+        token.setAppUser(user);
+
+        user.getTokens().add(token);
+
         return user;
     }
 

@@ -9,13 +9,9 @@ import org.springframework.data.repository.query.Param;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.Role;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
-
-    @Query("SELECT u FROM AppUser u JOIN u.roles r WHERE r.name = :roleName")
-    List<AppUser> findByRoleName(@Param("roleName") String roleName);
 
     Optional<AppUser> findByEmail(String email);
 
@@ -33,6 +29,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     @Query("SELECT DISTINCT u FROM AppUser u JOIN u.roles r WHERE r = :role")
     Page<AppUser> findUsersByRoleWithRoles(Pageable pageable, Role role);
 
-    @Query("SELECT u FROM AppUser u JOIN u.appUserTokens t WHERE t.token = :token")
-    Optional<AppUser> findByToken(String token);
+    @Query("SELECT u FROM AppUser u JOIN u.tokens t WHERE t.token = :token")
+    Optional<AppUser> findByToken(@Param("token") String token);
+
 }

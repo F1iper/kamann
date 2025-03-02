@@ -9,8 +9,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
+import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.dtos.ResetPasswordRequest;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserTokens;
+import pl.kamann.entities.appuser.Token;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.EmailSender;
@@ -45,98 +47,108 @@ public class PasswordResetServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Test
-    void shouldForgotPassword() {
+    void shouldRequestPasswordReset() {
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
-
         appUserRepository.save(user);
 
-        passwordResetService.forgotPassword(user.getEmail());
+        passwordResetService.requestPasswordReset(user.getEmail());
 
-        Set<AppUserTokens> updatedTokens = appUserRepository.findByEmail(user.getEmail()).orElseThrow().getAppUserTokens();
-
+        Set<Token> updatedTokens = appUserRepository.findByEmail(user.getEmail()).orElseThrow().getTokens();
         assertNotNull(updatedTokens);
+        assertFalse(updatedTokens.isEmpty());
     }
 
     @Test
-    void shouldResetPassword() {
-        AppUserTokens tokens = new AppUserTokens();
-        tokens.setToken("test_token");
-        tokens.setTokenType(TokenType.RESET_PASSWORD);
-        tokens.setExpirationDate(LocalDateTime.now().plusMinutes(10));
+    void shouldResetPasswordWithToken() {
+        Token token = new Token();
+        token.setToken("test_token");
+        token.setTokenType(TokenType.RESET_PASSWORD);
+        token.setExpirationDate(LocalDateTime.now().plusMinutes(10));
 
-        Set<AppUserTokens> tokenSet = new HashSet<>();
-        tokenSet.add(tokens);
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setToken("test_token");
+        request.setNewPassword("new_password");
+        request.setConfirmPassword("new_password");
+
+        Set<Token> tokenSet = new HashSet<>();
+        tokenSet.add(token);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokenSet);
+        user.setTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
-        user.setPassword("hashed_password");
+        user.setPassword(passwordEncoder.encode("old_password"));
 
-        tokens.setAppUser(user);
-
+        token.setAppUser(user);
         appUserRepository.save(user);
 
-        passwordResetService.resetPassword("test_token", "new_password");
+        passwordResetService.resetPasswordWithToken(request);
 
         AppUser updatedUser = appUserRepository.findByEmail(user.getEmail()).orElseThrow();
-        AppUserTokens updatedTokens = updatedUser.getAppUserTokens().stream()
+        Token updatedToken = updatedUser.getTokens().stream()
                 .filter(t -> t.getToken().equals("test_token"))
                 .findFirst()
                 .orElse(null);
 
-        assertNull(updatedTokens);
+        assertNull(updatedToken, "Token should be deleted after password reset.");
         assertTrue(passwordEncoder.matches("new_password", updatedUser.getPassword()));
     }
 
     @Test
     void shouldThrowExceptionForInvalidToken() {
-        Exception exception = assertThrows(RuntimeException.class, () ->
-                passwordResetService.resetPassword("invalid_token", "new_password")
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setToken("invalid_token");
+        request.setNewPassword("new_password");
+        request.setConfirmPassword("new_password");
+
+        ApiException exception = assertThrows(ApiException.class, () ->
+                passwordResetService.resetPasswordWithToken(request)
         );
         assertTrue(exception.getMessage().contains("Invalid reset password token"));
     }
 
     @Test
     void shouldThrowExceptionForExpiredToken() {
-        AppUserTokens tokens = new AppUserTokens();
-        tokens.setToken("test_token");
-        tokens.setTokenType(TokenType.RESET_PASSWORD);
-        tokens.setExpirationDate(LocalDateTime.now().minusMinutes(10));
+        Token token = new Token();
+        token.setToken("test_token");
+        token.setTokenType(TokenType.RESET_PASSWORD);
+        token.setExpirationDate(LocalDateTime.now().minusMinutes(10)); // Expired
 
-        Set<AppUserTokens> tokenSet = new HashSet<>();
-        tokenSet.add(tokens);
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setToken("test_token");
+        request.setNewPassword("new_password");
+        request.setConfirmPassword("new_password");
+
+        Set<Token> tokenSet = new HashSet<>();
+        tokenSet.add(token);
 
         AppUser user = new AppUser();
         user.setEmail("test@test.com");
-        user.setAppUserTokens(tokenSet);
+        user.setTokens(tokenSet);
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
 
-        tokens.setAppUser(user);
-
+        token.setAppUser(user);
         appUserRepository.save(user);
 
-        Exception exception = assertThrows(RuntimeException.class, () ->
-                passwordResetService.resetPassword("test_token", "new_password")
+        ApiException exception = assertThrows(ApiException.class, () ->
+                passwordResetService.resetPasswordWithToken(request)
         );
-
         assertTrue(exception.getMessage().contains("Reset password token expired"));
     }
 
     @Test
     void shouldThrowExceptionForUserNotFound() {
-        Exception exception = assertThrows(RuntimeException.class, () ->
-                passwordResetService.forgotPassword("")
+        ApiException exception = assertThrows(ApiException.class, () ->
+                passwordResetService.requestPasswordReset("nonexistent@test.com")
         );
-
-        assertTrue(exception.getMessage().contains("User with email:  not found"));
+        assertTrue(exception.getMessage().contains("User with email: nonexistent@test.com not found"));
     }
 
     @Test
@@ -146,15 +158,14 @@ public class PasswordResetServiceTest {
         user.setFirstName("Test");
         user.setLastName("User");
         user.setPassword("hashed_password");
-
         appUserRepository.save(user);
 
-        doThrow(new RuntimeException("Error sending the reset password email")).when(emailSender).sendEmail(anyString(), anyString(), any(Locale.class), anyString());
+        doThrow(new RuntimeException("Error sending the reset password email"))
+                .when(emailSender).sendEmail(anyString(), anyString(), any(Locale.class), anyString());
 
-        Exception exception = assertThrows(RuntimeException.class, () ->
-                passwordResetService.forgotPassword(user.getEmail())
+        ApiException exception = assertThrows(ApiException.class, () ->
+                passwordResetService.requestPasswordReset(user.getEmail())
         );
-
         assertTrue(exception.getMessage().contains("Error sending the reset password email"));
     }
 }

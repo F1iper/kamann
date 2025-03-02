@@ -9,7 +9,7 @@ import org.springframework.util.StringUtils;
 import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.codes.RecurrenceCodes;
 import pl.kamann.config.exception.handler.ApiException;
-import pl.kamann.dtos.EventUpdateRequest;
+import pl.kamann.dtos.event.EventUpdateRequest;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;

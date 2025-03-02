@@ -11,6 +11,8 @@ import pl.kamann.config.codes.EventCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.*;
+import pl.kamann.dtos.event.EventDto;
+import pl.kamann.dtos.event.EventLightDto;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.OccurrenceEvent;

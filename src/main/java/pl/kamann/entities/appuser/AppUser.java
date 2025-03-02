@@ -54,8 +54,8 @@ public class AppUser implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AppUserStatus status = AppUserStatus.ACTIVE;
 
-    @OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<AppUserTokens> appUserTokens = new HashSet<>();
+    @OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<Token> tokens = new HashSet<>();
 
     private boolean enabled = false;
 
