@@ -39,7 +39,7 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "User Registration", description = "Registers a new user.")
     public ResponseEntity<AppUserDto> register(@RequestBody @Valid RegisterRequest request) {
-        AppUserDto response = appUserMapper.toDto(authService.registerUser(request));
+        AppUserDto response = appUserMapper.mapToDto(authService.registerUser(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

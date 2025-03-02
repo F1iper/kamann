@@ -78,9 +78,8 @@ class AppUserServiceTest {
                         .build()
         );
 
-        int page = 1;
         int size = users.size();
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(0, size);
         Page<AppUser> pagedUsers = new PageImpl<>(users, pageable, users.size());
 
         when(paginationService.validatePageable(pageable)).thenReturn(pageable);
@@ -107,13 +106,13 @@ class AppUserServiceTest {
         when(entityLookupService.findUserById(userId)).thenReturn(user);
 
         var userDto = new AppUserDto(1L, "email@example.com", "Test", "User", Set.of(new Role("CLIENT")), AppUserStatus.ACTIVE);
-        when(appUserMapper.toDto(user)).thenReturn(userDto);
+        when(appUserMapper.mapToDto(user)).thenReturn(userDto);
 
         var result = appUserService.getUserById(userId);
 
         assertEquals(userDto, result);
         verify(entityLookupService, times(1)).findUserById(userId);
-        verify(appUserMapper, times(1)).toDto(user);
+        verify(appUserMapper, times(1)).mapToDto(user);
     }
 
     @Test
@@ -122,14 +121,14 @@ class AppUserServiceTest {
         var roles = Set.of(new Role("CLIENT"));
 
         var user = new AppUser();
-        when(appUserMapper.toEntity(any(AppUserDto.class), eq(roles))).thenReturn(user);
+        when(appUserMapper.mapToEntity(any(AppUserDto.class), eq(roles))).thenReturn(user);
 
         var savedUser = new AppUser();
         savedUser.setId(1L);
         when(appUserRepository.save(user)).thenReturn(savedUser);
 
         var savedUserDto = new AppUserDto(1L, "test@example.com", "Test", "User", roles, AppUserStatus.ACTIVE);
-        when(appUserMapper.toDto(savedUser)).thenReturn(savedUserDto);
+        when(appUserMapper.mapToDto(savedUser)).thenReturn(savedUserDto);
 
         when(entityLookupService.findRolesByNameIn(userDto.roles())).thenReturn(roles);
 
@@ -138,9 +137,9 @@ class AppUserServiceTest {
         assertEquals(savedUserDto, result);
         verify(entityLookupService, times(1)).validateEmailNotTaken(userDto.email());
         verify(entityLookupService, times(1)).findRolesByNameIn(userDto.roles());
-        verify(appUserMapper, times(1)).toEntity(eq(userDto), eq(roles));
+        verify(appUserMapper, times(1)).mapToEntity(eq(userDto), eq(roles));
         verify(appUserRepository, times(1)).save(user);
-        verify(appUserMapper, times(1)).toDto(savedUser);
+        verify(appUserMapper, times(1)).mapToDto(savedUser);
     }
 
     @Test
@@ -180,18 +179,24 @@ class AppUserServiceTest {
     }
 
     @Test
-    void getUsersByRoleReturnsEmptyPageWhenNoUsersExist() {
+    void getUsersByRoleReturnsEmptyResponseWhenNoUsersExist() {
         var pageable = Pageable.unpaged();
         var role = new Role("INSTRUCTOR");
 
         when(roleRepository.findByName("INSTRUCTOR")).thenReturn(Optional.of(role));
         when(appUserRepository.findByRolesContaining(role, pageable)).thenReturn(Page.empty(pageable));
+        when(appUserMapper.mapToDtoPaginatedResponseDto(any())).thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(0, 0)));
 
         var result = appUserService.getUsersByRole("INSTRUCTOR", pageable);
 
-        assertTrue(result.isEmpty());
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getMetaData().getTotalPages());
+        assertEquals(0, result.getMetaData().getTotalElements());
+
         verify(roleRepository, times(1)).findByName("INSTRUCTOR");
         verify(appUserRepository, times(1)).findByRolesContaining(role, pageable);
-        verifyNoMoreInteractions(appUserRepository, roleRepository);
+        verify(appUserMapper, times(1)).mapToDtoPaginatedResponseDto(any());
+        verifyNoMoreInteractions(appUserRepository, roleRepository, appUserMapper);
     }
 }
