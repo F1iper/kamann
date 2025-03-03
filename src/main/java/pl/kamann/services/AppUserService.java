@@ -80,7 +80,7 @@ public class AppUserService implements UserDetailsService {
         }
 
         AppUser user = entityLookupService.findUserById(id);
-        return appUserMapper.mapToDto(user);
+        return appUserMapper.toAppUserDto(user);
     }
 
     public AppUserDto createUser(AppUserDto userDto) {
@@ -104,13 +104,13 @@ public class AppUserService implements UserDetailsService {
 
         Set<Role> roles = entityLookupService.findRolesByNameIn(userDto.roles());
 
-        AppUser user = appUserMapper.mapToEntity(userDto, roles);
+        AppUser user = appUserMapper.toAppUser(userDto, roles);
 
         if (user.getStatus() == null) {
             user.setStatus(AppUserStatus.ACTIVE);
         }
 
-        return appUserMapper.mapToDto(appUserRepository.save(user));
+        return appUserMapper.toAppUserDto(appUserRepository.save(user));
     }
 
     public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
@@ -132,7 +132,7 @@ public class AppUserService implements UserDetailsService {
 
         AppUser user = entityLookupService.findUserById(userId);
         user.setStatus(status);
-        return appUserMapper.mapToDto(appUserRepository.save(user));
+        return appUserMapper.toAppUserDto(appUserRepository.save(user));
     }
 
     public void activateUser(Long userId) {
@@ -163,7 +163,7 @@ public class AppUserService implements UserDetailsService {
 
         PaginationMetaData metaData = new PaginationMetaData(users.getTotalPages(), users.getTotalElements());
 
-        return appUserMapper.mapToDtoPaginatedResponseDto(new PaginatedResponseDto<>(users.getContent(), metaData));
+        return appUserMapper.toDtoPaginatedResponseDto(new PaginatedResponseDto<>(users.getContent(), metaData));
     }
 
     @Override

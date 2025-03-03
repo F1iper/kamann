@@ -16,7 +16,7 @@ public class FacilityService {
     private final FacilityMapper facilityMapper;
 
     public FacilityDto getFacility(Long id) {
-        return facilityMapper.mapToDto(facilityRepository.findById(id).orElseThrow(() -> new ApiException(
+        return facilityMapper.toFacilityDto(facilityRepository.findById(id).orElseThrow(() -> new ApiException(
                 "Facility not found with id: " + id,
                 HttpStatus.NOT_FOUND,
                 EventCodes.EVENT_NOT_FOUND.name()
@@ -24,7 +24,7 @@ public class FacilityService {
     }
 
     public FacilityDto createFacility(FacilityDto facilityDto) {
-        return facilityMapper.mapToDto(facilityRepository.save(facilityMapper.mapToEntity(facilityDto)));
+        return facilityMapper.toFacilityDto(facilityRepository.save(facilityMapper.toFacility(facilityDto)));
     }
 
     public FacilityDto updateFacility(Long id, FacilityDto facilityDto) {
@@ -34,7 +34,7 @@ public class FacilityService {
                     facility.setAddress(facilityDto.address());
                     facility.setOpeningHours(facilityDto.openingHours());
                     facility.setClosingHours(facilityDto.closingHours());
-                    return facilityMapper.mapToDto(facilityRepository.save(facility));
+                    return facilityMapper.toFacilityDto(facilityRepository.save(facility));
                 })
                 .orElseThrow(() -> new ApiException(
                         "Facility not found with id: " + id,

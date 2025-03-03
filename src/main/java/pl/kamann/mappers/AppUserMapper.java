@@ -12,13 +12,13 @@ import java.util.Set;
 
 @Mapper(componentModel = "spring")
 public interface AppUserMapper {
-    AppUserDto mapToDto(AppUser user);
+    AppUserDto toAppUserDto(AppUser user);
 
     @Mapping(target = "roles", source = "roles")
-    AppUser mapToEntity(AppUserDto dto, Set<Role> roles);
+    AppUser toAppUser(AppUserDto dto, Set<Role> roles);
 
-    PaginatedResponseDto<AppUserDto> mapToDtoPaginatedResponseDto(PaginatedResponseDto<AppUser> users);
+    PaginatedResponseDto<AppUserDto> toDtoPaginatedResponseDto(PaginatedResponseDto<AppUser> users);
 
-    AppUserResponseDto mapToResponseDto(AppUser loggedInUser);
+    AppUserResponseDto toAppUserResponseDto(AppUser loggedInUser);
 
 }

@@ -6,6 +6,6 @@ import pl.kamann.entities.facility.Facility;
 
 @Mapper(componentModel = "spring")
 public interface FacilityMapper {
-    FacilityDto mapToDto(Facility facility);
-    Facility mapToEntity(FacilityDto facilityDto);
+    FacilityDto toFacilityDto(Facility facility);
+    Facility toFacility(FacilityDto facilityDto);
 }

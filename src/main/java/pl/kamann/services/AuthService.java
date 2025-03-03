@@ -137,6 +137,6 @@ public class AuthService {
                         HttpStatus.NOT_FOUND,
                         AuthCodes.USER_NOT_FOUND.name()));
 
-        return appUserMapper.mapToResponseDto(appUser);
+        return appUserMapper.toAppUserResponseDto(appUser);
     }
 }

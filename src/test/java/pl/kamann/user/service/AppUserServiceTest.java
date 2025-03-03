@@ -106,13 +106,13 @@ class AppUserServiceTest {
         when(entityLookupService.findUserById(userId)).thenReturn(user);
 
         var userDto = new AppUserDto(1L, "email@example.com", "Test", "User", Set.of(new Role("CLIENT")), AppUserStatus.ACTIVE);
-        when(appUserMapper.mapToDto(user)).thenReturn(userDto);
+        when(appUserMapper.toAppUserDto(user)).thenReturn(userDto);
 
         var result = appUserService.getUserById(userId);
 
         assertEquals(userDto, result);
         verify(entityLookupService, times(1)).findUserById(userId);
-        verify(appUserMapper, times(1)).mapToDto(user);
+        verify(appUserMapper, times(1)).toAppUserDto(user);
     }
 
     @Test
@@ -121,14 +121,14 @@ class AppUserServiceTest {
         var roles = Set.of(new Role("CLIENT"));
 
         var user = new AppUser();
-        when(appUserMapper.mapToEntity(any(AppUserDto.class), eq(roles))).thenReturn(user);
+        when(appUserMapper.toAppUser(any(AppUserDto.class), eq(roles))).thenReturn(user);
 
         var savedUser = new AppUser();
         savedUser.setId(1L);
         when(appUserRepository.save(user)).thenReturn(savedUser);
 
         var savedUserDto = new AppUserDto(1L, "test@example.com", "Test", "User", roles, AppUserStatus.ACTIVE);
-        when(appUserMapper.mapToDto(savedUser)).thenReturn(savedUserDto);
+        when(appUserMapper.toAppUserDto(savedUser)).thenReturn(savedUserDto);
 
         when(entityLookupService.findRolesByNameIn(userDto.roles())).thenReturn(roles);
 
@@ -137,9 +137,9 @@ class AppUserServiceTest {
         assertEquals(savedUserDto, result);
         verify(entityLookupService, times(1)).validateEmailNotTaken(userDto.email());
         verify(entityLookupService, times(1)).findRolesByNameIn(userDto.roles());
-        verify(appUserMapper, times(1)).mapToEntity(eq(userDto), eq(roles));
+        verify(appUserMapper, times(1)).toAppUser(eq(userDto), eq(roles));
         verify(appUserRepository, times(1)).save(user);
-        verify(appUserMapper, times(1)).mapToDto(savedUser);
+        verify(appUserMapper, times(1)).toAppUserDto(savedUser);
     }
 
     @Test
@@ -185,7 +185,7 @@ class AppUserServiceTest {
 
         when(roleRepository.findByName("INSTRUCTOR")).thenReturn(Optional.of(role));
         when(appUserRepository.findByRolesContaining(role, pageable)).thenReturn(Page.empty(pageable));
-        when(appUserMapper.mapToDtoPaginatedResponseDto(any())).thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(0, 0)));
+        when(appUserMapper.toDtoPaginatedResponseDto(any())).thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(0, 0)));
 
         var result = appUserService.getUsersByRole("INSTRUCTOR", pageable);
 
@@ -196,7 +196,7 @@ class AppUserServiceTest {
 
         verify(roleRepository, times(1)).findByName("INSTRUCTOR");
         verify(appUserRepository, times(1)).findByRolesContaining(role, pageable);
-        verify(appUserMapper, times(1)).mapToDtoPaginatedResponseDto(any());
+        verify(appUserMapper, times(1)).toDtoPaginatedResponseDto(any());
         verifyNoMoreInteractions(appUserRepository, roleRepository, appUserMapper);
     }
 }
