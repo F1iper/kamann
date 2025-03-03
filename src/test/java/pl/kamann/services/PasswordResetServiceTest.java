@@ -72,7 +72,6 @@ public class PasswordResetServiceTest {
         ResetPasswordRequest request = new ResetPasswordRequest();
         request.setToken("test_token");
         request.setNewPassword("new_password");
-        request.setConfirmPassword("new_password");
 
         Set<Token> tokenSet = new HashSet<>();
         tokenSet.add(token);
@@ -104,7 +103,6 @@ public class PasswordResetServiceTest {
         ResetPasswordRequest request = new ResetPasswordRequest();
         request.setToken("invalid_token");
         request.setNewPassword("new_password");
-        request.setConfirmPassword("new_password");
 
         ApiException exception = assertThrows(ApiException.class, () ->
                 passwordResetService.resetPasswordWithToken(request)
@@ -122,7 +120,6 @@ public class PasswordResetServiceTest {
         ResetPasswordRequest request = new ResetPasswordRequest();
         request.setToken("test_token");
         request.setNewPassword("new_password");
-        request.setConfirmPassword("new_password");
 
         Set<Token> tokenSet = new HashSet<>();
         tokenSet.add(token);

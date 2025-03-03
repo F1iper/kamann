@@ -54,7 +54,6 @@ public class PasswordResetService {
     public void resetPasswordWithToken(ResetPasswordRequest request) {
         String token = request.getToken();
         String newPassword = request.getNewPassword();
-        String confirmPassword = request.getConfirmPassword();
 
         log.info("Reset password attempt for token: {}", token);
 
@@ -69,15 +68,6 @@ public class PasswordResetService {
                 });
 
         validateResetToken(resetToken);
-
-        if (!newPassword.equals(confirmPassword)) {
-            log.warn("Passwords do not match for reset token: {}", token);
-            throw new ApiException(
-                    "Passwords do not match.",
-                    HttpStatus.BAD_REQUEST,
-                    AuthCodes.PASSWORDS_DO_NOT_MATCH.name()
-            );
-        }
 
         AppUser appUser = resetToken.getAppUser();
         appUser.setPassword(passwordEncoder.encode(newPassword));
@@ -126,7 +116,7 @@ public class PasswordResetService {
         }
 
         if (!validTokens.isEmpty()) {
-            log.warn("⚠Active reset token already exists for email: {}", appUser.getEmail());
+            log.warn("Active reset token already exists for email: {}", appUser.getEmail());
             throw new ApiException(
                     "A reset password token has already been generated. Please check your email.",
                     HttpStatus.CONFLICT,

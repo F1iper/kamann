@@ -25,6 +25,7 @@ public class TokenService {
     }
 
     public String generateToken() {
+        // todo use JWT
         return UUID.randomUUID().toString();
     }
 
