@@ -9,16 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.ResetPasswordRequest;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.Token;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
-import pl.kamann.repositories.TokenRepository;
 import pl.kamann.services.email.EmailSender;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 @Slf4j
@@ -28,55 +25,19 @@ public class PasswordResetService {
 
     private final AppUserRepository appUserRepository;
     private final TokenService tokenService;
-    private final TokenRepository tokenRepository;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
 
     @Transactional
     public void requestPasswordReset(String email) {
         log.info("Password reset requested for email: {}", email);
 
         AppUser appUser = validateUserForReset(email);
-        checkExistingResetTokens(appUser);
 
-        Token resetToken = generateResetToken(appUser);
-        tokenRepository.save(resetToken);
-        appUser.getTokens().add(resetToken);
-        appUserRepository.save(appUser);
-
-        sendResetPasswordEmail(appUser, resetToken);
+        sendResetPasswordEmail(appUser);
 
         log.info("Reset password email sent successfully to: {}", email);
-    }
-
-
-    @Transactional
-    public void resetPasswordWithToken(ResetPasswordRequest request) {
-        String token = request.getToken();
-        String newPassword = request.getNewPassword();
-
-        log.info("Reset password attempt for token: {}", token);
-
-        Token resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> {
-                    log.warn("Invalid reset password token: {}", token);
-                    return new ApiException(
-                            "Invalid reset password token.",
-                            HttpStatus.NOT_FOUND,
-                            AuthCodes.INVALID_TOKEN.name()
-                    );
-                });
-
-        validateResetToken(resetToken);
-
-        AppUser appUser = resetToken.getAppUser();
-        appUser.setPassword(passwordEncoder.encode(newPassword));
-
-        appUser.getTokens().remove(resetToken);
-        tokenRepository.delete(resetToken);
-        appUserRepository.save(appUser);
-
-        log.info("Password reset successfully for email: {}", appUser.getEmail());
     }
 
     private AppUser validateUserForReset(String email) {
@@ -101,54 +62,12 @@ public class PasswordResetService {
         return appUser;
     }
 
-    private void checkExistingResetTokens(AppUser appUser) {
-        List<Token> expiredTokens = new ArrayList<>();
-        List<Token> validTokens = new ArrayList<>();
+    private void sendResetPasswordEmail(AppUser appUser) {
 
-        for (Token token : appUser.getTokens()) {
-            if (token.getTokenType().equals(TokenType.RESET_PASSWORD)) {
-                if (token.isExpired()) {
-                    expiredTokens.add(token);
-                } else {
-                    validTokens.add(token);
-                }
-            }
-        }
+        String token = tokenService.generateToken(appUser.getEmail(), TokenType.RESET_PASSWORD, 15 * 60 * 1000);
 
-        if (!validTokens.isEmpty()) {
-            log.warn("Active reset token already exists for email: {}", appUser.getEmail());
-            throw new ApiException(
-                    "A reset password token has already been generated. Please check your email.",
-                    HttpStatus.CONFLICT,
-                    AuthCodes.RESET_PASSWORD_TOKEN_EXISTS.name()
-            );
-        }
-
-        if (!expiredTokens.isEmpty()) {
-            log.warn("Expired reset token found for email: {}", appUser.getEmail());
-            throw new ApiException(
-                    "Your password reset token has expired. Please request a new one.",
-                    HttpStatus.BAD_REQUEST,
-                    AuthCodes.RESET_PASSWORD_TOKEN_EXPIRED.name()
-            );
-        }
-
-        tokenRepository.deleteAll(expiredTokens);
-        expiredTokens.forEach(appUser.getTokens()::remove);
-    }
-
-    private Token generateResetToken(AppUser appUser) {
-        Token resetToken = new Token();
-        resetToken.setAppUser(appUser);
-        resetToken.setToken(tokenService.generateToken());
-        resetToken.setTokenType(TokenType.RESET_PASSWORD);
-        resetToken.setExpirationDate(tokenService.generateExpirationDate());
-        return resetToken;
-    }
-
-    private void sendResetPasswordEmail(AppUser appUser, Token resetToken) {
         try {
-            String resetLink = tokenService.generateResetPasswordLink(resetToken.getToken(), tokenService.getResetPasswordLink());
+            String resetLink = tokenService.generateResetPasswordLink(token, tokenService.getResetPasswordLink());
             log.info("Sending reset password email to: {}", appUser.getEmail());
             emailSender.sendEmail(appUser.getEmail(), resetLink, Locale.ENGLISH, "reset.password");
         } catch (MessagingException e) {
@@ -161,22 +80,34 @@ public class PasswordResetService {
         }
     }
 
-    private void validateResetToken(Token resetToken) {
-        if (!resetToken.getTokenType().equals(TokenType.RESET_PASSWORD)) {
-            log.warn("Token type mismatch for reset password: {}", resetToken.getToken());
-            throw new ApiException(
-                    "Invalid token type for password reset.",
-                    HttpStatus.BAD_REQUEST,
-                    AuthCodes.INVALID_TOKEN_TYPE.name()
-            );
-        }
 
-        if (resetToken.isExpired()) {
-            log.warn("Expired reset password token: {}", resetToken.getToken());
+    @Transactional
+    public void resetPasswordWithToken(ResetPasswordRequest request) {
+        String token = request.getToken();
+        String newPassword = request.getNewPassword();
+
+        log.info("Reset password attempt for token: {}", token);
+
+        if(jwtUtils.validateToken(token) && jwtUtils.isTokenTypeValid(token, TokenType.RESET_PASSWORD)) {
+            String email = jwtUtils.extractEmail(token);
+
+            AppUser appUser = appUserRepository.findByEmail(email).orElseThrow(() ->
+                    new ApiException(
+                            "User not found",
+                            HttpStatus.NOT_FOUND,
+                            AuthCodes.USER_NOT_FOUND.name()
+                    )
+            );
+
+            appUser.setPassword(passwordEncoder.encode(newPassword));
+            appUserRepository.save(appUser);
+
+            log.info("Password reset successfully for email: {}", appUser.getEmail());
+        } else {
             throw new ApiException(
-                    "Reset password token expired.",
-                    HttpStatus.BAD_REQUEST,
-                    AuthCodes.RESET_PASSWORD_TOKEN_EXPIRED.name()
+                    "Invalid reset password token.",
+                    HttpStatus.NOT_FOUND,
+                    AuthCodes.INVALID_TOKEN.name()
             );
         }
     }

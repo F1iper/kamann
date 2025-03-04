@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.config.pagination.PaginationMetaData;
+import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.*;
@@ -35,6 +36,7 @@ import java.util.function.Function;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.postgresql.hostchooser.HostRequirement.any;
 
 @ExtendWith(MockitoExtension.class)
 class AppUserServiceTest {
@@ -60,11 +62,11 @@ class AppUserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private TokenService tokenService;
-
     @InjectMocks
     private AppUserService appUserService;
+
+    @Mock
+    private JwtUtils jwtUtils;
 
     @Test
     void getAllUsersReturnsPaginatedResponseDto() {
@@ -87,9 +89,8 @@ class AppUserServiceTest {
                         .build()
         );
 
-        int page = 1;
         int size = users.size();
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(0, size);
         Page<AppUser> pagedUsers = new PageImpl<>(users, pageable, users.size());
 
         when(paginationService.validatePageable(pageable)).thenReturn(pageable);
@@ -141,17 +142,7 @@ class AppUserServiceTest {
         user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.ACTIVE);
         user.setEnabled(false);
-        user.setTokens(new HashSet<>());
 
-        var token = new Token();
-        token.setToken("generated-token");
-        token.setTokenType(TokenType.CONFIRMATION);
-        token.setExpirationDate(LocalDateTime.now().plusMinutes(15));
-        token.setAppUser(user);
-        user.getTokens().add(token);
-
-        when(tokenService.generateToken()).thenReturn("generated-token");
-        when(tokenService.generateExpirationDate()).thenReturn(LocalDateTime.now().plusMinutes(15));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(user);
 
         var expectedUserDto = new AppUserDto(1L, request.email(), request.firstName(), request.lastName(), Set.of(role), AppUserStatus.ACTIVE);
@@ -163,8 +154,6 @@ class AppUserServiceTest {
         verify(entityLookupService).validateEmailNotTaken(request.email());
         verify(roleRepository).findByName(request.role().toUpperCase());
         verify(passwordEncoder).encode(request.password());
-        verify(tokenService).generateToken();
-        verify(tokenService).generateExpirationDate();
         verify(appUserRepository).save(any(AppUser.class));
         verify(appUserMapper).toDto(user);
     }

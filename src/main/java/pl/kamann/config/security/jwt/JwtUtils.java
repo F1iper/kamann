@@ -10,12 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.TokenType;
 
 import javax.crypto.SecretKey;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -34,20 +32,33 @@ public class JwtUtils {
     }
 
     public String generateToken(String email, Set<Role> roles) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles.stream().map(Role::getName).toList());
 
-        List<String> roleNames = roles.stream().map(Role::getName).toList();
+        return generateTokenWithClaims(email, claims, jwtExpiration);
+    }
+
+    public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("TokenType", flag.toString());
+
+        return generateTokenWithClaims(email, claims, expirationTime);
+    }
+
+    public String generateTokenWithClaims(String email, Map<String, Object> claims, long expiration) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
 
         String token = Jwts.builder()
                 .setHeaderParam("typ", "JWT")
-                .claim("roles", roleNames)
+                .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
-        log.info("Generated token for {} with roles {}: {}", email, roleNames, token);
+
+        log.info("Generated token for {}: {}", email, token);
 
         return token;
     }
@@ -86,6 +97,14 @@ public class JwtUtils {
             log.error("JWT validation failed: {}", e.getMessage());
         }
         return false;
+    }
+
+    public boolean isTokenTypeValid(String token, TokenType expectedTokenType) {
+        String tokenTypeString = extractClaim(token, claims -> claims.get("TokenType", String.class));
+
+        TokenType tokenType = TokenType.valueOf(tokenTypeString);
+
+        return tokenType.equals(expectedTokenType);
     }
 
     private boolean isTokenExpired(String token) {

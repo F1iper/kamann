@@ -22,12 +22,13 @@ import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.*;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @Slf4j
@@ -41,7 +42,6 @@ public class AuthService {
 
     private final AppUserMapper appUserMapper;
     private final ConfirmUserService confirmUserService;
-    private final TokenService tokenService;
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
@@ -97,15 +97,6 @@ public class AuthService {
         user.setRoles(Set.of(role));
         user.setStatus(AppUserStatus.PENDING);
         user.setEnabled(false);
-        user.setTokens(new HashSet<>());
-
-        Token token = new Token();
-        token.setToken(tokenService.generateToken());
-        token.setTokenType(TokenType.CONFIRMATION);
-        token.setExpirationDate(tokenService.generateExpirationDate());
-        token.setAppUser(user);
-
-        user.getTokens().add(token);
 
         return user;
     }

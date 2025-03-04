@@ -15,7 +15,9 @@ import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.*;
+import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
@@ -23,7 +25,6 @@ import pl.kamann.utility.EntityLookupService;
 import pl.kamann.utility.PaginationService;
 import pl.kamann.utility.PaginationUtil;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -34,7 +35,6 @@ public class AppUserService implements UserDetailsService {
     private final AppUserMapper appUserMapper;
     private final RoleRepository roleRepository;
 
-    private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
     private final EntityLookupService entityLookupService;
     private final PaginationService paginationService;
@@ -110,14 +110,7 @@ public class AppUserService implements UserDetailsService {
         user.setStatus(AppUserStatus.ACTIVE);
         user.setEnabled(false);
 
-        Token token = new Token();
-        token.setToken(tokenService.generateToken());
-        token.setTokenType(TokenType.CONFIRMATION);
-        token.setExpirationDate(tokenService.generateExpirationDate());
-        token.setAppUser(user);
 
-        user.setTokens(new HashSet<>());
-        user.getTokens().add(token);
 
         return appUserMapper.toDto(appUserRepository.save(user));
     }
