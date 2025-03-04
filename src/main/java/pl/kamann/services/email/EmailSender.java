@@ -11,17 +11,17 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class ConfirmationEmail implements ConfirmationEmailFacade{
+public class EmailSender implements EmailSenderFacade {
     private final JavaMailSender javaMailSender;
 
-    public void sendConfirmationEmail(String to, String confirmationLink, Locale userLocale) throws MessagingException {
+    public void sendEmail(String to, String link, Locale userLocale, String type) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
-        EmailContentBuilder emailContentBuilder = new EmailContentBuilder(userLocale);
+        EmailContentBuilder emailContentBuilder = new EmailContentBuilder(userLocale, type);
 
         helper.setTo(to);
-        helper.setSubject(emailContentBuilder.getSubject());
-        helper.setText(emailContentBuilder.buildConfirmationEmail(confirmationLink), true);
+        helper.setSubject(emailContentBuilder.getSubject(type));
+        helper.setText(emailContentBuilder.buildConfirmationEmail(link), true);
 
         javaMailSender.send(message);
     }

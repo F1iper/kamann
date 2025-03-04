@@ -2,19 +2,17 @@ package pl.kamann.mappers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.EventLightDto;
-import pl.kamann.dtos.EventResponse;
-import pl.kamann.dtos.EventUpdateResponse;
+import org.springframework.stereotype.Service;
+import pl.kamann.dtos.event.EventDto;
+import pl.kamann.dtos.event.EventLightDto;
+import pl.kamann.dtos.event.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
 import pl.kamann.entities.event.EventStatus;
 import pl.kamann.utility.EntityLookupService;
 
-import java.time.LocalDateTime;
-
-@Component
+@Service
 @RequiredArgsConstructor
 public class EventMapper {
 
@@ -44,19 +42,6 @@ public class EventMapper {
                 .createdAt(event.getCreatedAt())
                 .build();
     }
-
-//    public EventResponse toResponseDto(Event event) {
-//        return new EventResponse(
-//                event.getId(),
-//                event.getTitle(),
-//                event.getDescription(),
-//                event.getStart(),
-//                event.getDurationMinutes(),
-//                event.getRrule(),
-//                event.getInstructor() != null ? event.getInstructor().getId() : null,
-//                event.getMaxParticipants()
-//        );
-//    }
 
     public CreateEventResponse toCreateEventResponse(Event event) {
         return new CreateEventResponse(

@@ -5,16 +5,18 @@ import java.util.ResourceBundle;
 
 public class EmailContentBuilder {
     ResourceBundle bundle;
-    public EmailContentBuilder(Locale locale){
+    String key;
+    public EmailContentBuilder(Locale locale, String key) {
         bundle = ResourceBundle.getBundle("messages", Locale.getDefault());
+        this.key = key;
     }
 
-    public String getSubject() {
-        return bundle.getString("registration.subject");
+    public String getSubject(String key) {
+        return bundle.getString(key + ".subject");
     }
 
     public String buildConfirmationEmail(String confirmationLink) {
-        return bundle.getString("registration.message") +
+        return bundle.getString(key + ".message") +
                 "<a href='" + confirmationLink + "'>" + confirmationLink + "</a>";
     }
 }

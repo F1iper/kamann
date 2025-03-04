@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.*;
+import pl.kamann.dtos.event.EventDto;
+import pl.kamann.dtos.event.EventLightDto;
 import pl.kamann.services.client.ClientEventService;
 
 @RestController

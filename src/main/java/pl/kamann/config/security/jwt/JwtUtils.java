@@ -6,21 +6,21 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.Role;
+import pl.kamann.entities.appuser.TokenType;
 
 import javax.crypto.SecretKey;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Component
 public class JwtUtils {
 
+    @Getter
     private final SecretKey secretKey;
     private final long jwtExpiration;
 
@@ -34,20 +34,34 @@ public class JwtUtils {
     }
 
     public String generateToken(String email, Set<Role> roles) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
+        return generateTokenWithClaims(email, claims, jwtExpiration);
+    }
 
-        List<String> roleNames = roles.stream().map(Role::getName).toList();
+    public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
+        Map<String, Object> claims = createClaims("TokenType", flag.toString());
+
+        return generateTokenWithClaims(email, claims, expirationTime);
+    }
+
+    private Map<String, Object> createClaims(String key, Object value) {
+        return Collections.singletonMap(key, value);
+    }
+
+    public String generateTokenWithClaims(String email, Map<String, Object> claims, long expiration) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
 
         String token = Jwts.builder()
                 .setHeaderParam("typ", "JWT")
-                .claim("roles", roleNames)
+                .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
-        log.info("Generated token for {} with roles {}: {}", email, roleNames, token);
+
+        log.info("Generated token for {}", email);
 
         return token;
     }
@@ -88,16 +102,23 @@ public class JwtUtils {
         return false;
     }
 
+    public boolean isTokenTypeValid(String token, TokenType expectedTokenType) {
+        String tokenTypeString = extractClaim(token, claims -> claims.get("TokenType", String.class));
+
+        TokenType tokenType = TokenType.valueOf(tokenTypeString);
+
+        return tokenType.equals(expectedTokenType);
+    }
+
     private boolean isTokenExpired(String token) {
         Date expiration = extractClaim(token, Claims::getExpiration);
         return expiration.before(new Date());
     }
 
-    public String extractTokenFromRequest(HttpServletRequest request) {
+    public Optional<String> extractTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
+        return (bearerToken != null && bearerToken.startsWith("Bearer "))
+                ? Optional.of(bearerToken.substring(7))
+                : Optional.empty();
     }
 }

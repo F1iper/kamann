@@ -18,6 +18,7 @@ import pl.kamann.repositories.AppUserRepository;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -36,39 +37,56 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = jwtUtils.extractTokenFromRequest(request);
+        String requestURI = request.getRequestURI();
+        log.debug("JWT Filter Intercepted Request: {}", requestURI);
 
-        if (token != null && jwtUtils.validateToken(token)) {
-            String email = jwtUtils.extractEmail(token);
+        if (requestURI.startsWith("/api/v1/auth/confirm") ||
+                requestURI.startsWith("/api/v1/auth/register") ||
+                requestURI.startsWith("/api/v1/auth/login")) {
+            log.debug("Skipping JWT authentication for: {}", requestURI);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            try {
-                AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
-                        .orElseThrow(() -> {
-                            log.warn("User with email {} not found", email);
-                            return new UsernameNotFoundException("User not found");
-                        });
+        Optional<String> tokenOpt = jwtUtils.extractTokenFromRequest(request);
 
-                List<GrantedAuthority> authorities = user.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                        .collect(Collectors.toList());
+        if (tokenOpt.isEmpty() || !jwtUtils.validateToken(tokenOpt.get())) {
+            log.debug("No valid JWT token found. Skipping authentication.");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        user.getEmail(), null, authorities);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        String token = tokenOpt.get();
+        log.debug("Extracted JWT Token: {}", token);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("Authenticated user: {}", email);
-            } catch (UsernameNotFoundException ex) {
-                log.error("Authentication failed: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-            } catch (Exception ex) {
-                log.error("An error occurred during authentication: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-            }
-        } else {
-            log.warn("Invalid or missing token");
+        String email = jwtUtils.extractEmail(token);
+
+        try {
+            AppUser user = appUserRepository.findAppUserWithRolesByEmail(email)
+                    .orElseThrow(() -> {
+                        log.warn("User with email {} not found", email);
+                        return new UsernameNotFoundException("User not found");
+                    });
+
+            List<GrantedAuthority> authorities = user.getRoles().stream()
+                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                    .collect(Collectors.toList());
+
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    user.getEmail(), null, authorities);
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.info("Authenticated user: {}", email);
+        } catch (UsernameNotFoundException ex) {
+            log.error("Authentication failed: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
+        } catch (Exception ex) {
+            log.error("An error occurred during authentication: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
     }
+
 }
