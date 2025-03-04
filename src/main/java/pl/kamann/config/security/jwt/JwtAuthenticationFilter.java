@@ -18,6 +18,7 @@ import pl.kamann.repositories.AppUserRepository;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -37,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
-        log.debug("🔍 JWT Filter Intercepted Request: {}", requestURI);
+        log.debug("JWT Filter Intercepted Request: {}", requestURI);
 
         if (requestURI.startsWith("/api/v1/auth/confirm") ||
                 requestURI.startsWith("/api/v1/auth/register") ||
@@ -47,14 +48,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = jwtUtils.extractTokenFromRequest(request);
-        log.debug("🔍 Extracted JWT Token: {}", token);
+        Optional<String> tokenOpt = jwtUtils.extractTokenFromRequest(request);
 
-        if (token == null || !jwtUtils.validateToken(token)) {
+        if (tokenOpt.isEmpty() || !jwtUtils.validateToken(tokenOpt.get())) {
             log.debug("No valid JWT token found. Skipping authentication.");
             filterChain.doFilter(request, response);
             return;
         }
+
+        String token = tokenOpt.get();
+        log.debug("Extracted JWT Token: {}", token);
 
         String email = jwtUtils.extractEmail(token);
 

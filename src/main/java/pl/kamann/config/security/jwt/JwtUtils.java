@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import java.util.*;
 @Component
 public class JwtUtils {
 
+    @Getter
     private final SecretKey secretKey;
     private final long jwtExpiration;
 
@@ -32,17 +34,18 @@ public class JwtUtils {
     }
 
     public String generateToken(String email, Set<Role> roles) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles.stream().map(Role::getName).toList());
-
+        Map<String, Object> claims = createClaims("roles", roles.stream().map(Role::getName).toList());
         return generateTokenWithClaims(email, claims, jwtExpiration);
     }
 
     public String generateTokenWithFlag(String email, TokenType flag, long expirationTime) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("TokenType", flag.toString());
+        Map<String, Object> claims = createClaims("TokenType", flag.toString());
 
         return generateTokenWithClaims(email, claims, expirationTime);
+    }
+
+    private Map<String, Object> createClaims(String key, Object value) {
+        return Collections.singletonMap(key, value);
     }
 
     public String generateTokenWithClaims(String email, Map<String, Object> claims, long expiration) {
@@ -58,7 +61,7 @@ public class JwtUtils {
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
 
-        log.info("Generated token for {}: {}", email, token);
+        log.info("Generated token for {}", email);
 
         return token;
     }
@@ -112,11 +115,10 @@ public class JwtUtils {
         return expiration.before(new Date());
     }
 
-    public String extractTokenFromRequest(HttpServletRequest request) {
+    public Optional<String> extractTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
+        return (bearerToken != null && bearerToken.startsWith("Bearer "))
+                ? Optional.of(bearerToken.substring(7))
+                : Optional.empty();
     }
 }

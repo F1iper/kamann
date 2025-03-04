@@ -122,10 +122,13 @@ public class AuthService {
     }
 
     public AppUserResponseDto getLoggedInAppUser(HttpServletRequest request) {
-        String token = jwtUtils.extractTokenFromRequest(request);
+        String token = jwtUtils.extractTokenFromRequest(request)
+                .orElseThrow(() -> new ApiException("Invalid or missing token",
+                        HttpStatus.UNAUTHORIZED,
+                        AuthCodes.INVALID_TOKEN.name()));
 
-        if (token == null || !jwtUtils.validateToken(token)) {
-            throw new ApiException("Invalid or missing token",
+        if (!jwtUtils.validateToken(token)) {
+            throw new ApiException("Invalid or expired token",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.INVALID_TOKEN.name());
         }

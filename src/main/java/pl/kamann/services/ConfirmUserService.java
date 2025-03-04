@@ -48,29 +48,45 @@ public class ConfirmUserService {
     public void confirmUserAccount(String token) {
         log.info("Confirming user account for token: {}", token);
 
-        if (jwtUtils.validateToken(token) && jwtUtils.isTokenTypeValid(token, TokenType.CONFIRMATION)) {
-            String email = jwtUtils.extractEmail(token);
-
-            AppUser user = appUserRepository.findByEmail(email).orElseThrow(() ->
-                    new ApiException(
-                            "User not found",
-                            HttpStatus.NOT_FOUND,
-                            AuthCodes.USER_NOT_FOUND.name()
-                    )
-            );
-
-            user.setEnabled(true);
-            user.setStatus(AppUserStatus.ACTIVE);
-
-            appUserRepository.save(user);
-
-            log.info("User account confirmed for: {}", user.getEmail());
-        } else {
+        if (!jwtUtils.validateToken(token)) {
             throw new ApiException(
                     "Invalid or expired confirmation Token",
-                    HttpStatus.NOT_FOUND,
+                    HttpStatus.UNAUTHORIZED,
                     AuthCodes.INVALID_TOKEN.name()
             );
         }
+
+        if (!jwtUtils.isTokenTypeValid(token, TokenType.CONFIRMATION)) {
+            throw new ApiException(
+                    "Token type is invalid",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.INVALID_TOKEN.name()
+            );
+        }
+
+        String email = jwtUtils.extractEmail(token);
+
+        AppUser user = appUserRepository.findByEmail(email).orElseThrow(() ->
+                new ApiException(
+                        "User not found",
+                        HttpStatus.NOT_FOUND,
+                        AuthCodes.USER_NOT_FOUND.name()
+                )
+        );
+
+        if (user.isEnabled()) {
+            throw new ApiException(
+                    "User is already confirmed",
+                    HttpStatus.BAD_REQUEST,
+                    AuthCodes.USER_ALREADY_CONFIRMED.name()
+            );
+        }
+
+        user.setEnabled(true);
+        user.setStatus(AppUserStatus.ACTIVE);
+
+        appUserRepository.save(user);
+
+        log.info("User account confirmed for: {}", user.getEmail());
     }
 }
