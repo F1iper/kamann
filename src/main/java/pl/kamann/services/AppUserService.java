@@ -163,7 +163,7 @@ public class AppUserService implements UserDetailsService {
 
         PaginationMetaData metaData = new PaginationMetaData(users.getTotalPages(), users.getTotalElements());
 
-        return appUserMapper.toDtoPaginatedResponseDto(new PaginatedResponseDto<>(users.getContent(), metaData));
+        return appUserMapper.toPaginatedResponseDto(new PaginatedResponseDto<>(users.getContent(), metaData));
     }
 
     @Override

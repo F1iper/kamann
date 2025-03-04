@@ -185,7 +185,7 @@ class AppUserServiceTest {
 
         when(roleRepository.findByName("INSTRUCTOR")).thenReturn(Optional.of(role));
         when(appUserRepository.findByRolesContaining(role, pageable)).thenReturn(Page.empty(pageable));
-        when(appUserMapper.toDtoPaginatedResponseDto(any())).thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(0, 0)));
+        when(appUserMapper.toPaginatedResponseDto(any())).thenReturn(new PaginatedResponseDto<>(List.of(), new PaginationMetaData(0, 0)));
 
         var result = appUserService.getUsersByRole("INSTRUCTOR", pageable);
 
@@ -196,7 +196,7 @@ class AppUserServiceTest {
 
         verify(roleRepository, times(1)).findByName("INSTRUCTOR");
         verify(appUserRepository, times(1)).findByRolesContaining(role, pageable);
-        verify(appUserMapper, times(1)).toDtoPaginatedResponseDto(any());
+        verify(appUserMapper, times(1)).toPaginatedResponseDto(any());
         verifyNoMoreInteractions(appUserRepository, roleRepository, appUserMapper);
     }
 }

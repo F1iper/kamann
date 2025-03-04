@@ -17,7 +17,7 @@ public interface AppUserMapper {
     @Mapping(target = "roles", source = "roles")
     AppUser toAppUser(AppUserDto dto, Set<Role> roles);
 
-    PaginatedResponseDto<AppUserDto> toDtoPaginatedResponseDto(PaginatedResponseDto<AppUser> users);
+    PaginatedResponseDto<AppUserDto> toPaginatedResponseDto(PaginatedResponseDto<AppUser> users);
 
     AppUserResponseDto toAppUserResponseDto(AppUser loggedInUser);
 
