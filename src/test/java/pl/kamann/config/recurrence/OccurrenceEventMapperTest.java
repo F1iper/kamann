@@ -1,6 +1,7 @@
 package pl.kamann.config.recurrence;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.entities.appuser.AppUser;
@@ -17,8 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class OccurrenceEventMapperTest {
 
+    private final OccurrenceEventMapper occurrenceEventMapper = Mappers.getMapper(OccurrenceEventMapper.class);
+
     @Test
-    void toLightDto_shouldMapOccurrenceEventCorrectly() {
+    void toEventLightDto_shouldMapOccurrenceEventCorrectly() {
         AppUser instructor = AppUser.builder().id(2L).firstName("Jane").lastName("Smith").build();
         Event event = Event.builder()
                 .id(50L)
@@ -33,8 +36,7 @@ class OccurrenceEventMapperTest {
                 .instructor(instructor)
                 .build();
 
-        OccurrenceEventMapper mapper = new OccurrenceEventMapper();
-        OccurrenceEventLightDto lightDto = mapper.toLightDto(occ);
+        OccurrenceEventLightDto lightDto = occurrenceEventMapper.toOccurrenceEventLightDto(occ);
 
         assertEquals(occ.getEvent().getId(), lightDto.eventId());
         assertEquals(occ.getId(), lightDto.occurrenceId());
@@ -45,7 +47,7 @@ class OccurrenceEventMapperTest {
     }
 
     @Test
-    void toDto_shouldMapOccurrenceEventDetailedDto() {
+    void toDto_shouldMapOccurrenceEventDetailedEventDto() {
         AppUser instructor = AppUser.builder().id(2L).firstName("Jane").lastName("Smith").build();
         AppUser creator = AppUser.builder().id(1L).build();
         EventType type = EventType.builder().id(1L).name("Pilates").build();
@@ -71,8 +73,7 @@ class OccurrenceEventMapperTest {
                 .attendances(Collections.emptyList())
                 .build();
 
-        OccurrenceEventMapper mapper = new OccurrenceEventMapper();
-        OccurrenceEventDto dto = mapper.toOccurrenceEventDto(occ);
+        OccurrenceEventDto dto = occurrenceEventMapper.toOccurrenceEventDto(occ);
 
         assertEquals(event.getId(), dto.eventId());
         assertEquals(start.toLocalDate(), dto.date());
