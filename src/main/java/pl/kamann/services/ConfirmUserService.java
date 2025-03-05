@@ -16,6 +16,10 @@ import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.EmailSender;
 
 import java.util.Locale;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -25,6 +29,7 @@ public class ConfirmUserService {
     private final EmailSender emailSender;
     private final TokenService tokenService;
     private final JwtUtils jwtUtils;
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
     public void sendConfirmationEmail(AppUser appUser) {
 
@@ -34,6 +39,9 @@ public class ConfirmUserService {
             String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
             emailSender.sendEmail(appUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
             log.info("Confirmation email sent successfully to user: {}", appUser.getEmail());
+
+            scheduleUserDeletion(appUser.getEmail());
+
         } catch (MessagingException e) {
             log.error("Error sending the confirmation email to user: {}", appUser.getEmail(), e);
             throw new ApiException(
@@ -42,6 +50,16 @@ public class ConfirmUserService {
                     AuthCodes.CONFIRMATION_EMAIL_ERROR.name()
             );
         }
+    }
+
+    private void scheduleUserDeletion(String email){
+        scheduledExecutorService.schedule(() -> {
+            Optional<AppUser> appUserOptional = appUserRepository.findByEmail(email);
+            if (appUserOptional.isPresent() && !appUserOptional.get().isEnabled()) {
+                appUserRepository.delete(appUserOptional.get());
+                log.info("User {} deleted due to inactivity after {} minutes", email, 15);
+            }
+        }, 15, TimeUnit.MINUTES);
     }
 
     @Transactional
