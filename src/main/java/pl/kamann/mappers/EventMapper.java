@@ -1,95 +1,48 @@
 package pl.kamann.mappers;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import pl.kamann.dtos.event.EventDto;
 import pl.kamann.dtos.event.EventLightDto;
 import pl.kamann.dtos.event.EventUpdateResponse;
+import org.mapstruct.Context;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;
-import pl.kamann.entities.event.EventStatus;
 import pl.kamann.utility.EntityLookupService;
 
-@Service
-@RequiredArgsConstructor
-public class EventMapper {
+@Mapper(componentModel = "spring")
+public interface EventMapper {
 
-    private final EntityLookupService lookupService;
+    @Mapping(target = "instructorId", source = "instructor.id")
+    @Mapping(target = "createdById", source = "createdBy.id")
+    @Mapping(target = "instructorFullName", expression = "java(mapInstructorFullName(event))")
+    @Mapping(target = "currentParticipants", expression = "java(calculateCurrentParticipants(event))")
+    @Mapping(target = "eventTypeId", source = "eventType.id")
+    @Mapping(target = "eventTypeName", source = "eventType.name")
+    EventDto toEventDto(Event event);
 
-    public EventDto toDto(Event event) {
-        int currentParticipants = event.getOccurrences() != null
+    default String mapInstructorFullName(Event event) {
+        return event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null;
+    }
+
+    default int calculateCurrentParticipants(Event event) {
+        return event.getOccurrences() != null
                 ? event.getOccurrences().stream()
                 .mapToInt(occ -> occ.getParticipants() != null ? occ.getParticipants().size() : 0)
                 .sum()
                 : 0;
-        return EventDto.builder()
-                .id(event.getId())
-                .title(event.getTitle())
-                .description(event.getDescription())
-                .start(event.getStart())
-                .durationMinutes(event.getDurationMinutes())
-                .updatedAt(event.getUpdatedAt())
-                .createdById(event.getCreatedBy() != null ? event.getCreatedBy().getId() : null)
-                .instructorId(event.getInstructor() != null ? event.getInstructor().getId() : null)
-                .instructorFullName(event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null)
-                .maxParticipants(event.getMaxParticipants())
-                .status(event.getStatus())
-                .currentParticipants(currentParticipants)
-                .eventTypeId(event.getEventType().getId())
-                .eventTypeName(event.getEventType() != null ? event.getEventType().getName() : null)
-                .createdAt(event.getCreatedAt())
-                .build();
     }
 
-    public CreateEventResponse toCreateEventResponse(Event event) {
-        return new CreateEventResponse(
-                event.getId(),
-                event.getTitle(),
-                event.getStart(),
-                event.getDurationMinutes(),
-                event.getStatus()
-        );
-    }
+    @Mapping(target = "createdBy", expression = "java(lookupService.getLoggedInUser())")
+    @Mapping(target = "instructor", expression = "java(lookupService.findUserById(request.instructorId()))")
+    @Mapping(target = "status", expression = "java(EventStatus.SCHEDULED)")
+    Event toEvent(CreateEventRequest request, @Context EntityLookupService lookupService);
 
-    public Event toEntity(CreateEventRequest request) {
-        return Event.builder()
-                .title(request.title())
-                .description(request.description())
-                .start(request.start())
-                .durationMinutes(request.durationMinutes())
-                .rrule(request.rrule())
-                .createdBy(lookupService.getLoggedInUser())
-                .instructor(lookupService.findUserById(request.instructorId()))
-                .maxParticipants(request.maxParticipants())
-                .eventTypeName(request.eventTypeName())
-                .status(EventStatus.SCHEDULED)
-                .build();
-    }
+    CreateEventResponse toCreateEventResponse(Event event);
 
-    public EventLightDto toLightDto(Event event) {
-        return new EventLightDto(
-                event.getId(),
-                event.getTitle(),
-                event.getStart(),
-                event.getDurationMinutes(),
-                event.getStatus(),
-                event.getEventType() != null ? event.getEventType().getName() : null
-        );
-    }
+    EventLightDto toEventLightDto(Event event);
 
-    public EventUpdateResponse toEventUpdateResponse(Event updatedEvent) {
-        return new EventUpdateResponse(
-                updatedEvent.getId(),
-                updatedEvent.getTitle(),
-                updatedEvent.getDescription(),
-                updatedEvent.getStart(),
-                updatedEvent.getDurationMinutes(),
-                updatedEvent.getStatus(),
-                updatedEvent.getUpdatedAt(),
-                updatedEvent.getInstructor() != null ? updatedEvent.getInstructor().getId() : null,
-                updatedEvent.getMaxParticipants()
-        );
-    }
+    @Mapping(target = "instructorId", source = "instructor.id")
+    EventUpdateResponse toEventUpdateResponse(Event event);
 }

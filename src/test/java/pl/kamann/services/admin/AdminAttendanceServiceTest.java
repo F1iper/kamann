@@ -90,12 +90,12 @@ class AdminAttendanceServiceTest {
         Page<Attendance> attendancePage = new PageImpl<>(List.of(attendance));
 
         when(attendanceRepository.findAll(pageable)).thenReturn(attendancePage);
-        when(attendanceMapper.toDto(attendance)).thenReturn(dto);
+        when(attendanceMapper.toAttendanceDetailsDto(attendance)).thenReturn(dto);
 
         Page<AttendanceDetailsDto> result = adminAttendanceService.getAttendanceSummary(pageable);
 
         assertEquals(1, result.getTotalElements());
-        assertEquals(dto, result.getContent().get(0));
+        assertEquals(dto, result.getContent().getFirst());
     }
 
     @Test

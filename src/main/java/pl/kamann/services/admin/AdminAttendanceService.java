@@ -55,7 +55,7 @@ public class AdminAttendanceService {
 
     public Page<AttendanceDetailsDto> getAttendanceSummary(Pageable pageable) {
         Page<Attendance> attendancePage = attendanceRepository.findAll(pageable);
-        return attendancePage.map(attendanceMapper::toDto);
+        return attendancePage.map(attendanceMapper::toAttendanceDetailsDto);
     }
 
     public Map<String, Object> getAttendanceStatistics(Long eventId, Long userId) {

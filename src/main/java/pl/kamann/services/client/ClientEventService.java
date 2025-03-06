@@ -50,7 +50,7 @@ public class ClientEventService {
         Page<OccurrenceEvent> pagedOccurrences = occurrenceEventRepository.findFilteredOccurrences(
                 scope.name(), loggedInUser, pageable);
 
-        return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toLightDto);
+        return paginationUtil.toPaginatedResponse(pagedOccurrences, occurrenceEventMapper::toOccurrenceEventLightDto);
     }
 
     public PaginatedResponseDto<EventLightDto> getLightEvents(int page, int size) {
@@ -58,7 +58,7 @@ public class ClientEventService {
         pageable = paginationService.validatePageable(pageable);
         Page<Event> pagedEvents = eventRepository.findAll(pageable);
 
-        return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toLightDto);
+        return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toEventLightDto);
     }
 
     public PaginatedResponseDto<EventDto> getEventsByType(String eventType, int page, int size) {
@@ -67,7 +67,7 @@ public class ClientEventService {
         pageable = paginationService.validatePageable(pageable);
 
         Page<Event> pagedEvent = eventRepository.findAllByEventTypeName(capitalizedEventType, pageable);
-        return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toDto);
+        return paginationUtil.toPaginatedResponse(pagedEvent, eventMapper::toEventDto);
     }
 
     public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
@@ -87,6 +87,6 @@ public class ClientEventService {
                         HttpStatus.BAD_REQUEST,
                         EventCodes.EVENT_NOT_FOUND.name()));
 
-        return eventMapper.toDto(event);
+        return eventMapper.toEventDto(event);
     }
 }

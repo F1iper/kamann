@@ -192,7 +192,7 @@ class AuthServiceTest {
             return user;
         });
 
-        when(appUserMapper.toDto(any(AppUser.class))).thenReturn(expectedDto);
+        when(appUserMapper.toAppUserDto(any(AppUser.class))).thenReturn(expectedDto);
 
         AppUserDto registeredUser = authService.registerUser(request);
 

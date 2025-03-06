@@ -85,7 +85,7 @@ public class AuthService {
         confirmUserService.sendConfirmationEmail(savedUser);
 
         log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
-        return appUserMapper.toDto(savedUser);
+        return appUserMapper.toAppUserDto(savedUser);
     }
 
     private AppUser createAppUser(RegisterRequest request, Role role) {
@@ -140,6 +140,6 @@ public class AuthService {
                         HttpStatus.NOT_FOUND,
                         AuthCodes.USER_NOT_FOUND.name()));
 
-        return appUserMapper.toResponseDto(appUser);
+        return appUserMapper.toAppUserResponseDto(appUser);
     }
 }

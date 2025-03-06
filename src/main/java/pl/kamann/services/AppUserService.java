@@ -13,6 +13,7 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.StatusCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.pagination.PaginatedResponseDto;
+import pl.kamann.config.pagination.PaginationMetaData;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
@@ -37,6 +38,7 @@ public class AppUserService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
     private final EntityLookupService entityLookupService;
+
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
 
@@ -57,7 +59,7 @@ public class AppUserService implements UserDetailsService {
             pagedUsers = appUserRepository.findUsersByRoleWithRoles(pageable, role);
         }
 
-        return paginationUtil.toPaginatedResponse(pagedUsers, appUserMapper::toDto);
+        return paginationUtil.toPaginatedResponse(pagedUsers, appUserMapper::toAppUserDto);
     }
 
     public AppUserDto getUserById(Long id) {
@@ -70,7 +72,7 @@ public class AppUserService implements UserDetailsService {
         }
 
         AppUser user = entityLookupService.findUserById(id);
-        return appUserMapper.toDto(user);
+        return appUserMapper.toAppUserDto(user);
     }
 
     public AppUserDto createUser(RegisterRequest request) {
@@ -110,9 +112,7 @@ public class AppUserService implements UserDetailsService {
         user.setStatus(AppUserStatus.ACTIVE);
         user.setEnabled(false);
 
-
-
-        return appUserMapper.toDto(appUserRepository.save(user));
+        return appUserMapper.toAppUserDto(appUserRepository.save(user));
     }
 
     public AppUserDto changeUserStatus(Long userId, AppUserStatus status) {
@@ -134,7 +134,7 @@ public class AppUserService implements UserDetailsService {
 
         AppUser user = entityLookupService.findUserById(userId);
         user.setStatus(status);
-        return appUserMapper.toDto(appUserRepository.save(user));
+        return appUserMapper.toAppUserDto(appUserRepository.save(user));
     }
 
     public void activateUser(Long userId) {
@@ -145,7 +145,7 @@ public class AppUserService implements UserDetailsService {
         changeUserStatus(userId, AppUserStatus.INACTIVE);
     }
 
-    public Page<AppUserDto> getUsersByRole(String roleName, Pageable pageable) {
+    public PaginatedResponseDto<AppUserDto> getUsersByRole(String roleName, Pageable pageable) {
         if (roleName == null || roleName.isBlank()) {
             throw new ApiException(
                     "Role name cannot be null or blank",
@@ -163,11 +163,9 @@ public class AppUserService implements UserDetailsService {
 
         Page<AppUser> users = appUserRepository.findByRolesContaining(role, pageable);
 
-        if (users.isEmpty()) {
-            return Page.empty(pageable);
-        }
+        PaginationMetaData metaData = new PaginationMetaData(users.getTotalPages(), users.getTotalElements());
 
-        return appUserMapper.toDtoPage(users);
+        return appUserMapper.toPaginatedResponseDto(new PaginatedResponseDto<>(users.getContent(), metaData));
     }
 
     @Override

@@ -1,38 +1,36 @@
 package pl.kamann.mappers;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pl.kamann.dtos.OccurrenceEventDto;
 import pl.kamann.dtos.OccurrenceEventLightDto;
 import pl.kamann.entities.event.OccurrenceEvent;
 
-import java.time.LocalDateTime;
+@Mapper(componentModel = "spring")
+public interface OccurrenceEventMapper {
 
-@Component
-public class OccurrenceEventMapper {
+    @Mapping(target = "eventId", source = "event.id")
+    @Mapping(target = "date", expression = "java(occurrenceEvent.getStart().toLocalDate())")
+    @Mapping(target = "startTime", expression = "java(occurrenceEvent.getStart().toLocalTime())")
+    @Mapping(target = "endTime", expression = "java(occurrenceEvent.getEnd().toLocalTime())")
+    @Mapping(target = "instructorId", source = "instructor.id")
+    @Mapping(target = "createdById", source = "createdBy.id")
+    @Mapping(target = "eventTypeName", source = "event.eventType.name")
+    @Mapping(target = "instructorFullName", expression = "java(mapInstructorFullName(occurrenceEvent))")
+    @Mapping(target = "attendanceCount", expression = "java(occurrenceEvent.getAttendances().size())")
+    @Mapping(target = "isModified", expression = "java(occurrenceEvent.isModified())")
+    OccurrenceEventDto toOccurrenceEventDto(OccurrenceEvent occurrenceEvent);
 
-    public OccurrenceEventDto toOccurrenceEventDto(OccurrenceEvent occ) {
-        return new OccurrenceEventDto(
-                occ.getEvent().getId(),
-                occ.getStart().toLocalDate(),
-                occ.getStart().toLocalTime(),
-                occ.getEnd().toLocalTime(),
-                occ.getDurationMinutes(),
-                occ.isCanceled(),
-                occ.getInstructor() != null ? occ.getInstructor().getId() : null,
-                occ.getCreatedBy() != null ? occ.getCreatedBy().getId() : null,
-                occ.getSeriesIndex(),
-                occ.getMaxParticipants(),
-                occ.getEvent().getEventType() != null ? occ.getEvent().getEventType().getName() : null,
-                occ.getInstructor() != null ? occ.getInstructor().getFirstName() + " " + occ.getInstructor().getLastName() : null,
-                occ.isModified(),
-                occ.getAttendances() != null ? occ.getAttendances().size() : 0
-        );
+    @Mapping(target = "occurrenceId", source = "id")
+    @Mapping(target = "eventId", source = "event.id")
+    @Mapping(target = "start", source = "start")
+    @Mapping(target = "end", expression = "java(occurrenceEvent.getStart().plusMinutes(occurrenceEvent.getDurationMinutes()))")
+    @Mapping(target = "title", source = "event.title")
+    @Mapping(target = "instructorName", expression = "java(mapInstructorFullName(occurrenceEvent))")
+    @Mapping(target = "eventTypeName", source = "event.eventTypeName")
+    OccurrenceEventLightDto toOccurrenceEventLightDto(OccurrenceEvent occurrenceEvent);
+
+    default String mapInstructorFullName(OccurrenceEvent occurrenceEvent) {
+        return occurrenceEvent.getInstructor() != null ? occurrenceEvent.getInstructor().getFirstName() + " " + occurrenceEvent.getInstructor().getLastName() : null;
     }
-
-    public OccurrenceEventLightDto toLightDto(OccurrenceEvent event) {
-        String instructorName = event.getInstructor() != null ? event.getInstructor().getFirstName() + " " + event.getInstructor().getLastName() : null;
-        LocalDateTime end = event.getStart().plusMinutes(event.getDurationMinutes());
-        return new OccurrenceEventLightDto(event.getId(), event.getEvent().getId(), event.getStart(), end, event.getEvent().getTitle(), instructorName, event.getEvent().getEventTypeName());
-    }
-
 }

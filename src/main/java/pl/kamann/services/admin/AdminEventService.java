@@ -58,11 +58,13 @@ public class AdminEventService {
     private final PaginationService paginationService;
     private final PaginationUtil paginationUtil;
 
+    private final EntityLookupService lookupService;
+
     @Transactional
     public CreateEventResponse createEvent(CreateEventRequest request) {
         eventValidationService.validateCreate(request);
 
-        Event event = eventMapper.toEntity(request);
+        Event event = eventMapper.toEvent(request, lookupService);
 
         event.setCreatedBy(entityLookupService.findUserById(request.createdById()));
 
@@ -82,7 +84,7 @@ public class AdminEventService {
 
         Page<Event> pagedEvents = eventRepository.findAll(pageable);
 
-        return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toDto);
+        return paginationUtil.toPaginatedResponse(pagedEvents, eventMapper::toEventDto);
     }
 
     @Transactional
@@ -199,7 +201,7 @@ public class AdminEventService {
     public EventDto getEventDtoById(Long eventId) {
         Event eventById = entityLookupService.findEventById(eventId);
 
-        return eventMapper.toDto(eventById);
+        return eventMapper.toEventDto(eventById);
     }
 
     public OccurrenceEventDto getOccurrenceById(Long occurrenceId) {
