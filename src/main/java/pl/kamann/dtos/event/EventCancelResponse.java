@@ -1,4 +1,4 @@
-package pl.kamann.dtos;
+package pl.kamann.dtos.event;
 
 public record EventCancelResponse(
         Long eventId,

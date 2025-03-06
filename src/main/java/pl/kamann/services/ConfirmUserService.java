@@ -1,33 +1,47 @@
 package pl.kamann.services;
 
 import jakarta.mail.MessagingException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
+import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
-import pl.kamann.services.email.ConfirmationEmail;
+import pl.kamann.services.email.EmailSender;
 
 import java.util.Locale;
-import java.util.UUID;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConfirmUserService {
     private final AppUserRepository appUserRepository;
-    private final ConfirmationEmail emailSender;
+    private final EmailSender emailSender;
     private final TokenService tokenService;
+    private final JwtUtils jwtUtils;
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
     public void sendConfirmationEmail(AppUser appUser) {
+
+        String token = tokenService.generateToken(appUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
+
         try {
-            emailSender.sendConfirmationEmail(appUser.getEmail(), tokenService.generateConfirmationLink(appUser.getConfirmationToken(), tokenService.getConfirmationLink()), Locale.ENGLISH);
+            String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
+            emailSender.sendEmail(appUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
             log.info("Confirmation email sent successfully to user: {}", appUser.getEmail());
+
+            scheduleUserDeletion(appUser.getEmail());
+
         } catch (MessagingException e) {
             log.error("Error sending the confirmation email to user: {}", appUser.getEmail(), e);
             throw new ApiException(
@@ -38,26 +52,59 @@ public class ConfirmUserService {
         }
     }
 
+    private void scheduleUserDeletion(String email){
+        scheduledExecutorService.schedule(() -> {
+            Optional<AppUser> appUserOptional = appUserRepository.findByEmail(email);
+            if (appUserOptional.isPresent() && !appUserOptional.get().isEnabled()) {
+                appUserRepository.delete(appUserOptional.get());
+                log.info("User {} deleted due to inactivity after {} minutes", email, 15);
+            }
+        }, 15, TimeUnit.MINUTES);
+    }
+
+    @Transactional
     public void confirmUserAccount(String token) {
-        appUserRepository.findByConfirmationToken(token)
-                .ifPresentOrElse(
-                        user -> {
-                            user.setConfirmationToken(null);
-                            user.setEnabled(true);
-                            appUserRepository.save(user);
+        log.info("Confirming user account for token: {}", token);
 
-                            sendConfirmationEmail(user);
+        if (!jwtUtils.validateToken(token)) {
+            throw new ApiException(
+                    "Invalid or expired confirmation Token",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.INVALID_TOKEN.name()
+            );
+        }
 
-                            log.info("User account confirmed for: {}", user.getEmail());
-                        },
-                        () -> {
-                            log.error("Invalid confirmation token: {}", token);
-                            throw new ApiException(
-                                    "Invalid confirmation token.",
-                                    HttpStatus.NOT_FOUND,
-                                    AuthCodes.INVALID_CONFIRMATION_TOKEN.name()
-                            );
-                        }
-                );
+        if (!jwtUtils.isTokenTypeValid(token, TokenType.CONFIRMATION)) {
+            throw new ApiException(
+                    "Token type is invalid",
+                    HttpStatus.UNAUTHORIZED,
+                    AuthCodes.INVALID_TOKEN.name()
+            );
+        }
+
+        String email = jwtUtils.extractEmail(token);
+
+        AppUser user = appUserRepository.findByEmail(email).orElseThrow(() ->
+                new ApiException(
+                        "User not found",
+                        HttpStatus.NOT_FOUND,
+                        AuthCodes.USER_NOT_FOUND.name()
+                )
+        );
+
+        if (user.isEnabled()) {
+            throw new ApiException(
+                    "User is already confirmed",
+                    HttpStatus.BAD_REQUEST,
+                    AuthCodes.USER_ALREADY_CONFIRMED.name()
+            );
+        }
+
+        user.setEnabled(true);
+        user.setStatus(AppUserStatus.ACTIVE);
+
+        appUserRepository.save(user);
+
+        log.info("User account confirmed for: {}", user.getEmail());
     }
 }

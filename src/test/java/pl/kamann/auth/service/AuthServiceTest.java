@@ -15,12 +15,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
+import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
 import pl.kamann.entities.appuser.AppUserStatus;
 import pl.kamann.entities.appuser.Role;
+import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
@@ -57,6 +59,9 @@ class AuthServiceTest {
 
     @Mock
     private TokenService tokenService;
+
+    @Mock
+    private AppUserMapper appUserMapper;
 
     @InjectMocks
     private AuthService authService;
@@ -156,24 +161,54 @@ class AuthServiceTest {
 
     @Test
     void shouldRegisterUserSuccessfully() {
-        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", clientRole.getName());
+        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", "CLIENT");
+
+        AppUser savedUser = AppUser.builder()
+                .id(1L)
+                .email(request.email())
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .password("encodedPassword")
+                .roles(Set.of(clientRole))
+                .status(AppUserStatus.ACTIVE)
+                .build();
+
+        AppUserDto expectedDto = AppUserDto.builder()
+                .id(savedUser.getId())
+                .email(savedUser.getEmail())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .roles(savedUser.getRoles())
+                .status(savedUser.getStatus())
+                .build();
 
         when(appUserRepository.findByEmail(request.email())).thenReturn(Optional.empty());
-        when(roleRepository.findByName(clientRole.getName())).thenReturn(Optional.of(clientRole));
+        when(roleRepository.findByName("CLIENT")).thenReturn(Optional.of(clientRole));
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
-        when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        AppUser registeredUser = authService.registerUser(request);
+        when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
+            AppUser user = invocation.getArgument(0);
+            user.setId(1L);
+            return user;
+        });
+
+        when(appUserMapper.toAppUserDto(any(AppUser.class))).thenReturn(expectedDto);
+
+        AppUserDto registeredUser = authService.registerUser(request);
 
         assertNotNull(registeredUser);
-        assertEquals(request.email(), registeredUser.getEmail());
-        assertEquals(clientRole.getName(), registeredUser.getRoles().iterator().next().getName());
-        assertEquals(AppUserStatus.ACTIVE, registeredUser.getStatus());
+        assertEquals(expectedDto.id(), registeredUser.id());
+        assertEquals(expectedDto.email(), registeredUser.email());
+        assertEquals(expectedDto.firstName(), registeredUser.firstName());
+        assertEquals(expectedDto.lastName(), registeredUser.lastName());
+        assertEquals(expectedDto.roles(), registeredUser.roles());
+        assertEquals(expectedDto.status(), registeredUser.status());
 
         verify(appUserRepository).findByEmail(request.email());
-        verify(roleRepository).findByName(clientRole.getName());
+        verify(roleRepository).findByName("CLIENT");
         verify(passwordEncoder).encode(request.password());
-        verify(appUserRepository).save(registeredUser);
+        verify(appUserRepository).save(any(AppUser.class));
+        verify(confirmUserService).sendConfirmationEmail(any(AppUser.class));
     }
 
     @Test

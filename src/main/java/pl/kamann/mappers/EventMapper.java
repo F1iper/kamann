@@ -1,11 +1,11 @@
 package pl.kamann.mappers;
 
+import pl.kamann.dtos.event.EventDto;
+import pl.kamann.dtos.event.EventLightDto;
+import pl.kamann.dtos.event.EventUpdateResponse;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import pl.kamann.dtos.EventDto;
-import pl.kamann.dtos.EventLightDto;
-import pl.kamann.dtos.EventUpdateResponse;
 import pl.kamann.dtos.event.CreateEventRequest;
 import pl.kamann.dtos.event.CreateEventResponse;
 import pl.kamann.entities.event.Event;

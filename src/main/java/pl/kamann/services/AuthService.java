@@ -17,6 +17,7 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
+import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
 import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
@@ -40,11 +41,10 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     private final AppUserMapper appUserMapper;
+    private final ConfirmUserService confirmUserService;
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
-    private final ConfirmUserService confirmUserService;
-    private final TokenService tokenService;
 
     public LoginResponse login(@Valid LoginRequest request) {
         try {
@@ -73,7 +73,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AppUser registerUser(RegisterRequest request) {
+    public AppUserDto registerUser(RegisterRequest request) {
         validateEmailNotTaken(request.email());
 
         String roleName = request.role() != null ? request.role() : RoleCodes.CLIENT.name();
@@ -85,7 +85,7 @@ public class AuthService {
         confirmUserService.sendConfirmationEmail(savedUser);
 
         log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
-        return savedUser;
+        return appUserMapper.toAppUserDto(savedUser);
     }
 
     private AppUser createAppUser(RegisterRequest request, Role role) {
@@ -95,9 +95,9 @@ public class AuthService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setRoles(Set.of(role));
-        user.setStatus(AppUserStatus.ACTIVE);
+        user.setStatus(AppUserStatus.PENDING);
         user.setEnabled(false);
-        user.setConfirmationToken(tokenService.generateConfirmationToken());
+
         return user;
     }
 
@@ -122,10 +122,13 @@ public class AuthService {
     }
 
     public AppUserResponseDto getLoggedInAppUser(HttpServletRequest request) {
-        String token = jwtUtils.extractTokenFromRequest(request);
+        String token = jwtUtils.extractTokenFromRequest(request)
+                .orElseThrow(() -> new ApiException("Invalid or missing token",
+                        HttpStatus.UNAUTHORIZED,
+                        AuthCodes.INVALID_TOKEN.name()));
 
-        if (token == null || !jwtUtils.validateToken(token)) {
-            throw new ApiException("Invalid or missing token",
+        if (!jwtUtils.validateToken(token)) {
+            throw new ApiException("Invalid or expired token",
                     HttpStatus.UNAUTHORIZED,
                     AuthCodes.INVALID_TOKEN.name());
         }

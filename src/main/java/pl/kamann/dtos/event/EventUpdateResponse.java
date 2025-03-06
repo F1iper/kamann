@@ -1,15 +1,19 @@
-package pl.kamann.dtos;
+package pl.kamann.dtos.event;
 
 import pl.kamann.entities.event.EventStatus;
 
 import java.time.LocalDateTime;
 
-public record EventLightDto(
+public record EventUpdateResponse(
+
         Long id,
         String title,
+        String description,
         LocalDateTime start,
         Integer durationMinutes,
         EventStatus status,
-        String eventTypeName
+        LocalDateTime updatedAt,
+        Long instructorId,
+        Integer maxParticipants
 ) {
 }
