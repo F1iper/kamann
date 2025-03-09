@@ -21,5 +21,5 @@ public record RegisterRequest(
         @Size(max = 50, message = "Last name cannot exceed 50 characters")
         String lastName,
 
-        String role
+        String phone
 ) {}

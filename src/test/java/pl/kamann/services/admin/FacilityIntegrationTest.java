@@ -19,34 +19,36 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ContextConfiguration(classes = TestContainersConfig.class)
 @ActiveProfiles("test")
 @Transactional
-public class FacilityIntegrationTest {
-
-    @Autowired
-    private FacilityRepository facilityRepository;
+class FacilityIntegrationTest {
 
     @Autowired
     private FacilityService facilityService;
 
-    @Test
-    public void shouldCreateUpdateAndDeleteFacility() {
-        long facilityId = 1L;
+    @Autowired
+    private FacilityRepository facilityRepository;
 
+    @Test
+    void shouldCreateUpdateAndDeleteFacility() {
+        // Create
         FacilityDto facilityDto = FacilityDto.builder()
-                .id(facilityId)
                 .name("name")
                 .address("address")
                 .openingHours(LocalTime.of(8, 0))
                 .closingHours(LocalTime.of(16, 0))
                 .build();
 
-        facilityService.createFacility(facilityDto);
+        FacilityDto createdFacility = facilityService.createFacility(facilityDto);
+        Long facilityId = createdFacility.id();
 
         assertEquals(1, facilityRepository.count());
 
         FacilityDto result = facilityService.getFacility(facilityId);
 
         assertNotNull(result);
-        assertEquals(result, facilityDto);
+        assertEquals(facilityDto.name(), result.name());
+        assertEquals(facilityDto.address(), result.address());
+        assertEquals(facilityDto.openingHours(), result.openingHours());
+        assertEquals(facilityDto.closingHours(), result.closingHours());
 
         FacilityDto updatedFacilityDto = FacilityDto.builder()
                 .id(facilityId)
@@ -58,7 +60,10 @@ public class FacilityIntegrationTest {
 
         result = facilityService.updateFacility(facilityId, updatedFacilityDto);
 
-        assertEquals(updatedFacilityDto, result);
+        assertEquals(updatedFacilityDto.name(), result.name());
+        assertEquals(updatedFacilityDto.address(), result.address());
+        assertEquals(updatedFacilityDto.openingHours(), result.openingHours());
+        assertEquals(updatedFacilityDto.closingHours(), result.closingHours());
 
         facilityService.deleteFacility(facilityId);
 

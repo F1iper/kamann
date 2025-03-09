@@ -1,7 +1,6 @@
 package pl.kamann.dtos;
 
 import lombok.Builder;
-import pl.kamann.entities.appuser.AppUserStatus;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +10,7 @@ public record AppUserResponseDto(
         String email,
         String firstName,
         String lastName,
-        AppUserStatus status,
+        String status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

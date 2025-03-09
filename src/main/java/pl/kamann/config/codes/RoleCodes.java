@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum RoleCodes {
-    CLIENT("CLIENT");
+    CLIENT("CLIENT"),
+    INSTRUCTOR("INSTRUCTOR");
 
     private final String code;
 }

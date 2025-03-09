@@ -2,11 +2,9 @@ package pl.kamann.services;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -16,16 +14,17 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
 import pl.kamann.services.email.EmailSender;
 import pl.kamann.testcontainers.config.TestContainersConfig;
 
-import javax.crypto.SecretKey;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ContextConfiguration(classes = TestContainersConfig.class)
@@ -46,27 +45,33 @@ public class ConfirmUserServiceTest {
     private JwtUtils jwtUtils;
 
     private AppUser testUser;
+    private AuthUser testAuthUser;
 
     @BeforeEach
     void setup() {
-        testUser = new AppUser();
-        testUser.setEmail("test@test.com");
-        testUser.setFirstName("Test");
-        testUser.setLastName("User");
-        testUser.setPassword("hashed_password");
-        testUser.setEnabled(false);
+        testAuthUser = AuthUser.builder()
+                .email("test@test.com")
+                .password("hashed_password")
+                .enabled(false)
+                .build();
+
+        testUser = AppUser.builder()
+                .firstName("Test")
+                .lastName("User")
+                .authUser(testAuthUser)
+                .build();
+
+        testAuthUser.setAppUser(testUser);
         appUserRepository.save(testUser);
     }
 
     @Test
     void shouldConfirmAccount() {
-        appUserRepository.save(testUser);
+        String token = generateValidJwtToken(testAuthUser.getEmail());
+        confirmUserService.confirmUserAccount(token);
 
-        confirmUserService.confirmUserAccount(generateValidJwtToken(testUser.getEmail()));
-
-        AppUser updatedUser = appUserRepository.findByEmail(testUser.getEmail()).orElseThrow();
-
-        assertTrue(updatedUser.isEnabled());
+        AppUser updatedUser = appUserRepository.findByEmail(testAuthUser.getEmail()).orElseThrow();
+        assertTrue(updatedUser.getAuthUser().isEnabled());
     }
 
     @Test
@@ -81,10 +86,10 @@ public class ConfirmUserServiceTest {
 
     @Test
     void shouldNotConfirmAlreadyConfirmedAccount() {
-        testUser.setEnabled(true);
+        testAuthUser.setEnabled(true);
         appUserRepository.save(testUser);
 
-        String validJwtToken = generateValidJwtToken(testUser.getEmail());
+        String validJwtToken = generateValidJwtToken(testAuthUser.getEmail());
 
         ApiException exception = assertThrows(ApiException.class, () ->
                 confirmUserService.confirmUserAccount(validJwtToken)
@@ -92,30 +97,27 @@ public class ConfirmUserServiceTest {
 
         assertTrue(exception.getMessage().contains("User is already confirmed"));
 
-        AppUser updatedUser = appUserRepository.findByEmail(testUser.getEmail()).orElseThrow();
-        assertTrue(updatedUser.isEnabled(), "User should remain enabled.");
+        AppUser updatedUser = appUserRepository.findByEmail(testAuthUser.getEmail()).orElseThrow();
+        assertTrue(updatedUser.getAuthUser().isEnabled());
     }
 
     @Test
     void shouldSendConfirmationEmailAfterActivation() throws MessagingException {
-        appUserRepository.save(testUser);
+        confirmUserService.sendConfirmationEmail(testAuthUser);
 
-        confirmUserService.sendConfirmationEmail(testUser);
-
-        Mockito.verify(emailSender, Mockito.times(1))
-                .sendEmail(Mockito.eq(testUser.getEmail()), Mockito.anyString(), Mockito.any(), Mockito.eq("registration"));
+        verify(emailSender).sendEmail(eq(testAuthUser.getEmail()), anyString(), any(), eq("registration"));
     }
 
     private String generateInvalidJwtToken() {
-        SecretKey fakeKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() - 10000);
+        Date expiryDate = new Date(now.getTime() - 10000); // Expired token
 
         return Jwts.builder()
                 .setSubject("testuser@example.com")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(fakeKey, SignatureAlgorithm.HS256)
+                .claim("TokenType", TokenType.CONFIRMATION.toString())
+                .signWith(jwtUtils.getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 

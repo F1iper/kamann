@@ -23,12 +23,16 @@ import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
+import pl.kamann.utility.EntityLookupService;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Slf4j
@@ -45,6 +49,9 @@ public class AuthService {
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
+    private final AuthUserRepository authUserRepository;
+
+    private final EntityLookupService lookupService;
 
     public LoginResponse login(@Valid LoginRequest request) {
         try {
@@ -52,9 +59,9 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
 
-            AppUser appUser = (AppUser) authentication.getPrincipal();
-            log.info("User logged in successfully: email={}", appUser.getEmail());
-            return new LoginResponse(jwtUtils.generateToken(appUser.getEmail(), appUser.getRoles()));
+            AuthUser authUser = (AuthUser) authentication.getPrincipal();
+            log.info("User logged in successfully: email={}", authUser.getEmail());
+            return new LoginResponse(jwtUtils.generateToken(authUser.getEmail(), authUser.getRoles()));
         } catch (DisabledException e) {
             log.warn("Attempted login with unconfirmed email: {}", request.email());
             throw new ApiException(
@@ -73,43 +80,63 @@ public class AuthService {
     }
 
     @Transactional
-    public AppUserDto registerUser(RegisterRequest request) {
-        validateEmailNotTaken(request.email());
+    public AppUserDto registerClient(RegisterRequest request) {
+        lookupService.validateEmailNotTaken(request.email());
 
-        String roleName = request.role() != null ? request.role() : RoleCodes.CLIENT.name();
-        Role userRole = findRoleByName(roleName);
+        Role clientRole = findRoleByName(RoleCodes.CLIENT.name());
 
-        AppUser user = createAppUser(request, userRole);
-        AppUser savedUser = appUserRepository.save(user);
+        AuthUser authUser = createAuthUser(request.email(), request.password(), clientRole);
+        AppUser appUser = createAppUser(request);
 
-        confirmUserService.sendConfirmationEmail(savedUser);
+        authUser.setAppUser(appUser);
+        appUser.setAuthUser(authUser);
 
-        log.info("User registered successfully: email={}, role={}", request.email(), userRole.getName());
-        return appUserMapper.toAppUserDto(savedUser);
+        AppUser savedAppUser = appUserRepository.save(appUser);
+
+        confirmUserService.sendConfirmationEmail(authUser);
+
+        log.info("User registered successfully: email={}, role={}", request.email(), clientRole.getName());
+        return appUserMapper.toAppUserDto(savedAppUser);
     }
 
-    private AppUser createAppUser(RegisterRequest request, Role role) {
+    @Transactional
+    public AppUserDto registerInstructor(RegisterRequest request) {
+        lookupService.validateEmailNotTaken(request.email());
+
+        Role instructorRole = findRoleByName(RoleCodes.INSTRUCTOR.name());
+
+        AuthUser authUser = createAuthUser(request.email(), request.password(), instructorRole);
+        AppUser appUser = createAppUser(request);
+
+        authUser.setAppUser(appUser);
+        appUser.setAuthUser(authUser);
+
+        AppUser savedAppUser = appUserRepository.save(appUser);
+
+        // todo: Admin approval step instead of immediate confirmation email
+        log.info("Instructor registered successfully: email={}, role={}", request.email(), instructorRole.getName());
+        return appUserMapper.toAppUserDto(savedAppUser);
+    }
+
+
+    private AuthUser createAuthUser(String email, String password, Role role) {
+        AuthUser authUser = new AuthUser();
+        authUser.setEmail(email);
+        authUser.setPassword(passwordEncoder.encode(password));
+        authUser.setRoles(Set.of(role));
+        authUser.setStatus(AuthUserStatus.PENDING);
+        authUser.setEnabled(false);
+
+        return authUser;
+    }
+
+    private AppUser createAppUser(RegisterRequest request) {
         AppUser user = new AppUser();
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
-        user.setRoles(Set.of(role));
-        user.setStatus(AppUserStatus.PENDING);
-        user.setEnabled(false);
-
+        user.setCreatedAt(LocalDateTime.now());
+        user.setPhone(request.phone());
         return user;
-    }
-
-    private void validateEmailNotTaken(String email) {
-        if (appUserRepository.findByEmail(email).isPresent()) {
-            log.warn("Attempted registration with existing email: {}", email);
-            throw new ApiException(
-                    "Email is already registered: " + email,
-                    HttpStatus.CONFLICT,
-                    AuthCodes.EMAIL_ALREADY_EXISTS.name()
-            );
-        }
     }
 
     public Role findRoleByName(String roleName) {
@@ -135,8 +162,13 @@ public class AuthService {
 
         String email = jwtUtils.extractEmail(token);
 
-        AppUser appUser = appUserRepository.findByEmail(email)
+        AuthUser authUser = authUserRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException("User not found",
+                        HttpStatus.NOT_FOUND,
+                        AuthCodes.USER_NOT_FOUND.name()));
+
+        AppUser appUser = appUserRepository.findByAuthUser(authUser)
+                .orElseThrow(() -> new ApiException("User profile not found",
                         HttpStatus.NOT_FOUND,
                         AuthCodes.USER_NOT_FOUND.name()));
 

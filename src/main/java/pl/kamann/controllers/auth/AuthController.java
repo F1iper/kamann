@@ -36,10 +36,16 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
     }
 
-    @PostMapping("/register")
-    @Operation(summary = "User Registration", description = "Registers a new user.")
-    public ResponseEntity<AppUserDto> register(@RequestBody @Valid RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerUser(request));
+    @PostMapping("/register-client")
+    @Operation(summary = "Client Registration", description = "Registers a new client.")
+    public ResponseEntity<AppUserDto> registerClient(@RequestBody @Valid RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerClient(request));
+    }
+
+    @PostMapping("/register-instructor")
+    @Operation(summary = "Instructor Registration", description = "Registers a new instructor.")
+    public ResponseEntity<AppUserDto> registerInstructor(@RequestBody @Valid RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerInstructor(request));
     }
 
     @GetMapping("/confirm")

@@ -5,10 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import pl.kamann.entities.appuser.AppUserStatus;
-import pl.kamann.entities.appuser.Role;
-
-import java.util.Set;
+import pl.kamann.entities.appuser.AuthUserStatus;
 
 @Builder
 public record AppUserDto(
@@ -27,10 +24,9 @@ public record AppUserDto(
         @Size(max = 50, message = "Last name cannot exceed 50 characters")
         String lastName,
 
-        @NotNull(message = "Roles cannot be null")
-        Set<Role> roles,
-
         @NotNull(message = "User status cannot be null")
-        AppUserStatus status
+        AuthUserStatus status,
+
+        String phone
 ) {
 }

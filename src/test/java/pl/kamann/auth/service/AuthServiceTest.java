@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.kamann.config.codes.AuthCodes;
+import pl.kamann.config.codes.RoleCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.AppUserDto;
@@ -20,14 +21,17 @@ import pl.kamann.dtos.login.LoginRequest;
 import pl.kamann.dtos.login.LoginResponse;
 import pl.kamann.dtos.register.RegisterRequest;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.mappers.AppUserMapper;
 import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.repositories.RoleRepository;
 import pl.kamann.services.AuthService;
 import pl.kamann.services.ConfirmUserService;
 import pl.kamann.services.TokenService;
+import pl.kamann.utility.EntityLookupService;
 
 import java.util.Optional;
 import java.util.Set;
@@ -40,7 +44,13 @@ import static org.mockito.Mockito.*;
 class AuthServiceTest {
 
     @Mock
+    private EntityLookupService entityLookupService;
+
+    @Mock
     private AppUserRepository appUserRepository;
+
+    @Mock
+    private AuthUserRepository authUserRepository;
 
     @Mock
     private RoleRepository roleRepository;
@@ -76,22 +86,17 @@ class AuthServiceTest {
 
     @Test
     void shouldLoginSuccessfully() {
-        String email = "user@example.com";
-        String password = "password";
-        String encodedPassword = "encodedPassword";
+        LoginRequest loginRequest = new LoginRequest("user@example.com", "password");
+        AuthUser user = AuthUser.builder()
+                .email(loginRequest.email())
+                .password("encodedPassword")
+                .roles(Set.of(clientRole))
+                .enabled(true)
+                .build();
 
-        AppUser user = new AppUser();
-        user.setEmail(email);
-        user.setPassword(encodedPassword);
-        user.setRoles(Set.of(clientRole));
-        user.setEnabled(true);
-
-        LoginRequest loginRequest = new LoginRequest(email, password);
-
-        Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, encodedPassword, user.getAuthorities());
+        Authentication mockAuthentication = new UsernamePasswordAuthenticationToken(user, "encodedPassword", user.getAuthorities());
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(mockAuthentication);
-
-        when(jwtUtils.generateToken(email, user.getRoles())).thenReturn("token");
+        when(jwtUtils.generateToken(loginRequest.email(), user.getRoles())).thenReturn("token");
 
         LoginResponse response = authService.login(loginRequest);
 
@@ -99,37 +104,33 @@ class AuthServiceTest {
         assertEquals("token", response.token());
 
         verify(authenticationManager).authenticate(any(Authentication.class));
-        verify(jwtUtils).generateToken(email, user.getRoles());
+        verify(jwtUtils).generateToken(loginRequest.email(), user.getRoles());
     }
 
     @Test
     void shouldThrowExceptionWhenEmailIsNotEnabledDuringLogin() {
-        String email = "user@example.com";
-        String password = "password";
-        String encodedPassword = "encodedPassword";
+        LoginRequest loginRequest = new LoginRequest("user@example.com", "password");
 
-        AppUser user = new AppUser();
-        user.setEmail(email);
-        user.setPassword(encodedPassword);
-        user.setEnabled(false);
-
-        LoginRequest loginRequest = new LoginRequest(email, password);
-
-        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, AuthCodes.EMAIL_NOT_CONFIRMED.getCode()));
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenThrow(new ApiException("Email not confirmed.", HttpStatus.UNAUTHORIZED, AuthCodes.EMAIL_NOT_CONFIRMED.getCode()));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+
         assertEquals("Email not confirmed.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+
+        verify(authenticationManager).authenticate(any(Authentication.class));
     }
 
     @Test
     void shouldThrowExceptionWhenEmailNotFoundDuringLogin() {
-        String email = "nonexistent@example.com";
-        LoginRequest loginRequest = new LoginRequest(email, "password");
+        LoginRequest loginRequest = new LoginRequest("nonexistent@example.com", "password");
 
-        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Invalid email address.", HttpStatus.NOT_FOUND, "INVALID_EMAIL"));
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenThrow(new ApiException("Invalid email address.", HttpStatus.NOT_FOUND, "INVALID_EMAIL"));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
+
         assertEquals("Invalid email address.", exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
@@ -138,112 +139,127 @@ class AuthServiceTest {
 
     @Test
     void shouldThrowExceptionWhenPasswordIsInvalidDuringLogin() {
-        String email = "user@example.com";
-        String password = "wrongPassword";
-        String encodedPassword = "encodedPassword";
+        LoginRequest loginRequest = new LoginRequest("user@example.com", "wrongPassword");
 
-        AppUser user = new AppUser();
-        user.setEmail(email);
-        user.setPassword(encodedPassword);
-
-        LoginRequest loginRequest = new LoginRequest(email, password);
-
-        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new ApiException("Invalid password.", HttpStatus.UNAUTHORIZED, "INVALID_PASSWORD"));
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenThrow(new ApiException("Invalid password.", HttpStatus.UNAUTHORIZED, "INVALID_PASSWORD"));
 
         ApiException exception = assertThrows(ApiException.class, () -> authService.login(loginRequest));
 
         assertEquals("Invalid password.", exception.getMessage());
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
 
-        verifyNoInteractions(jwtUtils);
         verify(authenticationManager).authenticate(any(Authentication.class));
+        verifyNoInteractions(jwtUtils);
     }
 
     @Test
-    void shouldRegisterUserSuccessfully() {
-        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", "CLIENT");
+    void shouldRegisterClientSuccessfully() {
+        RegisterRequest request = new RegisterRequest("client@example.com", "password", "John", "Doe", "123-456-7890");
 
         AppUser savedUser = AppUser.builder()
                 .id(1L)
-                .email(request.email())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
+                .phone(request.phone())
+                .build();
+
+        AuthUser savedAuthUser = AuthUser.builder()
+                .id(2L)
+                .email(request.email())
                 .password("encodedPassword")
                 .roles(Set.of(clientRole))
-                .status(AppUserStatus.ACTIVE)
+                .enabled(false)
+                .status(AuthUserStatus.ACTIVE)
+                .appUser(savedUser)
                 .build();
+
+        savedUser.setAuthUser(savedAuthUser);
 
         AppUserDto expectedDto = AppUserDto.builder()
                 .id(savedUser.getId())
-                .email(savedUser.getEmail())
+                .email(savedAuthUser.getEmail())
                 .firstName(savedUser.getFirstName())
                 .lastName(savedUser.getLastName())
-                .roles(savedUser.getRoles())
-                .status(savedUser.getStatus())
+                .phone(savedUser.getPhone())
+                .status(savedAuthUser.getStatus())
                 .build();
 
-        when(appUserRepository.findByEmail(request.email())).thenReturn(Optional.empty());
         when(roleRepository.findByName("CLIENT")).thenReturn(Optional.of(clientRole));
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
-
+        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
         when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
             AppUser user = invocation.getArgument(0);
             user.setId(1L);
+            user.getAuthUser().setId(2L);
             return user;
         });
-
         when(appUserMapper.toAppUserDto(any(AppUser.class))).thenReturn(expectedDto);
 
-        AppUserDto registeredUser = authService.registerUser(request);
+        AppUserDto registeredUser = authService.registerClient(request);
 
         assertNotNull(registeredUser);
         assertEquals(expectedDto.id(), registeredUser.id());
         assertEquals(expectedDto.email(), registeredUser.email());
         assertEquals(expectedDto.firstName(), registeredUser.firstName());
         assertEquals(expectedDto.lastName(), registeredUser.lastName());
-        assertEquals(expectedDto.roles(), registeredUser.roles());
+        assertEquals(expectedDto.phone(), registeredUser.phone());
         assertEquals(expectedDto.status(), registeredUser.status());
 
-        verify(appUserRepository).findByEmail(request.email());
+        verify(entityLookupService).validateEmailNotTaken(request.email());
         verify(roleRepository).findByName("CLIENT");
         verify(passwordEncoder).encode(request.password());
         verify(appUserRepository).save(any(AppUser.class));
-        verify(confirmUserService).sendConfirmationEmail(any(AppUser.class));
+        verify(appUserMapper).toAppUserDto(any(AppUser.class));
     }
 
     @Test
     void shouldThrowExceptionWhenEmailAlreadyRegisteredDuringRegistration() {
-        String email = "existing@example.com";
-        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", clientRole.getName());
+        RegisterRequest request = new RegisterRequest("existing@example.com", "password", "John", "Doe", "123-456-7890");
 
-        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(new AppUser()));
+        doThrow(new ApiException("Email is already registered: " + request.email(), HttpStatus.CONFLICT, AuthCodes.EMAIL_ALREADY_EXISTS.getCode()))
+                .when(entityLookupService).validateEmailNotTaken(request.email());
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.registerUser(request));
-        assertEquals("Email is already registered: " + email, exception.getMessage());
+        ApiException exception = assertThrows(ApiException.class, () -> authService.registerClient(request));
+
+        assertEquals("Email is already registered: " + request.email(), exception.getMessage());
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
 
-        verify(appUserRepository).findByEmail(email);
-        verifyNoInteractions(passwordEncoder, roleRepository);
+        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verifyNoInteractions(passwordEncoder, roleRepository, appUserRepository);
     }
 
     @Test
-    void shouldThrowExceptionWhenRoleNotFoundDuringRegistration() {
-        String email = "new@example.com";
-        String roleName = "UNKNOWN_ROLE";
-        Role unknownRole = new Role();
-        unknownRole.setName(roleName);
+    void shouldThrowExceptionWhenClientRoleNotFoundDuringRegistration() {
+        RegisterRequest request = new RegisterRequest("new@example.com", "password", "John", "Doe", "123-456-7890");
 
-        RegisterRequest request = new RegisterRequest(email, "password", "John", "Doe", unknownRole.getName());
+        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
+        when(roleRepository.findByName(RoleCodes.CLIENT.name())).thenReturn(Optional.empty());
 
-        when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
-        when(roleRepository.findByName(roleName)).thenReturn(Optional.empty());
+        ApiException exception = assertThrows(ApiException.class, () -> authService.registerClient(request));
 
-        ApiException exception = assertThrows(ApiException.class, () -> authService.registerUser(request));
-        assertEquals("Role not found: " + roleName, exception.getMessage());
+        assertEquals("Role not found: " + RoleCodes.CLIENT.name(), exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
-        verify(appUserRepository).findByEmail(email);
-        verify(roleRepository).findByName(roleName);
-        verifyNoInteractions(passwordEncoder);
+        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(roleRepository).findByName(RoleCodes.CLIENT.name());
+        verifyNoInteractions(passwordEncoder, appUserRepository, confirmUserService);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenInstructorRoleNotFoundDuringRegistration() {
+        RegisterRequest request = new RegisterRequest("new@example.com", "password", "John", "Doe", "123-456-7890");
+
+        doNothing().when(entityLookupService).validateEmailNotTaken(request.email());
+        when(roleRepository.findByName(RoleCodes.INSTRUCTOR.name())).thenReturn(Optional.empty());
+
+        ApiException exception = assertThrows(ApiException.class, () -> authService.registerInstructor(request));
+
+        assertEquals("Role not found: " + RoleCodes.INSTRUCTOR.name(), exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+        verify(entityLookupService).validateEmailNotTaken(request.email());
+        verify(roleRepository).findByName(RoleCodes.INSTRUCTOR.name());
+        verifyNoInteractions(passwordEncoder, appUserRepository);
     }
 }

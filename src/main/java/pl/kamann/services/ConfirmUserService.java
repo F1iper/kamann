@@ -10,40 +10,49 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.TokenType;
 import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConfirmUserService {
-    private final AppUserRepository appUserRepository;
+
     private final EmailSender emailSender;
     private final TokenService tokenService;
     private final JwtUtils jwtUtils;
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+    private final AuthUserRepository authUserRepository;
+    private final AppUserRepository appUserRepository;
 
-    public void sendConfirmationEmail(AppUser appUser) {
+    // Track scheduled deletion tasks by email
+    private final Map<String, ScheduledFuture<?>> deletionTasks = new ConcurrentHashMap<>();
 
-        String token = tokenService.generateToken(appUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
+    public void sendConfirmationEmail(AuthUser authUser) {
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.CONFIRMATION, 15 * 60 * 1000);
 
         try {
             String confirmationLink = tokenService.generateConfirmationLink(token, tokenService.getConfirmationLink());
-            emailSender.sendEmail(appUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
-            log.info("Confirmation email sent successfully to user: {}", appUser.getEmail());
+            emailSender.sendEmail(authUser.getEmail(), confirmationLink, Locale.ENGLISH, "registration");
+            log.info("Confirmation email sent successfully to user: {}", authUser.getEmail());
 
-            scheduleUserDeletion(appUser.getEmail());
+            scheduleUserDeletion(authUser.getEmail());
 
         } catch (MessagingException e) {
-            log.error("Error sending the confirmation email to user: {}", appUser.getEmail(), e);
+            log.error("Error sending the confirmation email to user: {}", authUser.getEmail(), e);
             throw new ApiException(
                     "Error sending the confirmation email.",
                     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -52,14 +61,28 @@ public class ConfirmUserService {
         }
     }
 
-    private void scheduleUserDeletion(String email){
-        scheduledExecutorService.schedule(() -> {
-            Optional<AppUser> appUserOptional = appUserRepository.findByEmail(email);
-            if (appUserOptional.isPresent() && !appUserOptional.get().isEnabled()) {
-                appUserRepository.delete(appUserOptional.get());
+    private void scheduleUserDeletion(String email) {
+        cancelDeletionTask(email);
+
+        ScheduledFuture<?> task = scheduledExecutorService.schedule(() -> {
+            Optional<AuthUser> authUserOptional = authUserRepository.findByEmail(email);
+            if (authUserOptional.isPresent() && !authUserOptional.get().isEnabled()) {
+                authUserRepository.delete(authUserOptional.get());
                 log.info("User {} deleted due to inactivity after {} minutes", email, 15);
+                deletionTasks.remove(email);
             }
         }, 15, TimeUnit.MINUTES);
+
+        deletionTasks.put(email, task);
+    }
+
+    private void cancelDeletionTask(String email) {
+        ScheduledFuture<?> task = deletionTasks.get(email);
+        if (task != null && !task.isDone() && !task.isCancelled()) {
+            task.cancel(false);
+            log.info("Cancelled scheduled deletion task for user: {}", email);
+        }
+        deletionTasks.remove(email);
     }
 
     @Transactional
@@ -84,7 +107,7 @@ public class ConfirmUserService {
 
         String email = jwtUtils.extractEmail(token);
 
-        AppUser user = appUserRepository.findByEmail(email).orElseThrow(() ->
+        AuthUser user = authUserRepository.findByEmail(email).orElseThrow(() ->
                 new ApiException(
                         "User not found",
                         HttpStatus.NOT_FOUND,
@@ -101,9 +124,16 @@ public class ConfirmUserService {
         }
 
         user.setEnabled(true);
-        user.setStatus(AppUserStatus.ACTIVE);
+        user.setStatus(AuthUserStatus.ACTIVE);
+        authUserRepository.save(user);
 
-        appUserRepository.save(user);
+        if (!appUserRepository.existsByAuthUser(user)) {
+            AppUser newAppUser = new AppUser();
+            newAppUser.setAuthUser(user);
+            appUserRepository.save(newAppUser);
+        }
+
+        cancelDeletionTask(email);
 
         log.info("User account confirmed for: {}", user.getEmail());
     }

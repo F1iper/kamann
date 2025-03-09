@@ -6,15 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kamann.config.pagination.PaginatedResponseDto;
 import pl.kamann.dtos.AppUserDto;
 import pl.kamann.dtos.AppUserResponseDto;
-import pl.kamann.dtos.register.RegisterRequest;
-import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.services.AppUserService;
 import pl.kamann.services.AuthService;
 
@@ -49,15 +46,6 @@ public class AdminUserController {
         return ResponseEntity.ok(authService.getLoggedInAppUser(request));
     }
 
-    @PostMapping("/register")
-    @Operation(
-            summary = "Register a new user",
-            description = "Register a new user (client, instructor, or admin) with specified details and roles. The roles and other information are provided in the request body."
-    )
-    public ResponseEntity<AppUserDto> registerUser(@RequestBody RegisterRequest request) {
-        AppUserDto registeredUser = authService.registerUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
-    }
 
     @PutMapping("/activate/{userId}")
     @Operation(
@@ -84,7 +72,7 @@ public class AdminUserController {
             summary = "Change the status of a user",
             description = "Change the status of a user to ACTIVE, INACTIVE, or any other supported status. The new status is provided as a query parameter."
     )
-    public ResponseEntity<AppUserDto> changeStatus(@PathVariable Long userId, @RequestParam AppUserStatus status) {
+    public ResponseEntity<AppUserDto> changeStatus(@PathVariable Long userId, @RequestParam AuthUserStatus status) {
         AppUserDto appUserDto = appUserService.changeUserStatus(userId, status);
         return ResponseEntity.ok(appUserDto);
     }

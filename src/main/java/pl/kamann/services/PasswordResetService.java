@@ -11,9 +11,9 @@ import pl.kamann.config.codes.AuthCodes;
 import pl.kamann.config.exception.handler.ApiException;
 import pl.kamann.config.security.jwt.JwtUtils;
 import pl.kamann.dtos.ResetPasswordRequest;
-import pl.kamann.entities.appuser.AppUser;
+import pl.kamann.entities.appuser.AuthUser;
 import pl.kamann.entities.appuser.TokenType;
-import pl.kamann.repositories.AppUserRepository;
+import pl.kamann.repositories.AuthUserRepository;
 import pl.kamann.services.email.EmailSender;
 
 import java.util.Locale;
@@ -23,7 +23,7 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class PasswordResetService {
 
-    private final AppUserRepository appUserRepository;
+    private final AuthUserRepository authUserRepository;
     private final TokenService tokenService;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
@@ -33,15 +33,15 @@ public class PasswordResetService {
     public void requestPasswordReset(String email) {
         log.info("Password reset requested for email: {}", email);
 
-        AppUser appUser = validateUserForReset(email);
+        AuthUser authUser = validateUserForReset(email);
 
-        sendResetPasswordEmail(appUser);
+        sendResetPasswordEmail(authUser);
 
         log.info("Reset password email sent successfully to: {}", email);
     }
 
-    private AppUser validateUserForReset(String email) {
-        AppUser appUser = appUserRepository.findByEmail(email)
+    private AuthUser validateUserForReset(String email) {
+        AuthUser authUser = authUserRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Password reset attempt for non-existent email: {}", email);
                     return new ApiException(
@@ -51,27 +51,26 @@ public class PasswordResetService {
                     );
                 });
 
-        if (!appUser.isEnabled()) {
-            log.warn("⚠ Password reset requested for a disabled user: {}", email);
+        if (!authUser.isEnabled()) {
+            log.warn("Password reset requested for a disabled user: {}", email);
             throw new ApiException(
                     "Your account is not active. Please contact support.",
                     HttpStatus.FORBIDDEN,
                     AuthCodes.USER_NOT_ACTIVE.name()
             );
         }
-        return appUser;
+        return authUser;
     }
 
-    private void sendResetPasswordEmail(AppUser appUser) {
-
-        String token = tokenService.generateToken(appUser.getEmail(), TokenType.RESET_PASSWORD, 15 * 60 * 1000);
+    private void sendResetPasswordEmail(AuthUser authUser) {
+        String token = tokenService.generateToken(authUser.getEmail(), TokenType.RESET_PASSWORD, 15 * 60 * 1000);
 
         try {
             String resetLink = tokenService.generateResetPasswordLink(token, tokenService.getResetPasswordLink());
-            log.info("Sending reset password email to: {}", appUser.getEmail());
-            emailSender.sendEmail(appUser.getEmail(), resetLink, Locale.ENGLISH, "reset.password");
+            log.info("Sending reset password email to: {}", authUser.getEmail());
+            emailSender.sendEmail(authUser.getEmail(), resetLink, Locale.ENGLISH, "reset.password");
         } catch (MessagingException e) {
-            log.error("Error sending reset password email to {}: {}", appUser.getEmail(), e.getMessage(), e);
+            log.error("Error sending reset password email to {}: {}", authUser.getEmail(), e.getMessage(), e);
             throw new ApiException(
                     "Error sending the reset password email.",
                     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -79,7 +78,6 @@ public class PasswordResetService {
             );
         }
     }
-
 
     @Transactional
     public void resetPasswordWithToken(ResetPasswordRequest request) {
@@ -91,7 +89,7 @@ public class PasswordResetService {
         if(jwtUtils.validateToken(token) && jwtUtils.isTokenTypeValid(token, TokenType.RESET_PASSWORD)) {
             String email = jwtUtils.extractEmail(token);
 
-            AppUser appUser = appUserRepository.findByEmail(email).orElseThrow(() ->
+            AuthUser authUser = authUserRepository.findByEmail(email).orElseThrow(() ->
                     new ApiException(
                             "User not found",
                             HttpStatus.NOT_FOUND,
@@ -99,10 +97,10 @@ public class PasswordResetService {
                     )
             );
 
-            appUser.setPassword(passwordEncoder.encode(newPassword));
-            appUserRepository.save(appUser);
+            authUser.setPassword(passwordEncoder.encode(newPassword));
+            authUserRepository.save(authUser);
 
-            log.info("Password reset successfully for email: {}", appUser.getEmail());
+            log.info("Password reset successfully for email: {}", authUser.getEmail());
         } else {
             throw new ApiException(
                     "Invalid reset password token.",

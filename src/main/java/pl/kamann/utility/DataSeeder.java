@@ -6,7 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pl.kamann.entities.appuser.AppUser;
-import pl.kamann.entities.appuser.AppUserStatus;
+import pl.kamann.entities.appuser.AuthUser;
+import pl.kamann.entities.appuser.AuthUserStatus;
 import pl.kamann.entities.appuser.Role;
 import pl.kamann.entities.attendance.Attendance;
 import pl.kamann.entities.attendance.AttendanceStatus;
@@ -31,10 +32,16 @@ public class DataSeeder {
     private RoleRepository roleRepository;
 
     @Autowired
+    private EntityLookupService lookupService;
+
+    @Autowired
     private EventMapper eventMapper;
 
     @Autowired
     private AppUserRepository appUserRepository;
+
+    @Autowired
+    private AuthUserRepository authUserRepository;
 
     @Autowired
     private EventTypeRepository eventTypeRepository;
@@ -64,7 +71,11 @@ public class DataSeeder {
     Role instructorRole = new Role("INSTRUCTOR");
     Role clientRole = new Role("CLIENT");
 
-    AppUser client1;
+    AppUser admin;
+    AuthUser authAdmin;
+
+    AppUser client;
+    AuthUser authClient;
 
     @PostConstruct
     public void seedData() {
@@ -86,27 +97,38 @@ public class DataSeeder {
     }
 
     private void createDefaultAdminAndClient() {
-        AppUser admin = AppUser.builder()
-                .enabled(true)
-                .email("admin@yoga.com")
+        admin = AppUser.builder()
                 .firstName("Admin")
                 .lastName("Admin")
-                .password(passwordEncoder.encode("admin"))
-                .roles(Set.of(adminRole))
                 .build();
-
         appUserRepository.save(admin);
 
-        client1 = AppUser.builder()
+        authAdmin = AuthUser.builder()
+                .email("admin@yoga.com")
+                .password(passwordEncoder.encode("admin"))
+                .status(AuthUserStatus.ACTIVE)
+                .appUser(admin)
                 .enabled(true)
-                .email("client1@client.com")
+                .roles(Set.of(adminRole))
+                .build();
+        authUserRepository.save(authAdmin);
+
+        client = AppUser.builder()
                 .firstName("John")
                 .lastName("Wick")
+                .build();
+        appUserRepository.save(client);
+
+        authClient = AuthUser.builder()
+                .email("client1@client.com")
                 .password(passwordEncoder.encode("admin"))
+                .status(AuthUserStatus.ACTIVE)
+                .appUser(client)
+                .enabled(true)
                 .roles(Set.of(clientRole))
                 .build();
+        authUserRepository.save(authClient);
 
-        appUserRepository.save(client1);
     }
 
     private void createInstructors() {
@@ -120,32 +142,52 @@ public class DataSeeder {
         appUserRepository.saveAll(instructors);
     }
 
+    @Transactional
     private void createClients() {
         List<AppUser> clients = IntStream.range(2, 5)
-                .mapToObj(i -> AppUser.builder()
-                        .enabled(true)
-                        .email("client" + i + "@client.com")
-                        .firstName("Client" + i)
-                        .lastName("Test")
-                        .password(passwordEncoder.encode("admin"))
-                        .roles(new HashSet<>(Collections.singletonList(clientRole)))
-                        .status(AppUserStatus.ACTIVE)
-                        .build())
+                .mapToObj(i -> {
+                    AuthUser authUser = AuthUser.builder()
+                            .email("client" + i + "@client.com")
+                            .password(passwordEncoder.encode("admin"))
+                            .status(AuthUserStatus.ACTIVE)
+                            .enabled(true)
+                            .roles(new HashSet<>(Collections.singletonList(clientRole)))
+                            .build();
+
+                    AppUser appUser = AppUser.builder()
+                            .firstName("Client" + i)
+                            .lastName("Test")
+                            .authUser(authUser)
+                            .build();
+
+                    authUser.setAppUser(appUser);
+
+                    return appUser;
+                })
                 .collect(Collectors.toList());
 
         appUserRepository.saveAll(clients);
     }
 
+    @Transactional
     private AppUser createInstructor(String email, String firstName, String lastName, Role role) {
-        return AppUser.builder()
-                .enabled(true)
+        AuthUser authUser = AuthUser.builder()
                 .email(email)
+                .password(passwordEncoder.encode("admin"))
+                .status(AuthUserStatus.ACTIVE)
+                .enabled(true)
+                .roles(new HashSet<>(Collections.singletonList(role)))
+                .build();
+
+        AppUser appUser = AppUser.builder()
                 .firstName(firstName)
                 .lastName(lastName)
-                .password(passwordEncoder.encode("admin"))
-                .roles(new HashSet<>(Collections.singletonList(role)))
-                .status(AppUserStatus.ACTIVE)
+                .authUser(authUser)
                 .build();
+
+        authUser.setAppUser(appUser);
+
+        return appUserRepository.save(appUser);
     }
 
     private void seedEventTypes() {
@@ -158,10 +200,10 @@ public class DataSeeder {
     }
 
     private void seedEvents() {
-        AppUser admin = appUserRepository.findByEmail("admin@yoga.com")
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
-        AppUser instructor = appUserRepository.findByEmail("instructor1@yoga.com")
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+        AppUser admin = lookupService.findUserByEmail("admin@yoga.com");
+        AppUser instructor = lookupService.findUserByEmail("instructor1@yoga.com");
+
+        // Fetch EventTypes
         EventType yogaType = eventTypeRepository.findByName("Yoga")
                 .orElseThrow(() -> new RuntimeException("Yoga event type not found"));
         EventType danceType = eventTypeRepository.findByName("Dance")
@@ -173,7 +215,7 @@ public class DataSeeder {
         createSingleYogaWorkshop(admin, instructor, yogaType);
         createSingleDanceWorkshop(admin, instructor, danceType);
 
-        //Create single past events
+        // Create single past events
         createSingleMorningTango(admin, instructor, danceType);
         createSingleEveningYoga(admin, instructor, yogaType);
         createSinglePolDanceWorkshop(admin, instructor, poleDanceType);
@@ -336,16 +378,16 @@ public class DataSeeder {
 
 
         // For each event, enroll client1 in the first occurrence (if available)
-        seedAttendanceForEvent("Yoga Workshop", client1);
-        seedAttendanceForEvent("Morning Yoga", client1);
-        seedAttendanceForEvent("Dance Workshop", client1);
-        seedAttendanceForEvent("Evening Pole Dance", client1);
-        seedAttendanceForEvent("Evening Yoga", client1);
-        seedAttendanceForEvent("Pole Dance Workshop", client1);
-        seedAttendanceForEvent("Morning Tango", client1);
+        seedAttendanceForEvent("Yoga Workshop");
+        seedAttendanceForEvent("Morning Yoga");
+        seedAttendanceForEvent("Dance Workshop");
+        seedAttendanceForEvent("Evening Pole Dance");
+        seedAttendanceForEvent("Evening Yoga");
+        seedAttendanceForEvent("Pole Dance Workshop");
+        seedAttendanceForEvent("Morning Tango");
     }
 
-    private void seedAttendanceForEvent(String eventTitle, AppUser client) {
+    private void seedAttendanceForEvent(String eventTitle) {
         List<Attendance> attendances = attendanceRepository.findAll();
         Optional<Event> eventOpt = eventRepository.findByTitle(eventTitle);
         eventOpt.ifPresent(event -> {
